@@ -39,26 +39,47 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = async function(e) {
                 try {
                     const conteudo = e.target.result;
-                    const dadosExtraidos = {
-                        arquivo: file.name,
-                        importado_em: new Date().toISOString(),
-                        status: 'processado_com_sucesso'
-                    };
+                    const linhas = conteudo.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    
+                    // Remove o cabeçalho se houver
+                    const cabecalho = linhas[0];
+                    const registros = linhas.slice(1);
 
+                    let itensProcessados = [];
+
+                    for (let linha of registros) {
+                        const colunas = linha.split(',');
+                        if (colunas.length >= 4) {
+                            itensProcessados.push({
+                                departamento: colunas[0],
+                                categoria: colunas[1],
+                                quantidade: parseInt(colunas[2]) || 0,
+                                percentual: colunas[3]
+                            });
+                        }
+                    }
+
+                    // Salva o relatório consolidado com os dados reais parseados na tabela do Supabase
                     const { error: dbError } = await supabase
                         .from('ura_relatorios_consolidados')
                         .insert({
                             data_inicio: new Date().toISOString().slice(0, 10),
                             data_fim: new Date().toISOString().slice(0, 10),
                             tipo_comparacao: 'nenhum',
-                            dados_json: dadosExtraidos
+                            dados_json: {
+                                arquivo: file.name,
+                                total_linhas: itensProcessados.length,
+                                itens: itensProcessados,
+                                importado_em: new Date().toISOString()
+                            }
                         });
 
                     if (dbError) throw dbError;
-                    alert('Relatório processado e salvo no banco de dados com sucesso!');
+
+                    alert(`Sucesso! ${itensProcessados.length} registros do arquivo foram salvos no banco de dados.`);
                 } catch (error) {
                     console.error('Erro ao salvar no banco:', error);
-                    alert('Erro ao salvar os dados importados no banco de dados.');
+                    alert('Erro ao processar e salvar os dados no banco de dados.');
                 } finally {
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                 }

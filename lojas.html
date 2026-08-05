@@ -25,23 +25,21 @@
 
         <!-- Conteúdo Principal -->
         <main class="main-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="page-header-flex">
                 <div>
-                    <h1 class="header-title">Geração de Relatório - Lojas</h1>
-                    <p class="subtitle">Personalize os filtros, comparativos e exporte a apresentação</p>
+                    <h1 class="header-title">Relatório por Lojas</h1>
+                    <p class="subtitle">Segmentação e volumetria por filial vinculada a períodos</p>
                 </div>
-                
-                <!-- Botão que abre o Modal de Configuração -->
-                <button type="button" id="btn-abrir-modal" class="btn">Configurar e Gerar Relatório</button>
+                <button type="button" id="btn-abrir-modal" class="btn-primary-modern">Configurar e Gerar Relatório</button>
             </div>
 
-            <!-- Container da Apresentação em Slides (16:9 / 1920x1080 proporcional) -->
-            <div id="container-slides" style="display: none; margin-top: 30px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2>Visualização do Relatório</h2>
+            <!-- Container da Apresentação em Slides (16:9) -->
+            <div id="container-slides" style="display: none;">
+                <div class="actions-bar">
+                    <h3>Visualização da Apresentação (1920x1080)</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button type="button" id="btn-exportar-pdf" class="btn" style="background-color: #d32f2f;">Exportar PDF</button>
-                        <button type="button" id="btn-exportar-pptx" class="btn" style="background-color: #1976d2;">Exportar PowerPoint</button>
+                        <button type="button" id="btn-exportar-pdf" class="btn-action red">Exportar PDF</button>
+                        <button type="button" id="btn-exportar-pptx" class="btn-action blue">Exportar PowerPoint</button>
                     </div>
                 </div>
 
@@ -49,48 +47,63 @@
                 <div class="slide-page">
                     <div class="slide-header">Grupo Lebes - Desempenho de Lojas (Tradicional vs Express)</div>
                     <div class="slide-body">
-                        <p id="conteudo-slide-1">Carregando dados do período selecionado...</p>
-                    </div>
-                </div>
-
-                <!-- Slide 2 -->
-                <div class="slide-page">
-                    <div class="slide-header">Grupo Lebes - Top Lojas e Comparativos</div>
-                    <div class="slide-body">
-                        <p id="conteudo-slide-2">Carregando análise comparativa...</p>
+                        <div class="table-container">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Filial (FL)</th>
+                                        <th>Modelo</th>
+                                        <th>Total de Contatos</th>
+                                        <th>% do Mês</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>FL 266 - Centro</strong></td>
+                                        <td><span class="badge tradicional">Tradicional</span></td>
+                                        <td>342</td>
+                                        <td>23.1%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>FL 08 - Shopping</strong></td>
+                                        <td><span class="badge express">EXPRESS</span></td>
+                                        <td>189</td>
+                                        <td>12.8%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Modal Centralizado de Filtros e Comparativos -->
+    <!-- Modal Centralizado de Filtros -->
     <div id="modal-filtro" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 15px; color: var(--cor-secundaria);">Filtros e Parâmetros do Relatório</h3>
+        <div class="modal-card">
+            <h3>Parâmetros do Relatório de Lojas</h3>
             
             <div class="input-group">
-                <label for="modal-data-inicio">Data de Início:</label>
-                <input type="date" id="modal-data-inicio">
+                <label>Data de Início:</label>
+                <input type="date" id="modal-data-inicio" class="input-modern">
             </div>
 
             <div class="input-group">
-                <label for="modal-data-fim">Data de Fim:</label>
-                <input type="date" id="modal-data-fim">
+                <label>Data de Fim:</label>
+                <input type="date" id="modal-data-fim" class="input-modern">
             </div>
 
-            <div class="input-group" style="margin-top: 15px;">
-                <label style="font-weight: bold; margin-bottom: 8px; display: block; text-align: left;">Comparar com:</label>
-                <div style="display: flex; flex-direction: column; gap: 8px; text-align: left; font-size: 0.9rem;">
-                    <label><input type="checkbox" id="chk-mes" value="mes_anterior"> Mês anterior (mesmos dias equivalentes)</label>
-                    <label><input type="checkbox" id="chk-semana" value="semana_anterior"> Semana anterior</label>
-                    <label><input type="checkbox" id="chk-ano" value="ano_anterior"> Ano anterior</label>
-                </div>
+            <div class="input-group checkbox-group">
+                <label class="checkbox-title">Comparar com:</label>
+                <label><input type="checkbox" id="chk-mes"> Mês anterior (período equivalente)</label>
+                <label><input type="checkbox" id="chk-semana"> Semana anterior</label>
+                <label><input type="checkbox" id="chk-ano"> Ano anterior</label>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button type="button" id="btn-gerar-relatorio" class="btn" style="flex: 1;">Gerar Relatório</button>
-                <button type="button" id="btn-fechar-modal" class="btn" style="background-color: #666; flex: 1;">Cancelar</button>
+            <div class="modal-buttons">
+                <button type="button" id="btn-gerar-relatorio" class="btn-primary-modern flex-1">Gerar Apresentação</button>
+                <button type="button" id="btn-fechar-modal" class="btn-secondary-modern flex-1">Cancelar</button>
             </div>
         </div>
     </div>
