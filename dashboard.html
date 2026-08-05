@@ -3,55 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Dashboard</title>
+    <title>Prisma TI - Dashboard Operacional</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
     <div class="layout-container">
         <!-- Menu Lateral -->
-        <nav class="sidebar">
+        <aside class="sidebar">
             <div class="sidebar-brand">
-                <img src="assets/img/logo.svg" alt="Logo da Empresa" class="logo-sidebar">
-                <h2>Prisma TI</h2>
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
+                <h2>Menu</h2>
             </div>
-            
-            <a class="nav-item active" id="menu-importar">Importar Dados URA</a>
-            <a class="nav-item" id="menu-relatorios">Relatórios</a>
-            <button class="logout-btn" id="btn-logout">Sair do Sistema</button>
-        </nav>
+            <nav>
+                <a href="#" class="active">Visão Geral URA</a>
+                <a href="#">Relatório de Lojas</a>
+                <a href="#">Categorias & PDV</a>
+            </nav>
+            <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
+        </aside>
 
-        <!-- Área de Conteúdo -->
+        <!-- Conteúdo Principal -->
         <main class="main-content">
-            <h1 class="header-title">Importação de Relatórios</h1>
-            <div class="subtitle">EXTRAÇÃO DE DADOS DA DÍGITRO</div>
+            <h1 class="header-title">Monitoramento de Atendimento</h1>
+            <p class="subtitle" style="margin-bottom: 20px;">Importação e Análise de Relatórios URA</p>
 
-            <!-- Área de Upload -->
+            <!-- Card de Upload -->
             <div class="card upload-card">
-                <div class="loading-overlay" id="loading-overlay">Processando arquivo...</div>
-                
-                <h3 style="margin-bottom: 15px; color: var(--cor-primaria);">Selecione o arquivo HTML diário</h3>
+                <div class="loading-overlay" id="loading-overlay">Processando arquivo HTML...</div>
+                <h3>Importar Relatório da URA</h3>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o arquivo HTML exportado do sistema para extração automática das métricas.</p>
                 
                 <div class="upload-section">
-                    <input type="file" id="arquivo-ura" accept=".html">
-                    <button class="btn btn-processar" id="btn-processar">Processar e Extrair Dados</button>
+                    <input type="file" id="file-input" accept=".html,.htm">
+                    <button type="button" id="btn-processar" class="btn">Processar e Analisar</button>
                 </div>
             </div>
 
-            <!-- Resultados da Extração -->
-            <div id="area-resultados" style="display: none;">
-                <h2 style="margin: 20px 0; color: var(--text-main);">Pré-visualização dos Dados</h2>
-                
-                <div class="card" id="resultado-agentes">
-                    <!-- A tabela gerada pelo JS será injetada aqui -->
+            <!-- Cards de KPIs Extraídos -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="card" style="text-align: center; margin-bottom: 0;">
+                    <span style="font-size: 0.85rem; color: #666; font-weight: bold;">CHAMADAS RECEBIDAS</span>
+                    <h2 id="kpi-recebidas" style="color: var(--cor-secundaria); font-size: 2rem; margin-top: 5px;">0</h2>
                 </div>
+                <div class="card" style="text-align: center; margin-bottom: 0;">
+                    <span style="font-size: 0.85rem; color: #666; font-weight: bold;">ATENDIDAS</span>
+                    <h2 id="kpi-atendidas" style="color: var(--cor-primaria); font-size: 2rem; margin-top: 5px;">0</h2>
+                </div>
+                <div class="card" style="text-align: center; margin-bottom: 0;">
+                    <span style="font-size: 0.85rem; color: #666; font-weight: bold;">ABANDONADAS / PERDIDAS</span>
+                    <h2 id="kpi-perdidas" style="color: var(--danger-red); font-size: 2rem; margin-top: 5px;">0</h2>
+                </div>
+                <div class="card" style="text-align: center; margin-bottom: 0;">
+                    <span style="font-size: 0.85rem; color: #666; font-weight: bold;">TME (MÉDIO ESPERA)</span>
+                    <h2 id="kpi-tme" style="color: var(--text-main); font-size: 2rem; margin-top: 5px;">00:00</h2>
+                </div>
+            </div>
 
-                <button class="btn" style="background-color: #0288d1;" id="btn-salvar-banco">Confirmar e Salvar no Banco de Dados</button>
+            <!-- Tabela de Pré-visualização dos Dados Extraídos -->
+            <div class="card">
+                <h3 style="margin-bottom: 15px; color: var(--cor-secundaria);">Resumo de Classificações e Métricas</h3>
+                <div style="overflow-x: auto;">
+                    <table class="table-preview">
+                        <thead>
+                            <tr>
+                                <th>Indicador / Categoria</th>
+                                <th>Quantidade / Volume</th>
+                                <th>Percentual (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-resultados-corpo">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #777;">Nenhum arquivo carregado no momento.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Importa o script do dashboard -->
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>
