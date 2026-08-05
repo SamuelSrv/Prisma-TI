@@ -3,37 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Login</title>
+    <title>Prisma TI - Acesso Corporativo</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="login-body">
 
     <div class="login-container">
         <div class="login-box">
-            <!-- Espaço reservado para o seu SVG -->
-            <img src="assets/img/logo.svg" alt="Logo da Empresa" class="logo-login">
-            
             <h2>Prisma TI</h2>
             <p class="subtitle">Acesso Restrito</p>
             
             <form id="login-form">
                 <div class="input-group">
                     <label for="email">E-mail Corporativo</label>
-                    <input type="email" id="email" required placeholder="nome@empresa.com.br" autocomplete="username">
+                    <input type="email" id="email" required placeholder="nome@empresa.com.br">
                 </div>
                 
                 <div class="input-group">
                     <label for="password">Senha</label>
-                    <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+                    <input type="password" id="password" required placeholder="••••••••">
                 </div>
                 
                 <button type="submit" id="btn-login" class="btn">Entrar no Sistema</button>
                 <p class="error-msg" id="login-error"></p>
+                
+                <!-- Nova Seção de Cadastro -->
+                <div class="register-section">
+                    <hr class="divider">
+                    <p>Novo por aqui?</p>
+                    <a href="cadastro.html" class="btn btn-secondary">Criar Minha Conta</a>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Importa o script de autenticação -->
+    <!-- Nova Barra de Rodapé Institucional -->
+    <div class="footer-bar">
+        Sistema Feito por: Grupo Lebes
+    </div>
+
     <script type="module" src="assets/js/auth.js"></script>
 </body>
 </html>
