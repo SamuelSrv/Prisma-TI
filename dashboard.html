@@ -3,34 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Login</title>
+    <title>Prisma TI - Dashboard</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="login-body">
+<body>
 
-    <div class="login-container">
-        <div class="login-box">
-            <h2>Prisma TI</h2>
-            <p class="subtitle">Acesso Restrito</p>
+    <div class="layout-container">
+        <!-- Menu Lateral -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <img src="assets/img/logo.svg" alt="Logo da Empresa" class="logo-sidebar">
+                <h2>Prisma TI</h2>
+            </div>
             
-            <form id="login-form">
-                <div class="input-group">
-                    <label for="email">E-mail Corporativo</label>
-                    <input type="email" id="email" required placeholder="nome@empresa.com.br">
-                </div>
+            <a class="nav-item active" id="menu-importar">Importar Dados URA</a>
+            <a class="nav-item" id="menu-relatorios">Relatórios</a>
+            <button class="logout-btn" id="btn-logout">Sair do Sistema</button>
+        </nav>
+
+        <!-- Área de Conteúdo -->
+        <main class="main-content">
+            <h1 class="header-title">Importação de Relatórios</h1>
+            <div class="subtitle">EXTRAÇÃO DE DADOS DA DÍGITRO</div>
+
+            <!-- Área de Upload -->
+            <div class="card upload-card">
+                <div class="loading-overlay" id="loading-overlay">Processando arquivo...</div>
                 
-                <div class="input-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" required placeholder="••••••••">
-                </div>
+                <h3 style="margin-bottom: 15px; color: var(--cor-primaria);">Selecione o arquivo HTML diário</h3>
                 
-                <button type="submit" id="btn-login" class="btn">Entrar no Sistema</button>
-                <p class="error-msg" id="login-error"></p>
-            </form>
-        </div>
+                <div class="upload-section">
+                    <input type="file" id="arquivo-ura" accept=".html">
+                    <button class="btn btn-processar" id="btn-processar">Processar e Extrair Dados</button>
+                </div>
+            </div>
+
+            <!-- Resultados da Extração -->
+            <div id="area-resultados" style="display: none;">
+                <h2 style="margin: 20px 0; color: var(--text-main);">Pré-visualização dos Dados</h2>
+                
+                <div class="card" id="resultado-agentes">
+                    <!-- A tabela gerada pelo JS será injetada aqui -->
+                </div>
+
+                <button class="btn" style="background-color: #0288d1;" id="btn-salvar-banco">Confirmar e Salvar no Banco de Dados</button>
+            </div>
+        </main>
     </div>
 
-    <!-- Importa o script de autenticação -->
-    <script type="module" src="assets/js/auth.js"></script>
+    <!-- Importa o script do dashboard -->
+    <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>
