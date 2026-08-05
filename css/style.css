@@ -1,4 +1,3 @@
-/* Variáveis de cores corporativas */
 :root {
     --primary-green: #2e7d32;
     --dark-green: #1b5e20;
@@ -10,29 +9,46 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-/* Fundo da tela de login */
-.login-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
-}
+body { background-color: var(--bg-color); color: var(--text-main); }
 
-/* Caixa central de login */
+/* --- TELA DE LOGIN --- */
+.login-body { display: flex; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); }
 .login-container { width: 100%; max-width: 400px; padding: 20px; }
 .login-box { background: var(--card-bg); padding: 40px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
 .login-box h2 { color: var(--dark-green); font-size: 1.8rem; margin-bottom: 5px; }
 .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
 
-/* Formulário */
 .input-group { margin-bottom: 20px; text-align: left; }
 .input-group label { display: block; margin-bottom: 8px; color: #555; font-weight: bold; font-size: 0.9rem; }
 .input-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; transition: 0.3s; }
 .input-group input:focus { border-color: var(--primary-green); outline: none; box-shadow: 0 0 5px rgba(46, 125, 50, 0.3); }
 
-/* Botão e Erros */
+/* --- COMPONENTES GERAIS --- */
 .btn { background-color: var(--primary-green); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; transition: 0.3s; }
 .btn:hover { background-color: var(--dark-green); }
 .btn:disabled { background-color: #9e9e9e; cursor: not-allowed; }
 .error-msg { color: var(--danger-red); margin-top: 15px; font-size: 0.9rem; display: none; font-weight: bold; }
+.card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 25px; position: relative; }
+
+/* --- DASHBOARD LAYOUT --- */
+.layout-container { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 250px; background-color: var(--dark-green); color: white; display: flex; flex-direction: column; padding: 20px; }
+.sidebar h2 { font-size: 1.2rem; margin-bottom: 30px; text-align: center; border-bottom: 1px solid #4caf50; padding-bottom: 15px; }
+.sidebar a { color: #c8e6c9; text-decoration: none; padding: 12px; margin-bottom: 5px; border-radius: 4px; cursor: pointer; transition: 0.2s; display: block; }
+.sidebar a:hover, .sidebar a.active { background-color: var(--primary-green); color: white; }
+.logout-btn { margin-top: auto; background-color: transparent; border: 1px solid #c8e6c9; color: white; padding: 10px; border-radius: 4px; cursor: pointer; }
+.logout-btn:hover { background-color: rgba(255,255,255,0.1); }
+.main-content { flex: 1; padding: 30px; overflow-y: auto; }
+.header-title { margin-bottom: 5px; font-size: 1.8rem; color: var(--text-main); }
+
+/* --- UPLOAD SECTION --- */
+.upload-card { border: 2px dashed #a5d6a7; text-align: center; padding: 40px 20px; }
+.upload-section { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
+.upload-section input[type="file"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
+.btn-processar { width: 100%; }
+.loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; align-items: center; justify-content: center; font-weight: bold; color: var(--primary-green); font-size: 1.2rem; border-radius: 8px; z-index: 10; }
+
+/* --- TABELAS --- */
+.table-preview { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; margin-top: 10px; }
+.table-preview th { background-color: var(--dark-green); color: white; padding: 10px; }
+.table-preview td { padding: 10px; border: 1px solid #e0e0e0; }
