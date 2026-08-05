@@ -27,40 +27,72 @@
         <main class="main-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <h1 class="header-title">Relatório por Lojas (Top Lojas)</h1>
-                    <p class="subtitle">Segmentação entre Tradicional e Express vinculada à data</p>
+                    <h1 class="header-title">Geração de Relatório - Lojas</h1>
+                    <p class="subtitle">Personalize os filtros, comparativos e exporte a apresentação</p>
                 </div>
                 
-                <!-- Filtro Obrigatório por Data -->
-                <div class="card" style="margin-bottom: 0; padding: 10px 15px; display: flex; align-items: center; gap: 10px;">
-                    <label for="filtro-data-lojas" style="font-size: 0.85rem; font-weight: bold; color: var(--cor-secundaria);">Data de Referência:</label>
-                    <input type="date" id="filtro-data-lojas" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    <button type="button" id="btn-filtrar-lojas" class="btn" style="padding: 6px 12px; font-size: 0.85rem;">Filtrar</button>
-                </div>
+                <!-- Botão que abre o Modal de Configuração -->
+                <button type="button" id="btn-abrir-modal" class="btn">Configurar e Gerar Relatório</button>
             </div>
 
-            <!-- Tabela de Lojas -->
-            <div class="card">
-                <h3 style="margin-bottom: 15px; color: var(--cor-secundaria);">Volume de Chamados por Filial (FL)</h3>
-                <div style="overflow-x: auto;">
-                    <table class="table-preview">
-                        <thead>
-                            <tr>
-                                <th>Filial (FL)</th>
-                                <th>Modelo (Tradicional / Express)</th>
-                                <th>Total de Contatos</th>
-                                <th>% do Mês</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-lojas-corpo">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #777;">Selecione uma data para carregar os registros.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <!-- Container da Apresentação em Slides (16:9 / 1920x1080 proporcional) -->
+            <div id="container-slides" style="display: none; margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2>Visualização do Relatório</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="btn-exportar-pdf" class="btn" style="background-color: #d32f2f;">Exportar PDF</button>
+                        <button type="button" id="btn-exportar-pptx" class="btn" style="background-color: #1976d2;">Exportar PowerPoint</button>
+                    </div>
+                </div>
+
+                <!-- Slide 1 -->
+                <div class="slide-page">
+                    <div class="slide-header">Grupo Lebes - Desempenho de Lojas (Tradicional vs Express)</div>
+                    <div class="slide-body">
+                        <p id="conteudo-slide-1">Carregando dados do período selecionado...</p>
+                    </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="slide-page">
+                    <div class="slide-header">Grupo Lebes - Top Lojas e Comparativos</div>
+                    <div class="slide-body">
+                        <p id="conteudo-slide-2">Carregando análise comparativa...</p>
+                    </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Modal Centralizado de Filtros e Comparativos -->
+    <div id="modal-filtro" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: var(--cor-secundaria);">Filtros e Parâmetros do Relatório</h3>
+            
+            <div class="input-group">
+                <label for="modal-data-inicio">Data de Início:</label>
+                <input type="date" id="modal-data-inicio">
+            </div>
+
+            <div class="input-group">
+                <label for="modal-data-fim">Data de Fim:</label>
+                <input type="date" id="modal-data-fim">
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <label style="font-weight: bold; margin-bottom: 8px; display: block; text-align: left;">Comparar com:</label>
+                <div style="display: flex; flex-direction: column; gap: 8px; text-align: left; font-size: 0.9rem;">
+                    <label><input type="checkbox" id="chk-mes" value="mes_anterior"> Mês anterior (mesmos dias equivalentes)</label>
+                    <label><input type="checkbox" id="chk-semana" value="semana_anterior"> Semana anterior</label>
+                    <label><input type="checkbox" id="chk-ano" value="ano_anterior"> Ano anterior</label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="button" id="btn-gerar-relatorio" class="btn" style="flex: 1;">Gerar Relatório</button>
+                <button type="button" id="btn-fechar-modal" class="btn" style="background-color: #666; flex: 1;">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="assets/js/lojas.js"></script>
