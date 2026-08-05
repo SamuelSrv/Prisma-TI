@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma TI - Dashboard Operacional</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
 
     <div class="layout-container">
@@ -16,9 +18,9 @@
                 <h2>Menu</h2>
             </div>
             <nav>
-                <a href="#" class="active">Visão Geral URA</a>
-                <a href="#">Relatório de Lojas</a>
-                <a href="#">Categorias & PDV</a>
+                <a href="dashboard.html" class="active">Visão Geral URA</a>
+                <a href="lojas.html">Relatório de Lojas</a>
+                <a href="categorias.html">Categorias & PDV</a>
             </nav>
             <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
         </aside>
@@ -32,8 +34,9 @@
             <div class="card upload-card">
                 <div class="loading-overlay" id="loading-overlay">Processando arquivo HTML...</div>
                 <h3>Importar Relatório da URA</h3>
-                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o arquivo HTML exportado do sistema para extração automática das métricas.</p>
-                
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o arquivo HTML exportado do
+                    sistema para extração automática das métricas.</p>
+
                 <div class="upload-section">
                     <input type="file" id="file-input" accept=".html,.htm">
                     <button type="button" id="btn-processar" class="btn">Processar e Analisar</button>
@@ -41,10 +44,12 @@
             </div>
 
             <!-- Cards de KPIs Extraídos -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
                 <div class="card" style="text-align: center; margin-bottom: 0;">
                     <span style="font-size: 0.85rem; color: #666; font-weight: bold;">CHAMADAS RECEBIDAS</span>
-                    <h2 id="kpi-recebidas" style="color: var(--cor-secundaria); font-size: 2rem; margin-top: 5px;">0</h2>
+                    <h2 id="kpi-recebidas" style="color: var(--cor-secundaria); font-size: 2rem; margin-top: 5px;">0
+                    </h2>
                 </div>
                 <div class="card" style="text-align: center; margin-bottom: 0;">
                     <span style="font-size: 0.85rem; color: #666; font-weight: bold;">ATENDIDAS</span>
@@ -74,7 +79,8 @@
                         </thead>
                         <tbody id="tabela-resultados-corpo">
                             <tr>
-                                <td colspan="3" style="text-align: center; color: #777;">Nenhum arquivo carregado no momento.</td>
+                                <td colspan="3" style="text-align: center; color: #777;">Nenhum arquivo carregado no
+                                    momento.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -85,4 +91,5 @@
 
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
+
 </html>

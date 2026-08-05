@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Categorias & PDV</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+    <div class="layout-container">
+        <!-- Menu Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
+                <h2>Prisma TI</h2>
+            </div>
+            <nav>
+                <a href="dashboard.html">Visão Geral URA</a>
+                <a href="lojas.html">Relatório de Lojas</a>
+                <a href="categorias.html" class="active">Categorias & PDV</a>
+            </nav>
+            <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h1 class="header-title">Detalhamento de Categorias & PDV</h1>
+                    <p class="subtitle">Análise pontual de ocorrências por período</p>
+                </div>
+                
+                <!-- Filtro Obrigatório por Data -->
+                <div class="card" style="margin-bottom: 0; padding: 10px 15px; display: flex; align-items: center; gap: 10px;">
+                    <label for="filtro-data-cat" style="font-size: 0.85rem; font-weight: bold; color: var(--cor-secundaria);">Data de Referência:</label>
+                    <input type="date" id="filtro-data-cat" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button type="button" id="btn-filtrar-cat" class="btn" style="padding: 6px 12px; font-size: 0.85rem;">Filtrar</button>
+                </div>
+            </div>
+
+            <!-- Tabela de Ocorrências por Categoria -->
+            <div class="card">
+                <h3 style="margin-bottom: 15px; color: var(--cor-secundaria);">Ocorrências Registradas</h3>
+                <div style="overflow-x: auto;">
+                    <table class="table-preview">
+                        <thead>
+                            <tr>
+                                <th>Departamento / Categoria Principal</th>
+                                <th>Subcategoria / Motivo</th>
+                                <th>Quantidade</th>
+                                <th>% do Mês</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-categorias-corpo">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #777;">Selecione uma data para carregar os registros.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="assets/js/categorias.js"></script>
+</body>
+</html>

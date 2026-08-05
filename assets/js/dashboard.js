@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnProcessar.addEventListener('click', () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert('Por favor, selecione um arquivo HTML da URA para processar.');
+                alert('Por favor, selecione um arquivo da o sistema para processar.');
                 return;
             }
 
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     analisarHtmlUra(htmlContent);
                 } catch (error) {
                     console.error('Erro ao ler o arquivo:', error);
-                    alert('Erro ao processar a estrutura do arquivo HTML.');
+                    alert('Erro ao processar a estrutura do arquivo.');
                 } finally {
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                 }
