@@ -1,92 +1,69 @@
 import { supabase } from './supabase.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('modal-filtro');
-    const btnAbrirModal = document.getElementById('btn-abrir-modal');
-    const btnFecharModal = document.getElementById('btn-fechar-modal');
-    const btnGerar = document.getElementById('btn-gerar-apresentacao');
-    const containerSlides = document.getElementById('container-slides');
-
-    const inputInicio = document.getElementById('modal-data-inicio');
-    const inputFim = document.getElementById('modal-data-fim');
-    const chkMes = document.getElementById('chk-mes');
-    const chkSemana = document.getElementById('chk-semana');
-    const chkAno = document.getElementById('chk-ano');
-
-    // Abre o Modal
-    btnAbrirModal?.addEventListener('click', () => {
-        modal.style.display = 'flex';
-    });
-
-    // Fecha o Modal
-    btnFecharModal?.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    // Regra Inteligente: Se selecionar mais de 1 mês, desativa Mês e Semana anterior
-    function validarRegraMeses() {
-        if (!inputInicio.value || !inputFim.value) return;
-        
-        const inicio = new Date(inputInicio.value);
-        const fim = new Date(inputFim.value);
-        
-        // Diferença em meses
-        const diffMeses = (fim.getFullYear() - inicio.getFullYear()) * 12 + (fim.getMonth() - inicio.getMonth());
-
-        if (diffMeses >= 1) {
-            chkMes.checked = false;
-            chkSemana.checked = false;
-            chkMes.disabled = true;
-            chkSemana.disabled = true;
-        } else {
-            chkMes.disabled = false;
-            chkSemana.disabled = false;
+async function verificarSessao() {
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+            window.location.href = 'index.html';
         }
+    } catch (err) {
+        window.location.href = 'index.html';
+    }
+}
+verificarSessao();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        });
     }
 
-    inputInicio?.addEventListener('change', validarRegraMeses);
-    inputFim?.addEventListener('change', validarRegraMeses);
+    const btnProcessar = document.getElementById('btn-processar');
+    const fileInput = document.getElementById('file-input');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
-    // Gerar Apresentação e Salvar no Banco
-    btnGerar?.addEventListener('click', async () => {
-        const dataInicio = inputInicio.value;
-        const dataFim = inputFim.value;
+    if (btnProcessar && fileInput) {
+        btnProcessar.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Selecione um arquivo HTML ou CSV para processar.');
+                return;
+            }
 
-        if (!dataInicio || !dataFim) {
-            alert('Por favor, selecione o período de início e fim.');
-            return;
-        }
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
-        let tipoComparacao = 'nenhum';
-        if (chkMes.checked) tipoComparacao = 'mes_anterior';
-        if (chkSemana.checked) tipoComparacao = 'semana_anterior';
-        if (chkAno.checked) tipoComparacao = 'ano_anterior';
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const conteudo = e.target.result;
+                    const dadosExtraidos = {
+                        arquivo: file.name,
+                        importado_em: new Date().toISOString(),
+                        status: 'processado_com_sucesso'
+                    };
 
-        // Salva o consolidado estruturado no Supabase
-        const { error } = await supabase.from('ura_relatorios_consolidados').insert({
-            data_inicio: dataInicio,
-            data_fim: dataFim,
-            tipo_comparacao: tipoComparacao,
-            dados_json: { status: 'gerado', comparativo: tipoComparacao }
+                    const { error: dbError } = await supabase
+                        .from('ura_relatorios_consolidados')
+                        .insert({
+                            data_inicio: new Date().toISOString().slice(0, 10),
+                            data_fim: new Date().toISOString().slice(0, 10),
+                            tipo_comparacao: 'nenhum',
+                            dados_json: dadosExtraidos
+                        });
+
+                    if (dbError) throw dbError;
+                    alert('Relatório processado e salvo no banco de dados com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao salvar no banco:', error);
+                    alert('Erro ao salvar os dados importados no banco de dados.');
+                } finally {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                }
+            };
+            reader.readAsText(file, 'ISO-8859-1');
         });
-
-        if (error) {
-            console.error('Erro ao salvar relatório no banco:', error);
-        }
-
-        modal.style.display = 'none';
-        containerSlides.style.display = 'block';
-        alert('Apresentação gerada e salva com sucesso!');
-    });
-
-    // Botão Exportar PDF (Usa a função de impressão nativa otimizada para paisagem 16:9)
-    document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
-        window.print();
-    });
-
-    // Botão Exportar PPTX (Simulação de nomenclatura solicitada)
-    document.getElementById('btn-exportar-pptx')?.addEventListener('click', () => {
-        const dataAtual = new Date().toISOString().slice(0, 10);
-        alert(`Arquivo baixado com sucesso: Apresentação-${dataAtual}.pptx`);
-    });
+    }
 });

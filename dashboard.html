@@ -1,73 +1,48 @@
-import { supabase } from './supabase.js';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Dashboard Operacional</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
 
-async function verificarSessao() {
-    try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error || !session) {
-            window.location.href = 'index.html';
-        }
-    } catch (err) {
-        window.location.href = 'index.html';
-    }
-}
-verificarSessao();
+    <div class="layout-container">
+        <!-- Menu Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
+                <h2>Prisma TI</h2>
+            </div>
+            <nav>
+                <a href="dashboard.html" class="active">Visão Geral URA</a>
+                <a href="lojas.html">Relatório de Lojas</a>
+                <a href="categorias.html">Categorias & PDV</a>
+            </nav>
+            <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
+        </aside>
 
-document.addEventListener('DOMContentLoaded', () => {
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.href = 'index.html';
-        });
-    }
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <h1 class="header-title">Monitoramento de Atendimento</h1>
+            <p class="subtitle" style="margin-bottom: 20px;">Importação e Análise de Relatórios URA</p>
 
-    const btnProcessar = document.getElementById('btn-processar');
-    const fileInput = document.getElementById('file-input');
-    const loadingOverlay = document.getElementById('loading-overlay');
+            <!-- Card de Upload -->
+            <div class="card upload-card">
+                <div class="loading-overlay" id="loading-overlay">Processando arquivo...</div>
+                <h3>Importar Relatório</h3>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o arquivo exportado para salvar os dados no banco.</p>
+                
+                <div class="upload-section">
+                    <input type="file" id="file-input" accept=".html,.htm,.csv,.txt">
+                    <button type="button" id="btn-processar" class="btn">Processar e Salvar</button>
+                </div>
+            </div>
+        </main>
+    </div>
 
-    if (btnProcessar && fileInput) {
-        btnProcessar.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Selecione um arquivo HTML ou CSV para processar.');
-                return;
-            }
-
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const conteudo = e.target.result;
-                    
-                    // Extração básica de exemplo baseada no conteúdo
-                    const dadosExtraidos = {
-                        arquivo: file.name,
-                        importado_em: new Date().toISOString(),
-                        status: 'processado_com_sucesso'
-                    };
-
-                    // SALVANDO NO SUPABASE (Tabela que criamos anteriormente)
-                    const { error: dbError } = await supabase
-                        .from('ura_relatorios_consolidados')
-                        .insert({
-                            data_inicio: new Date().toISOString().slice(0, 10),
-                            data_fim: new Date().toISOString().slice(0, 10),
-                            tipo_comparacao: 'nenhum',
-                            dados_json: dadosExtraidos
-                        });
-
-                    if (dbError) throw dbError;
-
-                    alert('Relatório processado e salvo no banco de dados com sucesso!');
-                } catch (error) {
-                    console.error('Erro ao salvar no banco:', error);
-                    alert('Erro ao salvar os dados importados no banco de dados.');
-                } finally {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                }
-            };
-            reader.readAsText(file, 'ISO-8859-1');
-        });
-    }
-});
+    <!-- Chamada correta do arquivo externo -->
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>
