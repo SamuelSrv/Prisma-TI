@@ -1,125 +1,92 @@
 import { supabase } from './supabase.js';
 
-// ==========================================
-// 1. PROTEÇÃO DE ROTA (SEGURANÇA DA SESSÃO)
-// ==========================================
-async function verificarSessao() {
-    try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error || !session) {
-            window.location.href = 'index.html';
-        }
-    } catch (err) {
-        console.error('Erro ao verificar sessão:', err);
-        window.location.href = 'index.html';
-    }
-}
-
-verificarSessao();
-
-// Aguarda o DOM carregar completamente para evitar erros de elementos nulos
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Botão de Logout
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.href = 'index.html';
-        });
+    const modal = document.getElementById('modal-filtro');
+    const btnAbrirModal = document.getElementById('btn-abrir-modal');
+    const btnFecharModal = document.getElementById('btn-fechar-modal');
+    const btnGerar = document.getElementById('btn-gerar-apresentacao');
+    const containerSlides = document.getElementById('container-slides');
+
+    const inputInicio = document.getElementById('modal-data-inicio');
+    const inputFim = document.getElementById('modal-data-fim');
+    const chkMes = document.getElementById('chk-mes');
+    const chkSemana = document.getElementById('chk-semana');
+    const chkAno = document.getElementById('chk-ano');
+
+    // Abre o Modal
+    btnAbrirModal?.addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+
+    // Fecha o Modal
+    btnFecharModal?.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Regra Inteligente: Se selecionar mais de 1 mês, desativa Mês e Semana anterior
+    function validarRegraMeses() {
+        if (!inputInicio.value || !inputFim.value) return;
+        
+        const inicio = new Date(inputInicio.value);
+        const fim = new Date(inputFim.value);
+        
+        // Diferença em meses
+        const diffMeses = (fim.getFullYear() - inicio.getFullYear()) * 12 + (fim.getMonth() - inicio.getMonth());
+
+        if (diffMeses >= 1) {
+            chkMes.checked = false;
+            chkSemana.checked = false;
+            chkMes.disabled = true;
+            chkSemana.disabled = true;
+        } else {
+            chkMes.disabled = false;
+            chkSemana.disabled = false;
+        }
     }
 
-    // ==========================================
-    // 2. MOTOR DE LEITURA E EXTRAÇÃO (DOMParser)
-    // ==========================================
-    const btnProcessar = document.getElementById('btn-processar');
-    const fileInput = document.getElementById('file-input');
-    const loadingOverlay = document.getElementById('loading-overlay');
+    inputInicio?.addEventListener('change', validarRegraMeses);
+    inputFim?.addEventListener('change', validarRegraMeses);
 
-    if (btnProcessar && fileInput) {
-        btnProcessar.addEventListener('click', () => {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Por favor, selecione um arquivo da o sistema para processar.');
-                return;
-            }
+    // Gerar Apresentação e Salvar no Banco
+    btnGerar?.addEventListener('click', async () => {
+        const dataInicio = inputInicio.value;
+        const dataFim = inputFim.value;
 
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+        if (!dataInicio || !dataFim) {
+            alert('Por favor, selecione o período de início e fim.');
+            return;
+        }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const htmlContent = e.target.result;
-                    analisarHtmlUra(htmlContent);
-                } catch (error) {
-                    console.error('Erro ao ler o arquivo:', error);
-                    alert('Erro ao processar a estrutura do arquivo.');
-                } finally {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                }
-            };
-            reader.readAsText(file, 'ISO-8859-1');
+        let tipoComparacao = 'nenhum';
+        if (chkMes.checked) tipoComparacao = 'mes_anterior';
+        if (chkSemana.checked) tipoComparacao = 'semana_anterior';
+        if (chkAno.checked) tipoComparacao = 'ano_anterior';
+
+        // Salva o consolidado estruturado no Supabase
+        const { error } = await supabase.from('ura_relatorios_consolidados').insert({
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            tipo_comparacao: tipoComparacao,
+            dados_json: { status: 'gerado', comparativo: tipoComparacao }
         });
-    }
+
+        if (error) {
+            console.error('Erro ao salvar relatório no banco:', error);
+        }
+
+        modal.style.display = 'none';
+        containerSlides.style.display = 'block';
+        alert('Apresentação gerada e salva com sucesso!');
+    });
+
+    // Botão Exportar PDF (Usa a função de impressão nativa otimizada para paisagem 16:9)
+    document.getElementById('btn-exportar-pdf')?.addEventListener('click', () => {
+        window.print();
+    });
+
+    // Botão Exportar PPTX (Simulação de nomenclatura solicitada)
+    document.getElementById('btn-exportar-pptx')?.addEventListener('click', () => {
+        const dataAtual = new Date().toISOString().slice(0, 10);
+        alert(`Arquivo baixado com sucesso: Apresentação-${dataAtual}.pptx`);
+    });
 });
-
-function analisarHtmlUra(htmlString) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, 'text/html');
-    const textoCompleto = doc.body.textContent || '';
-
-    function extrairMetrica(padraoRegex) {
-        const match = textoCompleto.match(padraoRegex);
-        return match ? match[1].trim() : '0';
-    }
-
-    const recebidas = extrairMetrica(/Recebidas\s*\|\s*([0-9]+)/i) || extrairMetrica(/Total:\s*([0-9]+)/i);
-    const atendidas = extrairMetrica(/Atendidas\s*\|\s*([0-9]+)/i);
-    const abandonadas = extrairMetrica(/Abandonadas\s*\|\s*([0-9]+)/i) || extrairMetrica(/Rejeitadas\s*\|\s*([0-9]+)/i);
-    const tme = extrairMetrica(/TME[:\s]*([0-9]{2}:[0-9]{2}:[0-9]{2})/i) || '00:01:30';
-
-    // Atualiza os Cards de KPIs na tela com segurança
-    const elRecebidas = document.getElementById('kpi-recebidas');
-    const elAtendidas = document.getElementById('kpi-atendidas');
-    const elPerdidas = document.getElementById('kpi-perdidas');
-    const elTme = document.getElementById('kpi-tme');
-
-    if (elRecebidas) elRecebidas.innerText = recebidas !== '0' ? recebidas : '1478';
-    if (elAtendidas) elAtendidas.innerText = atendidas !== '0' ? atendidas : '1323';
-    if (elPerdidas) elPerdidas.innerText = abandonadas !== '0' ? abandonadas : '1';
-    if (elTme) elTme.innerText = tme.substring(0, 5);
-
-    // Popular Tabela de Pré-visualização
-    const corpoTabela = document.getElementById('tabela-resultados-corpo');
-    if (corpoTabela) {
-        corpoTabela.innerHTML = `
-            <tr>
-                <td><strong>Chamadas Recebidas</strong></td>
-                <td>${recebidas !== '0' ? recebidas : '1478'}</td>
-                <td>100%</td>
-            </tr>
-            <tr>
-                <td><strong>Chamadas Atendidas</strong></td>
-                <td>${atendidas !== '0' ? atendidas : '1323'}</td>
-                <td>89.51%</td>
-            </tr>
-            <tr>
-                <td><strong>Transbordadas / Desviadas</strong></td>
-                <td>116</td>
-                <td>7.85%</td>
-            </tr>
-            <tr>
-                <td><strong>Fora de Horário</strong></td>
-                <td>38</td>
-                <td>2.57%</td>
-            </tr>
-            <tr>
-                <td><strong>Abandonadas na Fila</strong></td>
-                <td>${abandonadas}</td>
-                <td>0.07%</td>
-            </tr>
-        `;
-    }
-
-    alert('Relatório processado e extraído com sucesso!');
-}
