@@ -1,0 +1,38 @@
+/* Variáveis de cores corporativas */
+:root {
+    --primary-green: #2e7d32;
+    --dark-green: #1b5e20;
+    --danger-red: #d32f2f;
+    --bg-color: #f1f8e9;
+    --card-bg: #ffffff;
+    --text-main: #333333;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+/* Fundo da tela de login */
+.login-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+}
+
+/* Caixa central de login */
+.login-container { width: 100%; max-width: 400px; padding: 20px; }
+.login-box { background: var(--card-bg); padding: 40px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+.login-box h2 { color: var(--dark-green); font-size: 1.8rem; margin-bottom: 5px; }
+.subtitle { color: #666; font-size: 0.9rem; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Formulário */
+.input-group { margin-bottom: 20px; text-align: left; }
+.input-group label { display: block; margin-bottom: 8px; color: #555; font-weight: bold; font-size: 0.9rem; }
+.input-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; transition: 0.3s; }
+.input-group input:focus { border-color: var(--primary-green); outline: none; box-shadow: 0 0 5px rgba(46, 125, 50, 0.3); }
+
+/* Botão e Erros */
+.btn { background-color: var(--primary-green); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem; transition: 0.3s; }
+.btn:hover { background-color: var(--dark-green); }
+.btn:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+.error-msg { color: var(--danger-red); margin-top: 15px; font-size: 0.9rem; display: none; font-weight: bold; }
