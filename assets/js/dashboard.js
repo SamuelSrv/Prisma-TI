@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnProcessar.addEventListener('click', async () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert('Selecione um arquivo HTML ou CSV para processar.');
+                alert('Selecione um arquivo CSV para processar.');
                 return;
             }
 
@@ -41,45 +41,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     const conteudo = e.target.result;
                     const linhas = conteudo.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     
-                    // Remove o cabeçalho se houver
-                    const cabecalho = linhas[0];
+                    // Pula a linha de cabeçalho (índice 0)
                     const registros = linhas.slice(1);
-
-                    let itensProcessados = [];
+                    let dadosParaInserir = [];
+                    const dataHoje = new Date().toISOString().slice(0, 10);
 
                     for (let linha of registros) {
-                        const colunas = linha.split(',');
+                        const colunas = linha.split(',').map(c => c.trim());
                         if (colunas.length >= 4) {
-                            itensProcessados.push({
+                            dadosParaInserir.push({
                                 departamento: colunas[0],
                                 categoria: colunas[1],
                                 quantidade: parseInt(colunas[2]) || 0,
-                                percentual: colunas[3]
+                                percentual: colunas[3],
+                                data_referencia: dataHoje
                             });
                         }
                     }
 
-                    // Salva o relatório consolidado com os dados reais parseados na tabela do Supabase
+                    if (dadosParaInserir.length === 0) {
+                        alert('Nenhum registro válido encontrado no arquivo.');
+                        return;
+                    }
+
+                    // Insere todas as linhas de forma estruturada na tabela relacional
                     const { error: dbError } = await supabase
-                        .from('ura_relatorios_consolidados')
-                        .insert({
-                            data_inicio: new Date().toISOString().slice(0, 10),
-                            data_fim: new Date().toISOString().slice(0, 10),
-                            tipo_comparacao: 'nenhum',
-                            dados_json: {
-                                arquivo: file.name,
-                                total_linhas: itensProcessados.length,
-                                itens: itensProcessados,
-                                importado_em: new Date().toISOString()
-                            }
-                        });
+                        .from('ura_itens_relatorio')
+                        .insert(dadosParaInserir);
 
                     if (dbError) throw dbError;
 
-                    alert(`Sucesso! ${itensProcessados.length} registros do arquivo foram salvos no banco de dados.`);
+                    alert(`Sucesso! ${dadosParaInserir.length} registros foram distribuídos e salvos individualmente no banco de dados.`);
                 } catch (error) {
                     console.error('Erro ao salvar no banco:', error);
-                    alert('Erro ao processar e salvar os dados no banco de dados.');
+                    alert('Erro ao salvar os dados no banco de dados. Verifique o formato do arquivo.');
                 } finally {
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                 }
