@@ -1,8 +1,6 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
-import Datepicker from 'https://esm.sh/vanilla-datepicker@1.3.4';
-import 'https://esm.sh/vanilla-datepicker@1.3.4/dist/js/locales/pt-BR.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -16,7 +14,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const datepickerStart = new Datepicker(elemStart, {
             format: 'dd/mm/yyyy',
-            language: 'pt-BR',
             autohide: true,
             todayButton: true,
             clearButton: true
@@ -24,7 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const datepickerEnd = new Datepicker(elemEnd, {
             format: 'dd/mm/yyyy',
-            language: 'pt-BR',
             autohide: true,
             todayButton: true,
             clearButton: true
