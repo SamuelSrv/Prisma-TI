@@ -3,67 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Dashboard Operacional</title>
+    <title>Prisma TI - Dashboard Inicial</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <div class="layout-container">
-        <!-- Menu Lateral -->
+        <!-- Menu Lateral Padronizado -->
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
                 <h2>Prisma TI</h2>
             </div>
             <nav>
-                <a href="dashboard.html" class="active">Visão Geral URA</a>
-                <a href="lojas.html">Relatório de Lojas</a>
-                <a href="categorias.html">Categorias & PDV</a>
+                <a href="dashboard.html" class="active">Dashboard Inicial</a>
+                <a href="atendimentos-ura.html">Gerar Relatórios</a>
+                <a href="perfil.html">Perfil</a>
             </nav>
             <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
         </aside>
 
         <!-- Conteúdo Principal -->
         <main class="main-content">
-            <h1 class="header-title">Monitoramento de Atendimento</h1>
-            <p class="subtitle" style="margin-bottom: 20px;">Central de Importação e Distribuição de Dados</p>
-
-            <!-- Card de Importação Inteligente -->
-            <div class="card" style="position: relative; padding: 25px; margin-bottom: 30px;">
-                <div class="loading-overlay" id="loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); justify-content: center; align-items: center; z-index: 10; border-radius: 8px;">
-                    <strong>Processando e salvando no banco...</strong>
+            <div class="page-header-flex">
+                <div>
+                    <h1 class="header-title">Visão Geral da Operação</h1>
+                    <p class="subtitle">Mês em Exibição: <strong id="mes-atual-label" style="color: var(--cor-secundaria);">Abril / 2026</strong>[cite: 1, 2]</p>
                 </div>
-                
-                <h3 style="margin-bottom: 20px; color: var(--cor-secundaria);">Importação de Dados (CSV)</h3>
-                
-                <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                    <div class="input-group" style="flex: 1; min-width: 180px;">
-                        <label for="import-data" style="font-weight: bold; font-size: 0.9rem;">Data de Referência:</label>
-                        <input type="date" id="import-data" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px;" required>
-                    </div>
+            </div>
 
-                    <div class="input-group" style="flex: 1; min-width: 200px;">
-                        <label for="import-tipo" style="font-weight: bold; font-size: 0.9rem;">Destino dos Dados:</label>
-                        <select id="import-tipo" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px;" required>
-                            <option value="">Selecione a tabela...</option>
-                            <option value="volumetria">Volumetria Geral</option>
-                            <option value="categorias">Categorias & PDV</option>
-                            <option value="lojas">Relatório de Lojas</option>
-                        </select>
-                    </div>
+            <!-- Cards de KPIs -->
+            <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div class="card kpi-card" style="padding: 20px;">
+                    <span style="font-size: 0.85rem; color: #666;">Total de Ligações (Mês)</span>
+                    <h2 id="kpi-mes" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">1.478</h2>[cite: 1, 2]
+                </div>
+                <div class="card kpi-card" style="padding: 20px;">
+                    <span style="font-size: 0.85rem; color: #666;">Total de Ligações (Semana)</span>
+                    <h2 id="kpi-semana" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">385</h2>
+                </div>
+                <div class="card kpi-card" style="padding: 20px;">
+                    <span style="font-size: 0.85rem; color: #666;">Atendimentos (Chat x Ligação)</span>
+                    <h2 id="kpi-chat-ligacao" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">1.323 / 155</h2>[cite: 1, 2]
+                </div>
+                <div class="card kpi-card" style="padding: 20px; border-left: 4px solid #d32f2f;">
+                    <span style="font-size: 0.85rem; color: #666;">Abandonos na Semana</span>
+                    <h2 id="kpi-abandonos" style="font-size: 1.8rem; margin-top: 5px; color: #d32f2f;">1</h2>[cite: 1, 2]
+                </div>
+            </div>
 
-                    <div class="input-group" style="flex: 2; min-width: 250px;">
-                        <label for="file-input" style="font-weight: bold; font-size: 0.9rem;">Arquivo CSV:</label>
-                        <input type="file" id="file-input" accept=".csv" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; background: #f9f9f9;" required>
-                    </div>
-
-                    <button type="button" id="btn-processar" class="btn-primary-modern" style="height: 42px; min-width: 150px;">Importar Dados</button>
+            <!-- Gráficos -->
+            <div class="charts-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                <div class="card" style="padding: 20px;">
+                    <h3 style="font-size: 1.1rem; color: #333;">Distribuição de Chamadas por Status</h3>
+                    <canvas id="chartVolumetria" style="max-height: 280px; margin-top: 15px;"></canvas>
+                </div>
+                <div class="card" style="padding: 20px;">
+                    <h3 style="font-size: 1.1rem; color: #333;">Chat vs Ligação</h3>
+                    <canvas id="chartMidia" style="max-height: 280px; margin-top: 15px;"></canvas>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Script de processamento -->
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>
