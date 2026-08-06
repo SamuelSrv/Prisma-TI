@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const dataInicioISO = `${anoI}-${mesI}-${diaI} 00:00:00`;
                     const dataFimISO = `${anoF}-${mesF}-${diaF} 23:59:59`;
 
-                    // Lógica de Paginação Contínua (Fura o bloqueio de 1000 da API)
+                    // Paginação Contínua (Fura o bloqueio de 1000 da API)
                     let registros = [];
                     let inicioBusca = 0;
                     const limiteBusca = 1000;
@@ -114,9 +114,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         registros = registros.concat(data);
 
                         if (data.length < limiteBusca) {
-                            buscando = false; // Se vier menos de 1000, acabou a lista
+                            buscando = false; 
                         } else {
-                            inicioBusca += limiteBusca; // Pede a próxima página
+                            inicioBusca += limiteBusca; 
                         }
                     }
 
@@ -143,13 +143,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// CONSTRUTOR DE SLIDES UNIFORMES (16:9)
+// CONSTRUTOR DE SLIDES UNIFORMES (16:9) - CORRIGIDO O TOPO
 // ==============================================================
 function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     const modalSlidesContent = document.getElementById('modal-slides-content');
     
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 30px;">
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px;">
                     <div>
@@ -159,7 +159,8 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
                     <span style="font-size: 1.1rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
                 </div>
             </div>
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+            <!-- CORREÇÃO: justify-content: flex-start para não cortar o cabeçalho das tabelas -->
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden;">
                 ${htmlConteudo}
             </div>
         </div>
@@ -201,9 +202,10 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     `;
 
     // SLIDE 2: CATEGORIAS & DEPARTAMENTOS
-    const motivosPDV = agruparCategoria(dados, 'PDV');
-    const motivosAcesso = agruparCategoria(dados, 'Acessos');
-    const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
+    // CORREÇÃO: Limite exato de 5 itens (.slice(0, 5)) para garantir que o slide nunca ultrapasse o tamanho!
+    const motivosPDV = agruparCategoria(dados, 'PDV').slice(0, 5);
+    const motivosAcesso = agruparCategoria(dados, 'Acessos').slice(0, 5);
+    const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços').slice(0, 5);
 
     const htmlPagina1 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -227,7 +229,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
                 </table>
                 <div style="background: white; padding: 10px; border-radius: 8px; margin-top: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
                     <h4 style="color: #334155; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
-                    <canvas id="chartTipoLoja" style="max-height: 130px;"></canvas>
+                    <canvas id="chartTipoLoja" style="max-height: 120px;"></canvas>
                 </div>
             </div>
         </div>
