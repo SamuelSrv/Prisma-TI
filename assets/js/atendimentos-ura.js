@@ -9,26 +9,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        const pickerEnd = flatpickr("#date-end", {
-            dateFormat: "d/m/Y",
-            locale: "pt"
+        // Inicializa os inputs com o Vanilla Datepicker
+        const elemStart = document.getElementById('date-start');
+        const elemEnd = document.getElementById('date-end');
+
+        const datepickerStart = new Datepicker(elemStart, {
+            format: 'dd/mm/yyyy',
+            language: 'pt-BR',
+            autohide: true,
+            todayButton: true,
+            clearButton: true
         });
 
-        flatpickr("#date-start", {
-            dateFormat: "d/m/Y",
-            locale: "pt",
-            onChange: function(selectedDates) {
-                if (selectedDates.length > 0) {
-                    pickerEnd.set("minDate", selectedDates[0]);
-                }
-            }
+        const datepickerEnd = new Datepicker(elemEnd, {
+            format: 'dd/mm/yyyy',
+            language: 'pt-BR',
+            autohide: true,
+            todayButton: true,
+            clearButton: true
         });
 
+        // Lógica do botão gerar relatório
         const btnGerar = document.getElementById('btn-gerar');
         if (btnGerar) {
             btnGerar.addEventListener('click', () => {
-                const dataInicio = document.getElementById('date-start').value;
-                const dataFim = document.getElementById('date-end').value;
+                const dataInicio = elemStart.value;
+                const dataFim = elemEnd.value;
 
                 if (!dataInicio || !dataFim) {
                     alert('Por favor, selecione tanto a data inicial quanto a data final.');
