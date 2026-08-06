@@ -9,7 +9,7 @@
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
-    <!-- Estilização Dark Mode Profissional e Moderna -->
+    <!-- Estilização Dark Mode com Dropdowns Elegantes para Mês e Ano -->
     <style>
         .flatpickr-calendar {
             background: #111827 !important;
@@ -40,21 +40,55 @@
         .flatpickr-day:hover {
             background: #374151 !important;
         }
-        .flatpickr-month, .flatpickr-current-month, span.flatpickr-weekday {
+        .flatpickr-month, .flatpickr-current-month {
             color: #f3f4f6 !important;
             fill: #f3f4f6 !important;
+            height: 45px !important;
         }
-        .flatpickr-current-month input.cur-year, 
-        .flatpickr-current-month .flatpickr-monthDropdown-months {
-            color: #60a5fa !important;
+        .flatpickr-current-month {
+            font-size: 1rem !important;
             font-weight: 600 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            padding-top: 0 !important;
+        }
+        /* Estilização moderna dos selects de Mês e Ano */
+        .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .flatpickr-current-month input.cur-year {
+            background: #1f2937 !important;
+            color: #60a5fa !important;
+            border: 1px solid #374151 !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+            cursor: pointer !important;
+        }
+        .flatpickr-current-month .flatpickr-monthDropdown-months option {
+            background: #111827 !important;
+            color: #f3f4f6 !important;
+        }
+        .flatpickr-current-month .numInputWrapper span {
+            display: none !important; /* Remove as setinhas feias do ano */
+        }
+        span.flatpickr-weekday {
+            color: #9ca3af !important;
+            font-weight: 600 !important;
+        }
+        .flatpickr-prev-month, .flatpickr-next-month {
+            top: 12px !important;
         }
         .flatpickr-prev-month svg, .flatpickr-next-month svg {
             fill: #9ca3af !important;
         }
+        .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {
+            fill: #ffffff !important;
+        }
     </style>
 
-    <!-- Flatpickr JS (Carregado antes do módulo para garantir acesso global imediato) -->
+    <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
 </head>

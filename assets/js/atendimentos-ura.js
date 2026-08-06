@@ -9,17 +9,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        // Inicializa o calendário final
+        // Inicializa o calendário final com os seletores dropdown de mês e ano
         const pickerEnd = window.flatpickr("#date-end", {
             dateFormat: "d/m/Y",
             locale: "pt",
+            monthSelectorType: "dropdown",
+            yearSelectorType: "dropdown",
             allowInput: false
         });
 
-        // Inicializa o calendário inicial sincronizando com o final
+        // Inicializa o calendário inicial com os seletores dropdown e sincronização de minDate
         window.flatpickr("#date-start", {
             dateFormat: "d/m/Y",
             locale: "pt",
+            monthSelectorType: "dropdown",
+            yearSelectorType: "dropdown",
             allowInput: false,
             onChange: function(selectedDates) {
                 if (selectedDates.length > 0) {
