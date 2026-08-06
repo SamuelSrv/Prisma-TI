@@ -1,50 +1,104 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Acesso Corporativo</title>
+    <title>Prisma TI - Login</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* Estilos específicos centralizados para a tela de login */
+        body.login-body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: var(--bg-main);
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .login-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        .login-brand img {
+            width: 40px;
+            height: 40px;
+            filter: brightness(0) invert(1);
+        }
+        .login-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+        .btn-login:hover {
+            background-color: var(--accent-hover);
+        }
+        #login-error {
+            color: var(--danger);
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
 </head>
-
 <body class="login-body">
 
-    <div class="login-container">
-        <div class="login-box">
-            <img src="assets/img/logo.svg" alt="Logo da Empresa" class="logo-login">
-            <p class="subtitle">Acesso Restrito</p>
-
-            <form id="login-form">
-                <div class="input-group">
-                    <label for="email">E-mail Corporativo</label>
-                    <input type="email" id="email" required placeholder="nome@lebes.com.br">
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" required placeholder="••••••••">
-                </div>
-
-                <button type="submit" id="btn-login" class="btn">Entrar no Sistema</button>
-                <p class="error-msg" id="login-error"></p>
-
-                <!-- Nova Seção de Cadastro -->
-                <div class="register-section">
-                    <hr class="divider">
-                    <p>Novo por aqui?</p>
-                    <a href="cadastro.html" class="btn btn-secondary">Criar Minha Conta</a>
-                </div>
-            </form>
+    <div class="login-card">
+        <div class="login-brand">
+            <img src="assets/img/logo.svg" alt="Logo">
+            <h1>Prisma TI</h1>
         </div>
+
+        <form id="form-login">
+            <div class="input-group">
+                <label for="email">E-mail de Acesso</label>
+                <input type="email" id="email" class="input-modern" placeholder="seu.email@empresa.com" required>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" class="input-modern" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-login">Entrar no Sistema</button>
+            <p id="login-error">E-mail ou senha inválidos.</p>
+        </form>
     </div>
 
-    <!-- Nova Barra de Rodapé Institucional -->
-    <div class="footer-bar">
-        Sistema Feito por: Grupo Lebes
-    </div>
-
-    <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/index.js"></script>
 </body>
-
 </html>
