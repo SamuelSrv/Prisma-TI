@@ -7,12 +7,8 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-
     <div class="layout-container">
-        <!-- Menu Lateral Injetado via JavaScript -->
         <aside class="sidebar"></aside>
-
-        <!-- Conteúdo Principal -->
         <main class="main-content">
             <div class="page-header-flex">
                 <div>
@@ -22,7 +18,6 @@
                 <button type="button" id="btn-abrir-modal" class="btn-primary-modern">Configurar e Gerar Relatório</button>
             </div>
 
-            <!-- Card de Ingestão de Arquivo Diário -->
             <div class="card" style="padding: 25px; margin-bottom: 25px;">
                 <h3 style="margin-bottom: 15px; color: var(--text-primary);">Importar Relatório Dígitro (CSV)</h3>
                 <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
@@ -38,7 +33,6 @@
                 </div>
             </div>
 
-            <!-- Container da Apresentação em Slides -->
             <div id="container-slides" style="display: none;">
                 <div class="page-header-flex" style="margin-bottom: 15px;">
                     <h3 style="font-size: 1.1rem;">Visualização da Apresentação (Formato 16:9)</h3>
@@ -47,7 +41,6 @@
                         <button type="button" id="btn-exportar-pptx" class="btn-primary-modern" style="background-color: #3b82f6;">Exportar PowerPoint</button>
                     </div>
                 </div>
-
                 <div class="card" style="padding: 40px; min-height: 400px;">
                     <h2 style="color: var(--accent-primary); margin-bottom: 15px;">Dígitro Interact - Visão Geral do Período</h2>
                     <p style="margin-bottom: 8px;"><strong>Período:</strong> 01/04/2026 até 30/04/2026</p>
@@ -58,7 +51,6 @@
         </main>
     </div>
 
-    <!-- Modal de Filtros -->
     <div id="modal-filtro" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;">
         <div class="card" style="width: 400px; max-width: 90%;">
             <h3 style="margin-bottom: 20px;">Filtros do Relatório URA</h3>

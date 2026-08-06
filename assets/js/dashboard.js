@@ -1,4 +1,7 @@
 import { supabase } from './supabase.js';
+import { carregarMenu } from './menu.js';
+
+carregarMenu('dashboard');
 
 async function verificarSessao() {
     try {
@@ -11,13 +14,11 @@ async function verificarSessao() {
 verificarSessao();
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Logout
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
         await supabase.auth.signOut();
         window.location.href = 'index.html';
     });
 
-    // Renderização dos Gráficos com Chart.js
     const ctxVolumetria = document.getElementById('chartVolumetria').getContext('2d');
     new Chart(ctxVolumetria, {
         type: 'bar',
@@ -32,9 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
                 x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
                 y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
