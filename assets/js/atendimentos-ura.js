@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!authData || !authData.session) return;
         carregarMenu('gerar-relatorio');
 
-        // Configuração do Calendário (Datepicker)
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
         if (window.Datepicker) {
@@ -49,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Lógica do Botão Exportar PDF
         if (btnExportarPdf) {
             btnExportarPdf.addEventListener('click', () => {
                 const elementoModal = document.getElementById('modal-slides-content');
@@ -59,11 +57,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btnExportarPdf.disabled = true;
 
                 const options = {
-                    margin:       5,
-                    filename:     'relatorio_executivo_grupo_lebes.pdf',
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true, logging: false },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                    margin: 5,
+                    filename: 'relatorio_executivo_grupo_lebes.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
                 };
 
                 html2pdf().from(elementoModal).set(options).save().then(() => {
@@ -126,13 +124,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// CONSTRUTOR DE SLIDES UNIFORMES COM FLUXO CORRETO DE ALTURA
+// CONSTRUTOR DE SLIDES UNIFORMES (16:9)
 // ==============================================================
 function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     const modalSlidesContent = document.getElementById('modal-slides-content');
     
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 30px; page-break-after: always;">
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 30px;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px;">
                     <div>
@@ -183,7 +181,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // SLIDE 2: TOP 10 CATEGORIAS & DEPARTAMENTOS
+    // SLIDE 2: CATEGORIAS & DEPARTAMENTOS (Título ajustado para remover "Top 10")
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
     const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
@@ -268,46 +266,61 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // SLIDE 5: TMAX & TME POR DIA
+    // SLIDE 5: TMAX & TME ADAPTATIVO (DIA A DIA SE <= 5 DIAS, OU SEMANAL/BLOCOS SE > 5 DIAS)
     const datasUnicas = [...new Set(dados.map(d => {
         const str = String(d.data_hora);
         return str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
     }))].sort();
 
-    const linhasTabelaDatas = datasUnicas.slice(0, 6).map(dataIso => {
-        const partes = dataIso.split('-');
-        const dataBr = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataIso;
-        
-        const itensDia = dados.filter(d => {
-            const s = String(d.data_hora);
-            return s.startsWith(dataIso);
-        });
-        
-        const maxTme = itensDia.length > 0 ? Math.max(...itensDia.map(d => d.tme_segundos)) : 0;
-        const filialDestaque = itensDia.length > 0 ? itensDia[0].filial : '-';
-        const tmeMedioDia = itensDia.length > 0 ? Math.round(itensDia.reduce((a, b) => a + b.tme_segundos, 0) / itensDia.length) : 0;
+    let linhasTabelaPeriodo = '';
+    let tituloTabelaPeriodo = 'RESUMO DIÁRIO DE ATENDIMENTOS (TMAX & TME)';
 
-        return `
-            <tr>
-                <td style="font-weight: bold; background: #bbf7d0;">${dataBr}</td>
-                <td>${formatarTempo(maxTme)}</td>
-                <td>${filialDestaque}</td>
-                <td>${formatarTempo(tmeMedioDia)}</td>
-            </tr>
-        `;
-    }).join('');
+    if (datasUnicas.length <= 5) {
+        // Exibe dia a dia se o intervalo for curto (até 5 dias)
+        linhasTabelaPeriodo = datasUnicas.map(dataIso => {
+            const partes = dataIso.split('-');
+            const dataBr = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataIso;
+            const itensDia = dados.filter(d => String(d.data_hora).startsWith(dataIso));
+            const maxTme = itensDia.length > 0 ? Math.max(...itensDia.map(d => d.tme_segundos)) : 0;
+            const filialDestaque = itensDia.length > 0 ? itensDia[0].filial : '-';
+            const tmeMedioDia = itensDia.length > 0 ? Math.round(itensDia.reduce((a, b) => a + b.tme_segundos, 0) / itensDia.length) : 0;
+
+            return `<tr><td style="font-weight: bold; background: #bbf7d0;">${dataBr}</td><td>${formatarTempo(maxTme)}</td><td>${filialDestaque}</td><td>${formatarTempo(tmeMedioDia)}</td></tr>`;
+        }).join('');
+    } else {
+        // Se passar de 5 dias (ex: 30 dias), agrupa em blocos semanais para não poluir o relatório!
+        tituloTabelaPeriodo = 'RESUMO CONSOLIDADO POR BLOCOS / SEMANAS';
+        const blocosSemanais = [];
+        for (let i = 0; i < datasUnicas.length; i += 7) {
+            const fatia = datasUnicas.slice(i, i + 7);
+            const inicioBloco = fatia[0].split('-').reverse().join('/');
+            const fimBloco = fatia[fatia.length - 1].split('-').reverse().join('/');
+            
+            const itensBloco = dados.filter(d => {
+                const dt = String(d.data_hora).split('T')[0].split(' ')[0];
+                return fatia.includes(dt);
+            });
+
+            const maxTme = itensBloco.length > 0 ? Math.max(...itensBloco.map(d => d.tme_segundos)) : 0;
+            const filialDestaque = itensBloco.length > 0 ? itensBloco[0].filial : '-';
+            const tmeMedioBloco = itensBloco.length > 0 ? Math.round(itensBloco.reduce((a, b) => a + b.tme_segundos, 0) / itensBloco.length) : 0;
+
+            blocosSemanais.push(`<tr><td style="font-weight: bold; background: #bbf7d0;">${inicioBloco} a ${fimBloco}</td><td>${formatarTempo(maxTme)}</td><td>${filialDestaque}</td><td>${formatarTempo(tmeMedioBloco)}</td></tr>`);
+        }
+        linhasTabelaPeriodo = blocosSemanais.join('');
+    }
 
     const htmlPagina4 = `
         <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
             <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.85rem;">
                 <thead>
-                    <tr><th colspan="4">RESUMO DIÁRIO DE ATENDIMENTOS (TMAX & TME)</th></tr>
+                    <tr><th colspan="4">${tituloTabelaPeriodo}</th></tr>
                     <tr style="background:#22c55e; color:white;">
-                        <th>Data</th><th>Pico (TMAX)</th><th>Filial Destaque</th><th>TME Médio</th>
+                        <th>Período / Data</th><th>Pico (TMAX)</th><th>Filial Destaque</th><th>TME Médio</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${linhasTabelaDatas.length > 0 ? linhasTabelaDatas : '<tr><td colspan="4">Nenhum registro no período</td></tr>'}
+                    ${linhasTabelaPeriodo || '<tr><td colspan="4">Nenhum registro no período</td></tr>'}
                 </tbody>
             </table>
         </div>
@@ -315,13 +328,16 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
 
     modalSlidesContent.innerHTML = 
         renderPaginaRelatorio(htmlPanorama, 'Panorama Geral & Validação') +
-        renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
+        renderPaginaRelatorio(htmlPagina1, 'Categorias & Departamentos') + 
         renderPaginaRelatorio(htmlPagina2, 'Top Lojas do Período') + 
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
-        renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia');
+        renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Período');
 
+    // Gráfico Tradicional vs Express travado em escala máxima inteligente (máx 100 ou o total se passar de 100)
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
+    const maiorValor = Math.max(qtdTradicional, qtdExpress, 10);
+    const tetoEscala = maiorValor <= 100 ? 100 : Math.ceil(maiorValor * 1.2);
     
     if (chartAtual) chartAtual.destroy();
     const ctx = document.getElementById('chartTipoLoja').getContext('2d');
@@ -345,7 +361,10 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
                 tooltip: { enabled: true }
             }, 
             scales: { 
-                y: { beginAtZero: true } 
+                y: { 
+                    beginAtZero: true,
+                    suggestedMax: tetoEscala // Garante escala limpa e evita esticar até 120 desnecessariamente
+                } 
             } 
         },
         plugins: [{
