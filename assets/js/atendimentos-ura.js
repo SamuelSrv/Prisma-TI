@@ -12,9 +12,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
 
+        // Remove qualquer atributo datepicker que possa ter sobrado no HTML,
+        // pra garantir que o Flowbite não crie um auto-init em inglês
+        // por conta própria, competindo com a nossa instância manual.
+        [dateStartEl, dateEndEl].forEach(el => {
+            if (el) {
+                el.removeAttribute('datepicker');
+                el.removeAttribute('datepicker-autohide');
+                el.removeAttribute('datepicker-format');
+            }
+        });
+
         if (window.Datepicker) {
-            // Garante que o objeto de locales exista antes de escrever nele
-            // (nessa versão do bundle ele não vem pré-criado)
             if (!window.Datepicker.locales) {
                 window.Datepicker.locales = {};
             }
@@ -38,6 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 language: 'pt-BR',
                 todayHighlight: true
             };
+
+            // Se o Flowbite já tiver criado uma instância automática nesse
+            // elemento, destrói ela antes de criar a nossa em português.
+            if (dateStartEl?.datepicker) {
+                dateStartEl.datepicker.destroy();
+            }
+            if (dateEndEl?.datepicker) {
+                dateEndEl.datepicker.destroy();
+            }
 
             if (dateStartEl && !dateStartEl._datepicker) {
                 dateStartEl._datepicker = new window.Datepicker(dateStartEl, options);
