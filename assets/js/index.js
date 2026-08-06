@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkToCadastro = document.getElementById('link-to-cadastro');
     const linkToLogin = document.getElementById('link-to-login');
     const globalError = document.getElementById('global-error');
+    const cadSuccess = document.getElementById('cad-success');
 
     // Alternar entre Telas de Login e Cadastro
     linkToCadastro.addEventListener('click', (e) => {
@@ -32,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function limparErros() {
         globalError.style.display = 'none';
         globalError.textContent = '';
+        cadSuccess.style.display = 'none';
+        cadSuccess.textContent = '';
         document.querySelectorAll('.field-error').forEach(el => {
             el.style.display = 'none';
             el.textContent = '';
@@ -188,9 +191,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            alert('Conta criada com sucesso! Faça login para acessar o sistema.');
-            formCadastro.reset();
-            linkToLogin.click();
+            // Feedback visual limpo no sistema (sem popups nativos)
+            cadSuccess.textContent = 'Conta criada com sucesso! Redirecionando...';
+            cadSuccess.style.display = 'block';
+
+            setTimeout(() => {
+                formCadastro.reset();
+                linkToLogin.click();
+            }, 2000);
 
         } catch (err) {
             console.error('Erro no cadastro:', err.message);
@@ -202,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalError.style.display = 'block';
                 globalError.textContent = 'Erro ao cadastrar: ' + err.message;
             }
-        } finally {
             btn.disabled = false;
             btn.textContent = 'Criar Minha Conta';
         }
