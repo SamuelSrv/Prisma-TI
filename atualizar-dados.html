@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Atualizar Dados</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="layout-container">
+        <aside class="sidebar"></aside>
+        <main class="main-content">
+            <div class="page-header-flex">
+                <div>
+                    <h1 class="header-title">Atualização de Dados URA</h1>
+                    <p class="subtitle">Faça o upload diário do relatório CSV gerado pela Dígitro</p>
+                </div>
+            </div>
+
+            <!-- Card de Ingestão -->
+            <div class="card" style="padding: 35px; max-width: 800px;">
+                <h3 style="margin-bottom: 20px; color: var(--text-primary);">Importar Arquivo Diário</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="input-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">Data de Referência:</label>
+                        <input type="date" id="import-data" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">Arquivo CSV (Dígitro):</label>
+                        <input type="file" id="file-input" accept=".csv" style="padding: 10px; background: var(--bg-main);" required>
+                    </div>
+
+                    <button type="button" id="btn-processar" class="btn-primary-modern" style="margin-top: 10px; padding: 14px;">Processar e Inserir no Banco</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="assets/js/atualizar-dados.js"></script>
+</body>
+</html>

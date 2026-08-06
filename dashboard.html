@@ -5,25 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma TI - Dashboard Operacional</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <!-- Chart.js -->
+    <!-- Chart.js e Plugin de DataLabels para exibir porcentagens -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body>
-
     <div class="layout-container">
-        <!-- Menu Lateral Injetado via JavaScript -->
         <aside class="sidebar"></aside>
-
-        <!-- Conteúdo Principal -->
         <main class="main-content">
             <div class="page-header-flex">
                 <div>
                     <h1 class="header-title">Visão Geral da Operação</h1>
-                    <p class="subtitle">Mês em Exibição: <strong style="color: var(--accent-primary);">Abril / 2026</strong></p>
+                    <p class="subtitle">Acompanhe os principais indicadores e volumetria</p>
+                </div>
+                <!-- Seletor de Mês/Ano Interativo -->
+                <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-main); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <label for="filtro-mes" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">MÊS EM EXIBIÇÃO:</label>
+                    <input type="month" id="filtro-mes" value="2026-04" style="width: auto; padding: 6px 10px; margin-top: 0;">
                 </div>
             </div>
 
-            <!-- Cards de KPIs -->
             <div class="kpi-grid">
                 <div class="card kpi-card">
                     <span>Total de Ligações (Mês)</span>
@@ -43,10 +44,9 @@
                 </div>
             </div>
 
-            <!-- Gráficos -->
             <div class="charts-container">
                 <div class="chart-card">
-                    <h3>Distribuição de Chamadas por Status (Dígitro)</h3>
+                    <h3>Distribuição de Chamadas por Status (Com Porcentagens)</h3>
                     <canvas id="chartVolumetria" style="max-height: 280px;"></canvas>
                 </div>
                 <div class="chart-card">
@@ -56,7 +56,6 @@
             </div>
         </main>
     </div>
-
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>

@@ -30,6 +30,7 @@ body {
     min-height: 100vh;
 }
 
+/* Sidebar e Submenus */
 .sidebar {
     width: var(--sidebar-width);
     background-color: var(--bg-sidebar);
@@ -46,7 +47,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 35px;
+    margin-bottom: 30px;
     background: rgba(255, 255, 255, 0.03);
     padding: 12px 14px;
     border-radius: 10px;
@@ -69,7 +70,7 @@ body {
 .sidebar nav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
 }
 
@@ -95,6 +96,27 @@ body {
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
+.menu-group {
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-group-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    padding: 4px 16px;
+    font-weight: 700;
+}
+
+.submenu-item {
+    padding-left: 28px !important;
+    font-size: 0.9rem !important;
+}
+
 .logout-btn {
     background: transparent;
     border: 1px solid var(--border-color);
@@ -110,6 +132,7 @@ body {
     background-color: rgba(239, 68, 68, 0.1);
 }
 
+/* Conteúdo Principal */
 .main-content {
     margin-left: var(--sidebar-width);
     flex: 1;
@@ -140,6 +163,32 @@ body {
     margin-top: 4px;
 }
 
+/* Inputs, Calendários e Selects Modernos e Arredondados */
+input[type="date"],
+input[type="month"],
+select,
+.input-modern {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    margin-top: 6px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="date"]:focus,
+input[type="month"]:focus,
+select:focus,
+.input-modern:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Cards e KPIs */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -174,6 +223,7 @@ body {
     color: var(--danger);
 }
 
+/* Gráficos */
 .charts-container {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -205,7 +255,7 @@ body {
     color: #fff;
     border: none;
     padding: 12px 24px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -213,15 +263,4 @@ body {
 
 .btn-primary-modern:hover {
     background-color: var(--accent-hover);
-}
-
-.input-modern {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--bg-main);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    margin-top: 6px;
 }
