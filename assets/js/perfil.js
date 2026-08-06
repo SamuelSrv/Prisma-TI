@@ -2,7 +2,6 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 
-// Valida a sessão de segurança
 const session = await verificarAutenticacao();
 carregarMenu('perfil');
 
@@ -22,32 +21,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Erro ao buscar perfil no banco:", dbError);
         }
 
-        // Prioriza o banco, se não achar, pega dos metadados da sessão ou define padrão
+        // Define os valores finais priorizando o banco e os metadados
         const nomeFinal = perfil?.nome || metaData.nome || 'Usuário Sistema';
         const emailFinal = user.email;
         const cpfFinal = perfil?.cpf || metaData.cpf || 'Não informado';
         const cargoFinal = perfil?.cargo || 'Colaborador';
 
-        // Preenche os campos na tela
-        document.getElementById('perfil-nome').value = nomeFinal;
-        document.getElementById('perfil-email').value = emailFinal;
-        document.getElementById('perfil-cpf').value = cpfFinal;
+        // Preenche os inputs do formulário de perfil
+        const inputNome = document.getElementById('perfil-nome');
+        const inputEmail = document.getElementById('perfil-email');
+        const inputCpf = document.getElementById('perfil-cpf');
+        const displayNome = document.getElementById('display-nome');
+        const displayCargo = document.getElementById('display-cargo');
+        const avatarIniciais = document.getElementById('avatar-iniciais');
+
+        if (inputNome) inputNome.value = nomeFinal;
+        if (inputEmail) inputEmail.value = emailFinal;
+        if (inputCpf) inputCpf.value = cpfFinal;
         
-        document.getElementById('display-nome').textContent = nomeFinal;
-        document.getElementById('display-cargo').textContent = cargoFinal;
+        if (displayNome) displayNome.textContent = nomeFinal;
+        if (displayCargo) displayCargo.textContent = cargoFinal;
 
-        // Gera as iniciais para o Avatar de forma corrigida e segura
-        const iniciais = nomeFinal
-            .split(' ')
-            .filter(Boolean)
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase() || 'US';
-            
-        document.getElementById('avatar-iniciais').textContent = iniciais;
+        // Gera as iniciais para o Avatar de forma segura
+        if (avatarIniciais) {
+            const iniciais = nomeFinal
+                .split(' ')
+                .filter(Boolean)
+                .map(n => n[0])
+                .join('')
+                .substring(0, 2)
+                .toUpperCase() || 'US';
+                
+            avatarIniciais.textContent = iniciais;
+        }
 
-            } catch (error) {
+    } catch (error) {
         console.error("Erro geral ao carregar perfil:", error);
     }
 });
