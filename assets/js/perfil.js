@@ -36,18 +36,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('display-nome').textContent = nomeFinal;
         document.getElementById('display-cargo').textContent = cargoFinal;
 
-        // Gera as iniciais para o Avatar de forma segura
+        // Gera as iniciais para o Avatar de forma corrigida e segura
         const iniciais = nomeFinal
             .split(' ')
             .filter(Boolean)
-            map(n => n[0])
+            .map(n => n[0])
             .join('')
             .substring(0, 2)
             .toUpperCase() || 'US';
             
         document.getElementById('avatar-iniciais').textContent = iniciais;
 
-    } catch (error) {
+            } catch (error) {
         console.error("Erro geral ao carregar perfil:", error);
     }
 });
