@@ -30,17 +30,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dateEndEl) new window.Datepicker(dateEndEl, options);
         }
 
-        // Elementos da Tela
+        // Elementos da Tela e da Modal
         const btnGerar = document.getElementById('btn-gerar');
-        const btnVoltar = document.getElementById('btn-voltar');
-        const areaFiltros = document.getElementById('area-filtros');
-        const containerSlides = document.getElementById('container-slides');
-        const slideRender = document.getElementById('slide-render');
+        const modalApresentacao = document.getElementById('modal-apresentacao');
+        const btnFecharModal = document.getElementById('btn-fechar-modal');
 
-        if (btnVoltar) {
-            btnVoltar.addEventListener('click', () => {
-                containerSlides.style.display = 'none';
-                areaFiltros.style.display = 'block';
+        // Fechar Modal ao clicar no X
+        if (btnFecharModal) {
+            btnFecharModal.addEventListener('click', () => {
+                modalApresentacao.style.display = 'none';
+            });
+        }
+
+        // Fechar ao clicar fora da caixa do modal
+        if (modalApresentacao) {
+            modalApresentacao.addEventListener('click', (e) => {
+                if (e.target === modalApresentacao) {
+                    modalApresentacao.style.display = 'none';
+                }
             });
         }
 
@@ -75,18 +82,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return;
                     }
 
-                    // Esconde o menu de datas e mostra a área de relatório contínuo
-                    areaFiltros.style.display = 'none';
-                    containerSlides.style.display = 'block';
-
-                    // GERAR TODAS AS PÁGINAS EM PILHA VERTICAL
-                    renderizarApresentacaoCompleta(registros);
+                    // Preenche e abre a subjanela modal
+                    renderizarApresentacaoModal(registros);
+                    modalApresentacao.style.display = 'flex';
 
                 } catch (error) {
                     console.error("Erro:", error);
                     alert("Erro ao buscar os dados.");
                 } finally {
-                    btnGerar.innerText = 'Gerar Apresentação Completa';
+                    btnGerar.innerText = 'Gerar e Visualizar Apresentação';
                     btnGerar.disabled = false;
                 }
             });
@@ -97,19 +101,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// FUNÇÃO MESTRA: CONSTRÓI AS PÁGINAS EM PILHA VERTICAL (SCROLL)
+// FUNÇÃO MESTRA: CONSTRÓI AS PÁGINAS DENTRO DA SUBJANELA MODAL
 // ==============================================================
-function renderizarApresentacaoCompleta(dados) {
-    const slideRender = document.getElementById('slide-render');
+function renderizarApresentacaoModal(dados) {
+    const modalSlidesContent = document.getElementById('modal-slides-content');
     
-    // Cada página agora é um bloco fluido com largura excelente e margem para rolar para baixo
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div class="pagina-relatorio" style="width: 100%; max-width: 1300px; margin: 0 auto 40px auto; background-color: #ebf5ee; padding: 50px; border-radius: 16px; border: 1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;">
+        <div style="width: 100%; max-width: 1200px; background-color: #ebf5ee; padding: 50px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.2); box-sizing: border-box;">
             
             <!-- Cabeçalho Institucional Lebes por Página -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px; margin-bottom: 30px;">
-                <h2 style="color: #115e59; font-size: 1.5rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
-                <span style="font-size: 1.4rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
+                <h2 style="color: #115e59; font-size: 1.4rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
+                <span style="font-size: 1.3rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
             </div>
 
             ${htmlConteudo}
@@ -145,7 +148,7 @@ function renderizarApresentacaoCompleta(dados) {
                 </table>
                 <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
                     <h4 style="color: #334155; margin-bottom: 15px; font-size: 1.1rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
-                    <canvas id="chartTipoLoja" style="max-height: 220px;"></canvas>
+                    <canvas id="chartTipoLoja" style="max-height: 200px;"></canvas>
                 </div>
             </div>
         </div>
@@ -204,11 +207,11 @@ function renderizarApresentacaoCompleta(dados) {
         <div style="display: flex; gap: 20px; margin-top: 25px;">
             <div style="flex: 2; background: white; padding: 20px; border-radius: 8px;">
                 <h4 style="text-align: center; color: #475569; margin-bottom: 15px;">Volumetria Ligações URA</h4>
-                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Barras Evolutivo ]</div>
+                <div style="height: 220px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Barras Evolutivo ]</div>
             </div>
             <div style="flex: 1; background: white; padding: 20px; border-radius: 8px;">
                 <h4 style="text-align: center; color: #475569; margin-bottom: 15px;">Geral Tipo de Loja</h4>
-                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Pizza ]</div>
+                <div style="height: 220px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Pizza ]</div>
             </div>
         </div>
     `;
@@ -247,14 +250,14 @@ function renderizarApresentacaoCompleta(dados) {
         </div>
     `;
 
-    // INJETA TODAS AS PÁGINAS EM PILHA VERTICAL
-    slideRender.innerHTML = 
+    // INJETA AS PÁGINAS DENTRO DO MODAL
+    modalSlidesContent.innerHTML = 
         renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
         renderPaginaRelatorio(htmlPagina2, 'Top 10 Lojas') + 
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
         renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia (Ligação vs Chat)');
 
-    // Inicializa o Gráfico de Lojas da Página 1
+    // Inicializa o Gráfico da Página 1
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     
