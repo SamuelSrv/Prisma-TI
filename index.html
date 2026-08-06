@@ -51,6 +51,29 @@
             color: var(--text-secondary);
             margin-bottom: 6px;
         }
+        .password-container {
+            position: relative;
+        }
+        .password-container input {
+            padding-right: 45px;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+        .toggle-password:hover {
+            color: var(--text-primary);
+        }
         .field-error {
             color: var(--danger);
             font-size: 0.75rem;
@@ -121,7 +144,12 @@
 
             <div class="input-group">
                 <label for="login-password">Senha</label>
-                <input type="password" id="login-password" class="input-modern" placeholder="••••••••" autocomplete="current-password" required>
+                <div class="password-container">
+                    <input type="password" id="login-password" class="input-modern" placeholder="••••••••" autocomplete="current-password" required>
+                    <button type="button" class="toggle-password" data-target="login-password" title="Mostrar/Ocultar Senha">
+                        <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" id="btn-login-submit" class="btn-login">Entrar no Sistema</button>
@@ -154,7 +182,12 @@
 
             <div class="input-group">
                 <label for="cad-password">Senha (Mín. 8 caracteres, com letras e números)</label>
-                <input type="password" id="cad-password" class="input-modern" placeholder="••••••••" autocomplete="new-password" required>
+                <div class="password-container">
+                    <input type="password" id="cad-password" class="input-modern" placeholder="••••••••" autocomplete="new-password" required>
+                    <button type="button" class="toggle-password" data-target="cad-password" title="Mostrar/Ocultar Senha">
+                        <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
                 <span id="error-password" class="field-error"></span>
             </div>
 
