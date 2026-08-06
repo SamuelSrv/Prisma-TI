@@ -1,8 +1,6 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
-import Datepicker from 'https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/js/datepicker-full.js';
-import 'https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/js/locales/pt-BR.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -11,10 +9,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
+        if (typeof window.Datepicker === 'undefined') {
+            console.error("A biblioteca Datepicker não foi carregada corretamente.");
+            return;
+        }
+
         const elemStart = document.getElementById('date-start');
         const elemEnd = document.getElementById('date-end');
 
-        const datepickerStart = new Datepicker(elemStart, {
+        const datepickerStart = new window.Datepicker(elemStart, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
             autohide: true,
@@ -22,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearButton: true
         });
 
-        const datepickerEnd = new Datepicker(elemEnd, {
+        const datepickerEnd = new window.Datepicker(elemEnd, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
             autohide: true,
