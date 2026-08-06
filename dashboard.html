@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma TI - Dashboard Inicial</title>
+    <title>Prisma TI - Dashboard Operacional</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <div class="layout-container">
-        <!-- Menu Lateral Padronizado -->
+        <!-- Menu Lateral -->
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
@@ -29,39 +30,39 @@
             <div class="page-header-flex">
                 <div>
                     <h1 class="header-title">Visão Geral da Operação</h1>
-                    <p class="subtitle">Mês em Exibição: <strong id="mes-atual-label" style="color: var(--cor-secundaria);">Abril / 2026</strong>[cite: 1, 2]</p>
+                    <p class="subtitle">Mês em Exibição: <strong style="color: var(--accent-primary);">Abril / 2026</strong></p>
                 </div>
             </div>
 
             <!-- Cards de KPIs -->
-            <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                <div class="card kpi-card" style="padding: 20px;">
-                    <span style="font-size: 0.85rem; color: #666;">Total de Ligações (Mês)</span>
-                    <h2 id="kpi-mes" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">1.478</h2>[cite: 1, 2]
+            <div class="kpi-grid">
+                <div class="card kpi-card">
+                    <span>Total de Ligações (Mês)</span>
+                    <h2>1.478</h2>
                 </div>
-                <div class="card kpi-card" style="padding: 20px;">
-                    <span style="font-size: 0.85rem; color: #666;">Total de Ligações (Semana)</span>
-                    <h2 id="kpi-semana" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">385</h2>
+                <div class="card kpi-card">
+                    <span>Total de Ligações (Semana)</span>
+                    <h2>385</h2>
                 </div>
-                <div class="card kpi-card" style="padding: 20px;">
-                    <span style="font-size: 0.85rem; color: #666;">Atendimentos (Chat x Ligação)</span>
-                    <h2 id="kpi-chat-ligacao" style="font-size: 1.8rem; margin-top: 5px; color: var(--cor-primaria);">1.323 / 155</h2>[cite: 1, 2]
+                <div class="card kpi-card">
+                    <span>Atendimentos (Chat x Ligação)</span>
+                    <h2 style="font-size: 1.8rem; margin-top: 12px;">1.323 / 155</h2>
                 </div>
-                <div class="card kpi-card" style="padding: 20px; border-left: 4px solid #d32f2f;">
-                    <span style="font-size: 0.85rem; color: #666;">Abandonos na Semana</span>
-                    <h2 id="kpi-abandonos" style="font-size: 1.8rem; margin-top: 5px; color: #d32f2f;">1</h2>[cite: 1, 2]
+                <div class="card kpi-card alert">
+                    <span>Abandonos na Semana</span>
+                    <h2>1</h2>
                 </div>
             </div>
 
             <!-- Gráficos -->
-            <div class="charts-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-                <div class="card" style="padding: 20px;">
-                    <h3 style="font-size: 1.1rem; color: #333;">Distribuição de Chamadas por Status</h3>
-                    <canvas id="chartVolumetria" style="max-height: 280px; margin-top: 15px;"></canvas>
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Distribuição de Chamadas por Status (Dígitro)</h3>
+                    <canvas id="chartVolumetria" style="max-height: 280px;"></canvas>
                 </div>
-                <div class="card" style="padding: 20px;">
-                    <h3 style="font-size: 1.1rem; color: #333;">Chat vs Ligação</h3>
-                    <canvas id="chartMidia" style="max-height: 280px; margin-top: 15px;"></canvas>
+                <div class="chart-card">
+                    <h3>Volume por Mídia (Chat x Ligação)</h3>
+                    <canvas id="chartMidia" style="max-height: 280px;"></canvas>
                 </div>
             </div>
         </main>
