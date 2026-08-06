@@ -9,6 +9,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
+        const pickerEnd = flatpickr("#date-end", {
+            dateFormat: "d/m/Y",
+            locale: "pt"
+        });
+
+        flatpickr("#date-start", {
+            dateFormat: "d/m/Y",
+            locale: "pt",
+            onChange: function(selectedDates) {
+                if (selectedDates.length > 0) {
+                    pickerEnd.set("minDate", selectedDates[0]);
+                }
+            }
+        });
+
         const btnGerar = document.getElementById('btn-gerar');
         if (btnGerar) {
             btnGerar.addEventListener('click', () => {

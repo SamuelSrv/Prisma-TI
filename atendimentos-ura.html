@@ -6,24 +6,36 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Flowbite CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
-
-    <!-- Correção de Estilo para forçar o tema escuro nos inputs do Flowbite -->
+    <!-- Flatpickr (Calendário Estável) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- Estilização limpa combinando com o tema do sistema -->
     <style>
-        input[datepicker] {
-            background-color: #0f172a !important;
-            color: #f8fafc !important;
-            border-color: #334155 !important;
+        .flatpickr-calendar {
+            background: var(--bg-card, #1e293b) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4) !important;
+            padding: 16px !important;
+            color: var(--text-primary, #f8fafc) !important;
         }
-        input[datepicker]::placeholder {
-            color: #94a3b8 !important;
+        .flatpickr-day {
+            color: var(--text-primary, #f8fafc) !important;
+            border-radius: 8px !important;
         }
-        input[datepicker]:focus {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+        .flatpickr-day.selected {
+            background: var(--accent-primary, #10b981) !important;
+            border-color: var(--accent-primary, #10b981) !important;
+        }
+        .flatpickr-day:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+        .flatpickr-month, .flatpickr-current-month, span.flatpickr-weekday {
+            color: var(--text-primary, #f8fafc) !important;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
 </head>
 <body>
     <div class="layout-container">
@@ -38,45 +50,41 @@
                 </div>
             </div>
 
-            <!-- Card Centralizado -->
+            <!-- Card com o layout original e limpo -->
             <div class="card" style="padding: 40px; max-width: 700px; margin: 0 auto;">
                 <h3 style="margin-bottom: 25px; color: var(--text-primary); text-align: center;">Selecione o Período</h3>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                     
-                    <!-- Data Inicial -->
+                    <!-- Data Inicial com Ícone Embutido -->
                     <div>
                         <label for="date-start" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Inicial:
                         </label>
                         <div style="position: relative; width: 100%;">
                             <div style="position: absolute; inset-y: 0; left: 0; display: flex; align-items: center; padding-left: 12px; pointer-events: none; color: var(--text-secondary);">
-                                <svg style="width: 18px; height: 18px;" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
-                                </svg>
+                                <svg style="width: 18px; height: 18px;" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
                             </div>
-                            <input id="date-start" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #334155;" readonly>
+                            <input type="text" id="date-start" class="input-modern" placeholder="Selecione..." style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
                         </div>
                     </div>
                     
-                    <!-- Data Final -->
+                    <!-- Data Final com Ícone Embutido -->
                     <div>
                         <label for="date-end" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Final:
                         </label>
                         <div style="position: relative; width: 100%;">
                             <div style="position: absolute; inset-y: 0; left: 0; display: flex; align-items: center; padding-left: 12px; pointer-events: none; color: var(--text-secondary);">
-                                <svg style="width: 18px; height: 18px;" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
-                                </svg>
+                                <svg style="width: 18px; height: 18px;" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
                             </div>
-                            <input id="date-end" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #334155;" readonly>
+                            <input type="text" id="date-end" class="input-modern" placeholder="Selecione..." style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
                         </div>
                     </div>
                 </div>
 
                 <div style="text-align: center;">
-                    <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 15px 40px; font-size: 1.1rem; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; font-weight: 600;">
+                    <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 15px 40px; font-size: 1.1rem; cursor: pointer;">
                         Gerar Apresentação
                     </button>
                 </div>
@@ -84,10 +92,7 @@
         </main>
     </div>
 
-    <!-- Flowbite JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
-
-    <!-- Script exclusivo da página -->
+    <!-- Script da página -->
     <script type="module" src="assets/js/atendimentos-ura.js"></script>
 </body>
 </html>
