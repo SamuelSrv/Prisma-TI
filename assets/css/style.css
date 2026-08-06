@@ -185,3 +185,5 @@ body.sidebar-collapsed .chevron-icon {
 
 .input-modern { width: 100%; padding: 12px; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; margin-top: 6px; outline: none; }
 .input-modern:focus { border-color: var(--accent-primary); }
+
+@import "tailwindcss";
