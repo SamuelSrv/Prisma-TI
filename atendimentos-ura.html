@@ -6,9 +6,73 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Flatpickr (Calendário) -->
+    <!-- Flatpickr & Estilos Modernos -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+    
+    <!-- Personalização Avançada para deixar o Flatpickr arredondado e com cara da Microsoft -->
+    <style>
+        .flatpickr-calendar {
+            background: var(--bg-card, #1e293b) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+            padding: 15px !important;
+            font-family: inherit !important;
+        }
+        .flatpickr-days {
+            border: none !important;
+        }
+        .flatpickr-day {
+            border-radius: 50% !important;
+            margin: 2px !important;
+            color: var(--text-primary, #f8fafc) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+            background: var(--accent-primary, #10b981) !important;
+            border-color: var(--accent-primary, #10b981) !important;
+            border-radius: 50% !important;
+        }
+        .flatpickr-day:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 50% !important;
+        }
+        .flatpickr-months {
+            padding-bottom: 10px;
+        }
+        .flatpickr-month {
+            background: transparent !important;
+            color: var(--text-primary, #f8fafc) !important;
+        }
+        .flatpickr-current-month {
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+        }
+        .flatpickr-current-month .numInputWrapper {
+            width: 60px !important;
+        }
+        .flatpickr-current-month input.cur-year, 
+        .flatpickr-current-month .flatpickr-monthDropdown-months {
+            background: transparent !important;
+            font-weight: 700 !important;
+            color: var(--accent-primary, #10b981) !important;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 2px 4px;
+        }
+        .flatpickr-current-month input.cur-year:hover, 
+        .flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        span.flatpickr-weekday {
+            color: var(--text-secondary, #94a3b8) !important;
+            font-weight: 600 !important;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
 </head>

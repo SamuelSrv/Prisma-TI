@@ -11,19 +11,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2. Carrega o menu lateral marcando a opção correta
         carregarMenu('gerar-relatorio');
 
-        // 3. Inicializa os calendários Flatpickr de forma interligada (Data Inicial e Data Final)
+        // 3. Inicializa os calendários Flatpickr com seletores interativos de mês e ano (Estilo Microsoft)
         const pickerEnd = flatpickr("#date-end", {
             dateFormat: "d/m/Y",
             locale: "pt",
-            theme: "dark"
+            monthSelectorType: "dropdown", // Permite clicar no mês e abrir o menu de meses
+            yearSelectorType: "dropdown"   // Permite digitar ou alterar o ano rapidamente
         });
 
         flatpickr("#date-start", {
             dateFormat: "d/m/Y",
             locale: "pt",
-            theme: "dark",
+            monthSelectorType: "dropdown",
+            yearSelectorType: "dropdown",
             onChange: function(selectedDates) {
-                // Quando o usuário escolhe a data inicial, define o limite mínimo na data final
+                // Sincroniza o limite mínimo da data final com base na data inicial escolhida
                 if (selectedDates.length > 0) {
                     pickerEnd.set("minDate", selectedDates[0]);
                 }
