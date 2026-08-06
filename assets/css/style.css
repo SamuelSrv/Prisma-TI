@@ -187,3 +187,99 @@ body.sidebar-collapsed .chevron-icon {
 .input-modern:focus { border-color: var(--accent-primary); }
 
 @import "tailwindcss";
+
+/* ==============================================================
+   MODO APRESENTAÇÃO / RELATÓRIO 1920x1080 (ESTILO GRUPO LEBES)
+   ============================================================== */
+
+.slide-wrapper {
+    /* Força o tamanho Full HD */
+    width: 1920px;
+    height: 1080px;
+    
+    /* Cores institucionais Lebes baseadas nas imagens */
+    background-color: #ebf5ee; /* Fundo verde super claro */
+    font-family: 'Inter', -apple-system, sans-serif;
+    position: relative;
+    padding: 60px;
+    box-sizing: border-box;
+    
+    /* Transformação para caber na tela do navegador sem quebrar o tamanho real */
+    transform-origin: top left;
+    transform: scale(0.5); /* Ajuste via JS dependendo do monitor */
+    margin-bottom: -540px; /* Compensa o espaço do scale */
+    
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+/* Marca d'água / Logo no canto superior direito */
+.slide-wrapper::before {
+    content: "Grupo Lebes";
+    position: absolute;
+    top: 40px;
+    right: 60px;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #115e59;
+    letter-spacing: -1px;
+}
+
+/* Detalhe circular verde no canto inferior direito */
+.slide-wrapper::after {
+    content: "";
+    position: absolute;
+    bottom: -150px;
+    right: -150px;
+    width: 400px;
+    height: 400px;
+    background: conic-gradient(from 180deg at 50% 50%, #16a34a 0deg, #115e59 180deg, #16a34a 360deg);
+    border-radius: 50%;
+    opacity: 0.9;
+}
+
+/* Título principal do Slide */
+.slide-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 50px;
+}
+.slide-title span {
+    color: #475569;
+}
+
+/* Tabelas estilo corporativo Lebes */
+.lebes-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+.lebes-table th {
+    background-color: #16a34a;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 12px 20px;
+    text-transform: uppercase;
+}
+.lebes-table td {
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    color: #334155;
+    border-bottom: 1px solid #e2e8f0;
+}
+.lebes-table tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+/* Célula de destaque (Ex: % Mês com fundo mais escuro) */
+.lebes-table td.highlight {
+    background-color: #bbf7d0; /* Verde clarinho */
+    font-weight: 600;
+}
