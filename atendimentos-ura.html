@@ -6,96 +6,116 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Flatpickr (Removido o tema padrão escuro antigo para evitar conflitos de estilo) -->
+    <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
-    <!-- Estilização limpa e moderna do calendário -->
+    <!-- Estilização Limpa e Arredondada Estilo Microsoft / Fluent UI -->
     <style>
         .flatpickr-calendar {
             background: #111827 !important;
-            border: 1px solid #374151 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
-            padding: 16px !important;
+            border: 1px solid #1f2937 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+            padding: 20px !important;
             font-family: inherit !important;
             color: #f3f4f6 !important;
+            width: 320px !important;
         }
         .flatpickr-months {
-            padding-bottom: 8px;
+            padding: 0 0 15px 0 !important;
+            display: flex;
             align-items: center;
+            justify-content: space-between;
         }
         .flatpickr-month {
             background: transparent !important;
             color: #f3f4f6 !important;
-            height: 40px !important;
+            height: auto !important;
+            fill: #f3f4f6;
         }
         .flatpickr-current-month {
-            font-size: 0.95rem !important;
-            font-weight: 600 !important;
+            font-size: 1.05rem !important;
+            font-weight: 500 !important;
             color: #f3f4f6 !important;
-            padding-top: 0 !important;
+            position: static !important;
+            width: auto !important;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
         }
-        .flatpickr-current-month input.cur-year, 
-        .flatpickr-current-month .flatpickr-monthDropdown-months {
+        .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .flatpickr-current-month input.cur-year {
             background: transparent !important;
+            border: none !important;
+            outline: none !important;
             font-weight: 600 !important;
-            color: #f3f4f6 !important;
+            color: #60a5fa !important;
             cursor: pointer;
+            padding: 0 !important;
+            font-size: 1.05rem !important;
         }
         .flatpickr-current-month .flatpickr-monthDropdown-months option {
-            background: #111827;
+            background: #1f2937;
             color: #f3f4f6;
+        }
+        .flatpickr-current-month .numInputWrapper {
+            width: auto !important;
+        }
+        .flatpickr-current-month .numInputWrapper span {
+            display: none !important;
         }
         .flatpickr-weekdays {
             background: transparent !important;
-            margin-top: 6px;
+            padding: 0 !important;
+            margin-bottom: 8px;
         }
         span.flatpickr-weekday {
             background: transparent !important;
             color: #9ca3af !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem;
+            font-weight: 500 !important;
+            font-size: 0.85rem;
         }
         .flatpickr-days {
             border: none !important;
         }
         .flatpickr-day {
-            border-radius: 8px !important;
+            border-radius: 50% !important;
             margin: 2px !important;
-            color: #f3f4f6 !important;
+            color: #e5e7eb !important;
             background: transparent !important;
             border: none !important;
             font-weight: 400;
             height: 38px !important;
             line-height: 38px !important;
+            width: 38px !important;
             max-width: 38px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             transition: background 0.15s ease;
         }
-        /* Dia selecionado totalmente preenchido em azul sólido */
         .flatpickr-day.selected, 
         .flatpickr-day.startRange, 
-        .flatpickr-day.endRange,
-        .flatpickr-day.selected:hover,
-        .flatpickr-day.startRange:hover,
-        .flatpickr-day.endRange:hover {
+        .flatpickr-day.endRange {
             background: #2563eb !important;
             border-color: #2563eb !important;
             color: #ffffff !important;
-            border-radius: 8px !important;
+            border-radius: 50% !important;
         }
         .flatpickr-day:hover {
             background: #374151 !important;
-            border-radius: 8px !important;
+            border-radius: 50% !important;
         }
         .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
             color: #4b5563 !important;
         }
         .flatpickr-prev-month, .flatpickr-next-month {
             padding: 8px !important;
-            border-radius: 8px;
+            border-radius: 50%;
+            top: 15px !important;
+            background: transparent !important;
             transition: background 0.15s;
         }
         .flatpickr-prev-month:hover, .flatpickr-next-month:hover {
@@ -103,6 +123,8 @@
         }
         .flatpickr-prev-month svg, .flatpickr-next-month svg {
             fill: #9ca3af !important;
+            width: 14px;
+            height: 14px;
         }
     </style>
 
@@ -111,7 +133,6 @@
 </head>
 <body>
     <div class="layout-container">
-        <!-- O Menu Lateral será injetado aqui -->
         <aside class="sidebar"></aside>
         
         <main class="main-content">
@@ -122,12 +143,10 @@
                 </div>
             </div>
 
-            <!-- Card com os campos de data customizados com o ícone embutido -->
             <div class="card" style="padding: 40px; max-width: 700px; margin: 0 auto;">
                 <h3 style="margin-bottom: 25px; color: var(--text-primary); text-align: center;">Selecione o Período</h3>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-                    <!-- Data Inicial com Ícone Embutido -->
                     <div>
                         <label for="date-start" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Inicial:
@@ -140,7 +159,6 @@
                         </div>
                     </div>
                     
-                    <!-- Data Final com Ícone Embutido -->
                     <div>
                         <label for="date-end" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Final:
@@ -163,7 +181,6 @@
         </main>
     </div>
 
-    <!-- Chama o script exclusivo desta página -->
     <script type="module" src="assets/js/atendimentos-ura.js"></script>
 </body>
 </html>
