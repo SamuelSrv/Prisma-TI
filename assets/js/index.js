@@ -47,11 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (input) {
                 if (input.type === 'password') {
                     input.type = 'text';
-                    // Altera o ícone para "olho cortado" (ocultar)
                     button.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
                 } else {
                     input.type = 'password';
-                    // Retorna ao ícone de "olho normal" (mostrar)
                     button.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
                 }
             }
@@ -71,6 +69,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
             e.target.value = value;
         });
+    }
+
+    // Função para validar matematicamente o CPF
+    function validarCPF(strCPF) {
+        strCPF = strCPF.replace(/[^\d]+/g, '');
+        if (strCPF.length !== 11 || /^(\d)\1{10}$/.test(strCPF)) return false;
+        
+        let soma = 0;
+        let resto;
+        
+        for (let i = 1; i <= 9; i++) {
+            soma = soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
+        }
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(strCPF.substring(9, 10))) return false;
+        
+        soma = 0;
+        for (let i = 1; i <= 10; i++) {
+            soma = soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i);
+        }
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(strCPF.substring(10, 11))) return false;
+        
+        return true;
     }
 
     // Processamento do Login
@@ -97,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Processamento do Cadastro Separado com Validações Corrigidas
+    // Processamento do Cadastro
     formCadastro.addEventListener('submit', async (e) => {
         e.preventDefault();
         limparErros();
@@ -110,7 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let temErro = false;
 
-        // Validação de Senha Corrigida: Mínimo 8 caracteres, contendo letras e números (permite símbolos)
+        // 1. Validação de CPF (Estrutura e Matemática)
+        if (!validarCPF(cpf)) {
+            const errEl = document.getElementById('error-cpf');
+            errEl.textContent = 'CPF inválido. Verifique os números digitados.';
+            errEl.style.display = 'block';
+            temErro = true;
+        }
+
+        // 2. Validação de Senha (Mínimo 8 caracteres, letras e números)
         const regexSenha = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
         if (!regexSenha.test(password)) {
             const errEl = document.getElementById('error-password');
@@ -125,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'Verificando dados...';
 
         try {
-            // Validação de CPF existente no banco
+            // 3. Validação de CPF já existente no banco de dados
             const { data: cpfExistente } = await supabase
                 .from('perfis_usuarios')
                 .select('cpf')
