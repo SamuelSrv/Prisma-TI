@@ -9,8 +9,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        // Inicializa manualmente os datepickers (reforço caso o auto-init do
-        // atributo `datepicker` falhe por timing de carregamento do script)
+        // Locale pt-BR declarado manualmente (o CDN do Flowbite não carrega
+        // arquivos de i18n automaticamente, então precisa registrar aqui)
+        if (window.Datepicker) {
+            window.Datepicker.locales['pt-BR'] = {
+                days: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+                daysShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+                daysMin: ['Do', 'Se', 'Te', 'Qu', 'Qu', 'Se', 'Sá'],
+                months: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+                monthsShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                today: 'Hoje',
+                clear: 'Limpar',
+                titleFormat: 'MM y',
+                format: 'dd/mm/yyyy',
+                weekStart: 0
+            };
+        }
+
+        // Inicializa manualmente os datepickers já com o idioma pt-BR
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
 
@@ -18,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const options = {
                 autohide: true,
                 format: 'dd/mm/yyyy',
+                language: 'pt-BR',
                 todayHighlight: true
             };
 
