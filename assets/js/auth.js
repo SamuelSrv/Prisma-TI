@@ -1,41 +1,35 @@
 import { supabase } from './supabase.js';
 
-// Barreira 1: Se já estiver logado, não precisa ver a tela de login
-async function verificarSessao() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        window.location.href = 'dashboard.html';
+export async function verificarAutenticacao() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+        window.location.replace('index.html');
+        return null;
     }
-}
-verificarSessao();
 
-const loginForm = document.getElementById('login-form');
-const btnLogin = document.getElementById('btn-login');
-const loginError = document.getElementById('login-error');
-
-if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        btnLogin.innerText = 'Autenticando...';
-        btnLogin.disabled = true;
-        loginError.style.display = 'none';
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            loginError.innerText = 'E-mail ou senha incorretos.';
-            loginError.style.display = 'block';
-            btnLogin.innerText = 'Entrar no Sistema';
-            btnLogin.disabled = false;
-        } else {
-            window.location.href = 'dashboard.html';
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+            window.location.replace('index.html');
         }
     });
+
+    document.body.classList.add('auth-ok');
+    return session;
+}
+
+export function ativarBotaoLogout() {
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            btnLogout.style.opacity = '0.5';
+            btnLogout.disabled = true;
+            btnLogout.innerHTML = '<span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></span><span class="menu-text">Saindo...</span>';
+            
+            await supabase.auth.signOut();
+            window.location.replace('index.html');
+        });
+    }
 }
