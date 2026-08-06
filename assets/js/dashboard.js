@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const filtroMesEl = document.getElementById('filtro-mes');
         
-        // Define AUTOMATICAMENTE o mês atual do sistema (ex: 2026-08) ao entrar/atualizar a página
+        // Define AUTOMATICAMENTE o mês atual do sistema ao entrar
         const agora = new Date();
         const anoAtual = agora.getFullYear();
         const mesAtual = String(agora.getMonth() + 1).padStart(2, '0');
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function carregarDadosDashboard() {
     const filtroMesEl = document.getElementById('filtro-mes');
-    const anoMes = filtroMesEl.value; // Ex: "2026-08"
+    const anoMes = filtroMesEl.value; 
 
     if (!anoMes) return;
 
@@ -45,13 +45,30 @@ async function carregarDadosDashboard() {
     const dataFimISO = `${ano}-${mes}-${ultimoDiaDoMes} 23:59:59`;
 
     try {
-        const { data: registros, error } = await supabase
-            .from('atendimentos_detalhados')
-            .select('*')
-            .gte('data_hora', dataInicioISO)
-            .lte('data_hora', dataFimISO);
+        // Lógica de Paginação Contínua para furar o limite de 1000 registros no Dashboard
+        let registros = [];
+        let inicioBusca = 0;
+        const limiteBusca = 1000;
+        let buscando = true;
 
-        if (error) throw error;
+        while (buscando) {
+            const { data, error } = await supabase
+                .from('atendimentos_detalhados')
+                .select('*')
+                .gte('data_hora', dataInicioISO)
+                .lte('data_hora', dataFimISO)
+                .range(inicioBusca, inicioBusca + limiteBusca - 1);
+
+            if (error) throw error;
+
+            registros = registros.concat(data);
+
+            if (data.length < limiteBusca) {
+                buscando = false; 
+            } else {
+                inicioBusca += limiteBusca; 
+            }
+        }
 
         atualizarDashboard(registros || []);
 

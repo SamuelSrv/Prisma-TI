@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!authData || !authData.session) return;
         carregarMenu('gerar-relatorio');
 
+        // Configuração do Calendário (Datepicker)
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
         if (window.Datepicker) {
@@ -94,13 +95,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const dataInicioISO = `${anoI}-${mesI}-${diaI} 00:00:00`;
                     const dataFimISO = `${anoF}-${mesF}-${diaF} 23:59:59`;
 
-                    const { data: registros, error } = await supabase
-                        .from('atendimentos_detalhados')
-                        .select('*')
-                        .gte('data_hora', dataInicioISO)
-                        .lte('data_hora', dataFimISO);
+                    // Lógica de Paginação Contínua (Fura o bloqueio de 1000 da API)
+                    let registros = [];
+                    let inicioBusca = 0;
+                    const limiteBusca = 1000;
+                    let buscando = true;
 
-                    if (error) throw error;
+                    while (buscando) {
+                        const { data, error } = await supabase
+                            .from('atendimentos_detalhados')
+                            .select('*')
+                            .gte('data_hora', dataInicioISO)
+                            .lte('data_hora', dataFimISO)
+                            .range(inicioBusca, inicioBusca + limiteBusca - 1);
+
+                        if (error) throw error;
+
+                        registros = registros.concat(data);
+
+                        if (data.length < limiteBusca) {
+                            buscando = false; // Se vier menos de 1000, acabou a lista
+                        } else {
+                            inicioBusca += limiteBusca; // Pede a próxima página
+                        }
+                    }
+
                     if (registros.length === 0) {
                         alert(`Nenhum atendimento entre ${dataInicio} e ${dataFim}.`);
                         return;
@@ -181,7 +200,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // SLIDE 2: CATEGORIAS & DEPARTAMENTOS (Título ajustado para remover "Top 10")
+    // SLIDE 2: CATEGORIAS & DEPARTAMENTOS
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
     const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
@@ -266,7 +285,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // SLIDE 5: TMAX & TME ADAPTATIVO (DIA A DIA SE <= 5 DIAS, OU SEMANAL/BLOCOS SE > 5 DIAS)
+    // SLIDE 5: TMAX & TME ADAPTATIVO
     const datasUnicas = [...new Set(dados.map(d => {
         const str = String(d.data_hora);
         return str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
@@ -276,7 +295,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     let tituloTabelaPeriodo = 'RESUMO DIÁRIO DE ATENDIMENTOS (TMAX & TME)';
 
     if (datasUnicas.length <= 5) {
-        // Exibe dia a dia se o intervalo for curto (até 5 dias)
         linhasTabelaPeriodo = datasUnicas.map(dataIso => {
             const partes = dataIso.split('-');
             const dataBr = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataIso;
@@ -288,7 +306,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
             return `<tr><td style="font-weight: bold; background: #bbf7d0;">${dataBr}</td><td>${formatarTempo(maxTme)}</td><td>${filialDestaque}</td><td>${formatarTempo(tmeMedioDia)}</td></tr>`;
         }).join('');
     } else {
-        // Se passar de 5 dias (ex: 30 dias), agrupa em blocos semanais para não poluir o relatório!
         tituloTabelaPeriodo = 'RESUMO CONSOLIDADO POR BLOCOS / SEMANAS';
         const blocosSemanais = [];
         for (let i = 0; i < datasUnicas.length; i += 7) {
@@ -333,7 +350,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
         renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Período');
 
-    // Gráfico Tradicional vs Express travado em escala máxima inteligente (máx 100 ou o total se passar de 100)
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     const maiorValor = Math.max(qtdTradicional, qtdExpress, 10);
@@ -363,7 +379,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
             scales: { 
                 y: { 
                     beginAtZero: true,
-                    suggestedMax: tetoEscala // Garante escala limpa e evita esticar até 120 desnecessariamente
+                    suggestedMax: tetoEscala
                 } 
             } 
         },
