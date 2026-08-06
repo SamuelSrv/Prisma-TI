@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
+
 <body>
     <div class="layout-container">
         <aside class="sidebar"></aside>
@@ -19,28 +21,33 @@
                     <p class="subtitle">Acompanhe os principais indicadores e volumetria</p>
                 </div>
                 <!-- Seletor de Mês/Ano Interativo -->
-                <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-main); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
-                    <label for="filtro-mes" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">MÊS EM EXIBIÇÃO:</label>
-                    <input type="month" id="filtro-mes" value="2026-04" style="width: auto; padding: 6px 10px; margin-top: 0;">
+                <div
+                    style="display: flex; align-items: center; gap: 12px; background: var(--bg-main); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <label for="filtro-mes"
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">MÊS EM
+                        EXIBIÇÃO:</label>
+                    <input type="month" id="filtro-mes" value="2026-04"
+                        style="width: auto; padding: 6px 10px; margin-top: 0;">
                 </div>
             </div>
 
+            <!-- Cards de KPIs Zerados e Identificados -->
             <div class="kpi-grid">
                 <div class="card kpi-card">
                     <span>Total de Ligações (Mês)</span>
-                    <h2>1.478</h2>
+                    <h2 id="kpi-ligacoes-mes">0</h2>
                 </div>
                 <div class="card kpi-card">
                     <span>Total de Ligações (Semana)</span>
-                    <h2>385</h2>
+                    <h2 id="kpi-ligacoes-semana">0</h2>
                 </div>
                 <div class="card kpi-card">
                     <span>Atendimentos (Chat x Ligação)</span>
-                    <h2 style="font-size: 1.8rem; margin-top: 12px;">1.323 / 155</h2>
+                    <h2 id="kpi-atendimentos" style="font-size: 1.8rem; margin-top: 12px;">0 / 0</h2>
                 </div>
                 <div class="card kpi-card alert">
                     <span>Abandonos na Semana</span>
-                    <h2>1</h2>
+                    <h2 id="kpi-abandonos">0</h2>
                 </div>
             </div>
 
@@ -58,4 +65,5 @@
     </div>
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
+
 </html>

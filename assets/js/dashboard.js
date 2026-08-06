@@ -4,7 +4,7 @@ import { carregarMenu } from './menu.js';
 carregarMenu('dashboard');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicialização do Gráfico de Barras
+    // 1. Gráfico de Barras ZERADO
     const ctxVolumetria = document.getElementById('chartVolumetria').getContext('2d');
     let chartVolumetria = new Chart(ctxVolumetria, {
         type: 'bar',
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             labels: ['Atendidas', 'Transbordadas', 'Fora de Horário', 'Abandonadas'],
             datasets: [{
                 label: 'Chamadas',
-                data: [1323, 116, 38, 1], // Dados Iniciais
+                data: [0, 0, 0, 0], // Dados zerados
                 backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
                 borderRadius: 6
             }]
@@ -26,6 +26,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     color: '#f8fafc', anchor: 'end', align: 'top', font: { weight: 'bold' },
                     formatter: (value, ctx) => {
                         let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        if (sum === 0) return '0%'; // Evita erro de divisão por zero
+                        return ((value * 100) / sum).toFixed(1) + '%';
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+            }
+        }
+    });
+
+    // 2. Gráfico de Rosca ZERADO
+    const ctxMidia = document.getElementById('chartMidia').getContext('2d');
+    let chartMidia = new Chart(ctxMidia, {
+        type: 'doughnut',
+        data: {
+            labels: ['Chat / WhatsApp', 'Telefonia / Voz'],
+            datasets: [{
+                data: [0, 0], // Dados zerados
+                backgroundColor: ['#10b981', '#3b82f6'],
+                borderWidth: 0
+            }]
+        },
+        plugins: [ChartDataLabels],
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 12 } } },
+                datalabels: {
+                    color: '#fff', font: { weight: 'bold', size: 13 },
+                    formatter: (value, ctx) => {
+                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        if (sum === 0) return '0%'; // Evita erro de divisão por zero
                         return ((value * 100) / sum).toFixed(1) + '%';
                     }
                 }
@@ -33,29 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Lógica para Atualizar o Gráfico ao mudar o mês
+    // Eventos do Dashboard mantidos intactos...
     const atualizarDashboard = () => {
-        const mes = document.getElementById('select-mes').value;
-        const ano = document.getElementById('select-ano').value;
-        
-        console.log(`Atualizando dashboard para: ${mes}/${ano}`);
-        
-        // Simulando a busca de novos dados do Banco baseada na data
-        const novosDados = [
-            Math.floor(Math.random() * 2000) + 1000, 
-            Math.floor(Math.random() * 200) + 50, 
-            Math.floor(Math.random() * 100), 
-            Math.floor(Math.random() * 10)
-        ];
-
-        // Aplica os novos dados e atualiza visualmente com animação
-        chartVolumetria.data.datasets[0].data = novosDados;
-        chartVolumetria.update();
-
-        // Atualização visual dos cards do topo
-        document.querySelector('.kpi-card h2').textContent = (novosDados[0] + novosDados[1] + novosDados[2]).toLocaleString('pt-BR');
+        // Função preparada para quando implementarmos a busca real no Supabase
+        console.log('Filtro alterado, buscando dados do banco...');
     };
 
-    document.getElementById('select-mes')?.addEventListener('change', atualizarDashboard);
-    document.getElementById('select-ano')?.addEventListener('change', atualizarDashboard);
+    document.getElementById('filtro-mes')?.addEventListener('change', atualizarDashboard);
 });

@@ -3,13 +3,13 @@ export function carregarMenu(paginaAtiva) {
     if (!sidebar) return;
 
     sidebar.innerHTML = `
-        <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <a href="dashboard.html" class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; overflow: hidden;">
-                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar" style="width: 28px; height: 28px; filter: brightness(0) invert(1); flex-shrink: 0;">
-                <h2 class="menu-text" style="font-size: 1.1rem; color: #fff; white-space: nowrap;">Prisma TI</h2>
+        <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; gap: 10px;">
+            <a href="dashboard.html" class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none; flex: 1; overflow: hidden;">
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar" style="width: 32px; height: 32px; filter: brightness(0) invert(1); flex-shrink: 0;">
+                <h2 class="menu-text" style="font-size: 1.2rem; color: var(--text-primary); font-weight: 700; white-space: nowrap; margin: 0;">Prisma TI</h2>
             </a>
-            <button id="toggle-sidebar" class="btn-icon" style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; margin-left: 10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <button id="toggle-sidebar" class="btn-icon" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;" title="Recolher Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
         </div>
         
@@ -49,7 +49,7 @@ export function carregarMenu(paginaAtiva) {
     const toggleSubmenu = sidebar.querySelector('.toggle-submenu');
     const submenu = sidebar.querySelector('.submenu');
     toggleSubmenu.addEventListener('click', () => {
-        if (document.body.classList.contains('sidebar-collapsed')) return; // Não abre sanfona se menu estiver minimizado
+        if (document.body.classList.contains('sidebar-collapsed')) return;
         const isClosed = submenu.style.display === 'none';
         submenu.style.display = isClosed ? 'flex' : 'none';
         toggleSubmenu.querySelector('.chevron').textContent = isClosed ? '▲' : '▼';
@@ -60,7 +60,7 @@ export function carregarMenu(paginaAtiva) {
     toggleSidebar.addEventListener('click', () => {
         document.body.classList.toggle('sidebar-collapsed');
         if (document.body.classList.contains('sidebar-collapsed')) {
-            submenu.style.display = 'none'; // Fecha o submenu ao minimizar
+            submenu.style.display = 'none';
             toggleSubmenu.querySelector('.chevron').textContent = '▼';
         }
     });
