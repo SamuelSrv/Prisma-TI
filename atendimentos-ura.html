@@ -8,6 +8,22 @@
     
     <!-- Flowbite CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+
+    <!-- Correção de Estilo para forçar o tema escuro nos inputs do Flowbite -->
+    <style>
+        input[datepicker] {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }
+        input[datepicker]::placeholder {
+            color: #94a3b8 !important;
+        }
+        input[datepicker]:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+        }
+    </style>
 </head>
 <body>
     <div class="layout-container">
@@ -22,7 +38,7 @@
                 </div>
             </div>
 
-            <!-- Card Centralizado com o Datepicker -->
+            <!-- Card Centralizado -->
             <div class="card" style="padding: 40px; max-width: 700px; margin: 0 auto;">
                 <h3 style="margin-bottom: 25px; color: var(--text-primary); text-align: center;">Selecione o Período</h3>
                 
@@ -39,7 +55,7 @@
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
                                 </svg>
                             </div>
-                            <input id="date-start" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" class="input-modern" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                            <input id="date-start" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #334155;" readonly>
                         </div>
                     </div>
                     
@@ -54,13 +70,13 @@
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
                                 </svg>
                             </div>
-                            <input id="date-end" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" class="input-modern" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                            <input id="date-end" datepicker datepicker-autohide datepicker-format="dd/mm/yyyy" type="text" placeholder="Selecione a data" style="padding-left: 40px; text-align: left; font-size: 1rem; padding-top: 12px; padding-bottom: 12px; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #334155;" readonly>
                         </div>
                     </div>
                 </div>
 
                 <div style="text-align: center;">
-                    <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 15px 40px; font-size: 1.1rem; cursor: pointer;">
+                    <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 15px 40px; font-size: 1.1rem; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; font-weight: 600;">
                         Gerar Apresentação
                     </button>
                 </div>
