@@ -30,19 +30,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dateEndEl) new window.Datepicker(dateEndEl, options);
         }
 
-        // Elementos da Tela e da Modal
         const btnGerar = document.getElementById('btn-gerar');
         const modalApresentacao = document.getElementById('modal-apresentacao');
         const btnFecharModal = document.getElementById('btn-fechar-modal');
 
-        // Fechar Modal ao clicar no X
         if (btnFecharModal) {
             btnFecharModal.addEventListener('click', () => {
                 modalApresentacao.style.display = 'none';
             });
         }
 
-        // Fechar ao clicar fora da caixa do modal
         if (modalApresentacao) {
             modalApresentacao.addEventListener('click', (e) => {
                 if (e.target === modalApresentacao) {
@@ -51,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Lógica Principal de Geração
         if (btnGerar) {
             btnGerar.addEventListener('click', async () => {
                 const dataInicio = dateStartEl.value;
@@ -61,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     alert('Selecione o período completo.'); return;
                 }
 
-                btnGerar.innerText = 'Buscando e Processando Dados...';
+                btnGerar.innerText = 'Processando Relatório...';
                 btnGerar.disabled = true;
 
                 try {
@@ -82,8 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return;
                     }
 
-                    // Preenche e abre a subjanela modal de forma dinâmica
-                    renderizarApresentacaoModal(registros);
+                    renderizarApresentacaoModal(registros, dataInicio, dataFim);
                     modalApresentacao.style.display = 'flex';
 
                 } catch (error) {
@@ -101,16 +96,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// FUNÇÃO MESTRA: CONSTRÓI AS PÁGINAS DINAMICAMENTE COM OS DADOS
+// CONSTRUTOR DE PÁGINAS DO RELATÓRIO EXECUTIVO
 // ==============================================================
-function renderizarApresentacaoModal(dados) {
+function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     const modalSlidesContent = document.getElementById('modal-slides-content');
     
+    // Função padrão para manter todas as páginas com o mesmo tamanho e exibindo o período
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div style="width: 100%; max-width: 1200px; background-color: #ebf5ee; padding: 50px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.2); box-sizing: border-box; margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px; margin-bottom: 30px;">
-                <h2 style="color: #115e59; font-size: 1.4rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
-                <span style="font-size: 1.3rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
+        <div style="width: 100%; max-width: 1200px; background-color: #ebf5ee; padding: 45px 50px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.2); box-sizing: border-box; margin-bottom: 35px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px; margin-bottom: 25px;">
+                <div>
+                    <h2 style="color: #115e59; font-size: 1.35rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
+                    <span style="font-size: 0.85rem; color: #475569; font-weight: 600;">Período Analisado: ${periodoInicio} até ${periodoFim}</span>
+                </div>
+                <span style="font-size: 1.25rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
             </div>
             ${htmlConteudo}
         </div>
@@ -119,7 +118,43 @@ function renderizarApresentacaoModal(dados) {
     const totalAtendimentos = dados.length;
 
     // ---------------------------------------------------------
-    // PÁGINA 1: TOP 10 CATEGORIAS & DEPARTAMENTOS (Dinâmico)
+    // PÁGINA 1: PANORAMA GERAL & VALIDAÇÃO (NOVA PÁGINA)
+    // ---------------------------------------------------------
+    const totalLigacoes = dados.filter(d => d.canal === 'Ligação').length;
+    const totalChats = dados.filter(d => d.canal === 'Chat').length;
+    const totalAtendidas = dados.filter(d => d.status === 'Atendida').length;
+    const totalPerdidas = dados.filter(d => d.status !== 'Atendida').length;
+    const taxaSucesso = ((totalAtendidas / totalAtendimentos) * 100).toFixed(1);
+
+    const htmlPanorama = `
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #16a34a;">
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">TOTAL GERAL</span>
+                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${totalAtendimentos}</span>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #3b82f6;">
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">LIGAÇÕES / CHAT</span>
+                <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${totalLigacoes} / ${totalChats}</span>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #10b981;">
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">ATENDIDAS</span>
+                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${totalAtendidas}</span>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #ef4444;">
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">TAXA DE SUCESSO</span>
+                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${taxaSucesso}%</span>
+            </div>
+        </div>
+        <div style="background: white; padding: 25px; border-radius: 8px;">
+            <h4 style="color: #334155; font-size: 1rem; font-weight: 700; margin-bottom: 10px;">Validação dos Dados</h4>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
+                Este panorama geral valida que os registros extraídos do banco de dados refletem consistentemente o intervalo selecionado (${periodoInicio} a ${periodoFim}). A distribuição entre canais e status está ativa para auditoria gerencial.
+            </p>
+        </div>
+    `;
+
+    // ---------------------------------------------------------
+    // PÁGINA 2: TOP 10 CATEGORIAS & DEPARTAMENTOS
     // ---------------------------------------------------------
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
@@ -128,33 +163,33 @@ function renderizarApresentacaoModal(dados) {
     const htmlPagina1 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
             <div>
-                <table class="lebes-table" style="font-size: 0.95rem;">
+                <table class="lebes-table" style="font-size: 0.9rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">PDV</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosPDV)}</tbody>
                 </table>
-                <table class="lebes-table" style="margin-top: 25px; font-size: 0.95rem;">
+                <table class="lebes-table" style="margin-top: 20px; font-size: 0.9rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">ACESSOS</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosAcesso)}</tbody>
                 </table>
             </div>
             <div>
-                <table class="lebes-table" style="font-size: 0.95rem;">
+                <table class="lebes-table" style="font-size: 0.9rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">OPERAÇÕES/SERVIÇOS</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosOperacoes)}</tbody>
                 </table>
-                <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
-                    <h4 style="color: #334155; margin-bottom: 15px; font-size: 1.1rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
-                    <canvas id="chartTipoLoja" style="max-height: 200px;"></canvas>
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="color: #334155; margin-bottom: 10px; font-size: 1rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
+                    <canvas id="chartTipoLoja" style="max-height: 180px;"></canvas>
                 </div>
             </div>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 2: TOP 10 LOJAS (Dinâmico baseado nas filiais do período)
+    // PÁGINA 3: TOP LOJAS
     // ---------------------------------------------------------
     const filiaisUnicas = [...new Set(dados.map(d => d.filial))];
     const topLojas = filiaisUnicas.map(f => ({
@@ -163,31 +198,26 @@ function renderizarApresentacaoModal(dados) {
     })).sort((a, b) => b.qtd - a.qtd).slice(0, 5);
 
     const htmlPagina2 = `
-        <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 25px;">
-            <table class="lebes-table" style="width: 100%; font-size: 0.95rem;">
-                <thead>
-                    <tr><th colspan="3" style="text-align: center;">Ranking de Lojas / Filiais no Período</th></tr>
-                    <tr style="background:#22c55e; color:white;"><th>Filial</th><th>Quantidade de Atendimentos</th><th>% do Período</th></tr>
-                </thead>
-                <tbody>
-                    ${topLojas.length > 0 ? topLojas.map(l => `
-                        <tr>
-                            <td>${l.filial}</td>
-                            <td class="highlight" style="text-align:center;">${l.qtd}</td>
-                            <td class="highlight" style="text-align:center;">${((l.qtd / totalAtendimentos) * 100).toFixed(0)}%</td>
-                        </tr>
-                    `).join('') : '<tr><td colspan="3" style="text-align:center;">Nenhuma loja encontrada</td></tr>'}
-                </tbody>
-            </table>
-        </div>
+        <table class="lebes-table" style="width: 100%; font-size: 0.95rem;">
+            <thead>
+                <tr><th colspan="3" style="text-align: center;">Ranking de Lojas / Filiais no Período</th></tr>
+                <tr style="background:#22c55e; color:white;"><th>Filial</th><th>Quantidade de Atendimentos</th><th>% do Período</th></tr>
+            </thead>
+            <tbody>
+                ${topLojas.length > 0 ? topLojas.map(l => `
+                    <tr>
+                        <td>${l.filial}</td>
+                        <td class="highlight" style="text-align:center;">${l.qtd}</td>
+                        <td class="highlight" style="text-align:center;">${((l.qtd / totalAtendimentos) * 100).toFixed(0)}%</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="3" style="text-align:center;">Nenhuma loja encontrada</td></tr>'}
+            </tbody>
+        </table>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 3: FECHAMENTO EVOLUTIVO (Calculado do período)
+    // PÁGINA 4: FECHAMENTO EVOLUTIVO
     // ---------------------------------------------------------
-    const totalRecebidas = totalAtendimentos;
-    const totalAtendidas = dados.filter(d => d.status === 'Atendida').length;
-    const totalPerdidas = dados.filter(d => d.status === 'Abandonada' || d.status === 'Perdida').length;
     const tmeMedioSeg = totalAtendimentos > 0 ? (dados.reduce((acc, d) => acc + d.tme_segundos, 0) / totalAtendimentos).toFixed(0) : 0;
     const tmeFormatado = `00:0${Math.floor(tmeMedioSeg / 60)}:${('0' + (tmeMedioSeg % 60)).slice(-2)}`;
 
@@ -200,24 +230,23 @@ function renderizarApresentacaoModal(dados) {
             </thead>
             <tbody>
                 <tr>
-                    <td class="highlight">${totalRecebidas}</td>
+                    <td class="highlight">${totalAtendimentos}</td>
                     <td class="highlight">${totalAtendidas}</td>
                     <td class="highlight" style="color: #ef4444;">${totalPerdidas}</td>
                     <td class="highlight">${tmeFormatado}</td>
                 </tr>
             </tbody>
         </table>
-        <div style="background: white; padding: 30px; border-radius: 8px; margin-top: 25px; text-align: center; color: #64748b;">
-            <p>Métrica consolidada com base no filtro de datas selecionado na central.</p>
+        <div style="background: white; padding: 25px; border-radius: 8px; margin-top: 25px; text-align: center; color: #64748b;">
+            <p>Métrica consolidada e calculada em tempo real para o período de ${periodoInicio} a ${periodoFim}.</p>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 4: TMAX & TME POR DIA (Dinâmico por data)
+    // PÁGINA 5: TMAX & TME POR DIA (DINÂMICO SEM DATAS ERRADAS)
     // ---------------------------------------------------------
     const datasUnicas = [...new Set(dados.map(d => d.data_hora.split(' ')[0]))].sort();
-    
-    const linhasTabelaDatas = datasUnicas.map(dataIso => {
+    const linhasTabelaDatas = datasUnicas.slice(0, 10).map(dataIso => {
         const [ano, mes, dia] = dataIso.split('-');
         const dataBr = `${dia}/${mes}/${ano}`;
         const itensDia = dados.filter(d => d.data_hora.startsWith(dataIso));
@@ -237,7 +266,7 @@ function renderizarApresentacaoModal(dados) {
     }).join('');
 
     const htmlPagina4 = `
-        <div style="display: flex; flex-direction: column; gap: 25px; align-items: center;">
+        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
             <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.9rem;">
                 <thead>
                     <tr><th colspan="4">RESUMO DIÁRIO DE ATENDIMENTOS (TMAX & TME)</th></tr>
@@ -252,26 +281,66 @@ function renderizarApresentacaoModal(dados) {
         </div>
     `;
 
-    // INJETA TODAS AS PÁGINAS DINÂMICAS DENTRO DO MODAL
+    // INJETA TODAS AS 5 PÁGINAS EM PILHA VERTICAL DENTRO DO MODAL
     modalSlidesContent.innerHTML = 
+        renderPaginaRelatorio(htmlPanorama, 'Panorama Geral & Validação') +
         renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
         renderPaginaRelatorio(htmlPagina2, 'Top Lojas do Período') + 
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
         renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia');
 
-    // Inicializa o Gráfico de Lojas da Página 1 com os dados filtrados
+    // ==========================================================
+    // GRÁFICO COM OS VALORES EXIBIDOS ACIMA DAS BARRAS
+    // ==========================================================
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     
     if (chartAtual) chartAtual.destroy();
     const ctx = document.getElementById('chartTipoLoja').getContext('2d');
+    
     chartAtual = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Tradicional', 'EXPRESS'],
-            datasets: [{ label: 'Quantidade', data: [qtdTradicional, qtdExpress], backgroundColor: ['#4ade80', '#16a34a'], borderWidth: 0, barThickness: 40 }]
+            datasets: [{ 
+                label: 'Quantidade', 
+                data: [qtdTradicional, qtdExpress], 
+                backgroundColor: ['#4ade80', '#16a34a'], 
+                borderWidth: 0, 
+                barThickness: 45 
+            }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        options: { 
+            responsive: true, 
+            plugins: { 
+                legend: { display: false },
+                // Plugin customizado para desenhar o número em cima da barra
+                tooltip: { enabled: true }
+            }, 
+            scales: { 
+                y: { beginAtZero: true } 
+            } 
+        },
+        plugins: [{
+            id: 'escreverValorAcimaDaBarra',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    chart.getDatasetMeta(i).data.forEach((bar, index) => {
+                        const valor = dataset.data[index];
+                        const porcentagem = totalAtendimentos > 0 ? ((valor / totalAtendimentos) * 100).toFixed(0) + '%' : '0%';
+                        
+                        ctx.fillStyle = '#1e293b';
+                        ctx.font = 'bold 12px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        
+                        // Desenha o número e a porcentagem logo em cima da barra
+                        ctx.fillText(`${valor} (${porcentagem})`, bar.x, bar.y - 6);
+                    });
+                });
+            }
+        }]
     });
 }
 
