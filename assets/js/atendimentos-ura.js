@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const btnGerar = document.getElementById('btn-gerar');
         if (btnGerar) {
-            btnGerar.addEventListener('click', () => {
+            btnGerar.addEventListener('click', async () => { // Função agora é assíncrona (async)
                 const dataInicio = dateStartEl.value;
                 const dataFim = dateEndEl.value;
 
@@ -78,7 +78,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                alert(`Gerando relatório para o período de ${dataInicio} até ${dataFim}`);
+                // Feedback visual de carregamento
+                const textoOriginal = btnGerar.innerText;
+                btnGerar.innerText = 'Buscando dados...';
+                btnGerar.disabled = true;
+
+                try {
+                    // 1. Converter datas de DD/MM/YYYY para YYYY-MM-DD
+                    const [diaI, mesI, anoI] = dataInicio.split('/');
+                    const dataInicioISO = `${anoI}-${mesI}-${diaI} 00:00:00`; 
+
+                    const [diaF, mesF, anoF] = dataFim.split('/');
+                    const dataFimISO = `${anoF}-${mesF}-${diaF} 23:59:59`; 
+
+                    // 2. Consulta ao Supabase
+                    // ATENÇÃO: Substitua 'ura_volumetria_geral' pelo nome real da sua tabela,
+                    // e 'data_atendimento' pelo nome correto da coluna onde está a data do registro.
+                    const { data: relatorioData, error } = await supabase
+                        .from('ura_volumetria_geral') 
+                        .select('*')
+                        .gte('data_atendimento', dataInicioISO) // Maior ou igual à data de início
+                        .lte('data_atendimento', dataFimISO);   // Menor ou igual à data de fim
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    // 3. Resultado no console
+                    console.log("✅ Dados brutos recebidos do banco:", relatorioData);
+                    
+                    if (relatorioData.length === 0) {
+                        alert(`Nenhum atendimento encontrado entre ${dataInicio} e ${dataFim}.`);
+                    } else {
+                        alert(`Sucesso! Foram encontrados ${relatorioData.length} registros. Abra o Console (F12) para ver os dados.`);
+                    }
+
+                } catch (error) {
+                    console.error("Erro ao buscar relatórios no Supabase:", error);
+                    alert("Erro ao buscar os dados. Verifique a conexão e o console.");
+                } finally {
+                    // Restaura o botão independentemente do resultado
+                    btnGerar.innerText = textoOriginal;
+                    btnGerar.disabled = false;
+                }
             });
         }
     } catch (error) {
