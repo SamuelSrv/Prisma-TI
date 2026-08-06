@@ -9,44 +9,37 @@
 <body>
 
     <div class="layout-container">
-        <!-- Menu Lateral Padronizado -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
-                <h2>Prisma TI</h2>
-            </div>
-            <nav>
-                <a href="dashboard.html">Dashboard Inicial</a>
-                <a href="atendimentos-ura.html">Gerar Relatórios</a>
-                <a href="perfil.html" class="active">Perfil</a>
-            </nav>
-            <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
-        </aside>
+        <!-- Menu Lateral Injetado via JavaScript -->
+        <aside class="sidebar"></aside>
 
         <!-- Conteúdo Principal -->
         <main class="main-content">
-            <h1 class="header-title">Perfil do Usuário</h1>
-            <p class="subtitle" style="margin-bottom: 25px;">Informações cadastrais e credenciais de acesso</p>
+            <div class="page-header-flex">
+                <div>
+                    <h1 class="header-title">Perfil do Usuário</h1>
+                    <p class="subtitle">Informações cadastrais e credenciais de acesso</p>
+                </div>
+            </div>
 
             <div class="card" style="max-width: 600px; padding: 30px;">
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #555;">Nome Completo:</label>
-                    <input type="text" id="perfil-nome" class="input-modern" readonly style="background-color: #f5f5f5; cursor: default;">
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 0.9rem;">Nome Completo:</label>
+                    <input type="text" id="perfil-nome" class="input-modern" readonly style="background-color: var(--bg-main); cursor: default;">
                 </div>
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #555;">E-mail:</label>
-                    <input type="email" id="perfil-email" class="input-modern" readonly style="background-color: #f5f5f5; cursor: default;">
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 0.9rem;">E-mail:</label>
+                    <input type="email" id="perfil-email" class="input-modern" readonly style="background-color: var(--bg-main); cursor: default;">
                 </div>
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #555;">CPF:</label>
-                    <input type="text" id="perfil-cpf" class="input-modern" readonly style="background-color: #f5f5f5; cursor: default;">
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 0.9rem;">CPF:</label>
+                    <input type="text" id="perfil-cpf" class="input-modern" readonly style="background-color: var(--bg-main); cursor: default;">
                 </div>
 
-                <div class="input-group" style="margin-bottom: 10px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #555;">Perfil / Função:</label>
-                    <input type="text" id="perfil-cargo" class="input-modern" readonly style="background-color: #f5f5f5; cursor: default;">
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 0.9rem;">Perfil / Função:</label>
+                    <input type="text" id="perfil-cargo" class="input-modern" readonly style="background-color: var(--bg-main); cursor: default;">
                 </div>
             </div>
         </main>
