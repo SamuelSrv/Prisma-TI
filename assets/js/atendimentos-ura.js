@@ -14,11 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
         if (window.Datepicker) {
-            // CORREÇÃO: Cria o objeto de idiomas caso ele não exista
             if (!window.Datepicker.locales) {
                 window.Datepicker.locales = {};
             }
-            
             window.Datepicker.locales['pt-BR'] = {
                 days: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
                 daysShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
@@ -77,11 +75,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return;
                     }
 
-                    // Esconde o menu de datas e mostra os slides
+                    // Esconde o menu de datas e mostra a área de relatório contínuo
                     areaFiltros.style.display = 'none';
                     containerSlides.style.display = 'block';
 
-                    // GERAR TODAS AS PÁGINAS DA APRESENTAÇÃO
+                    // GERAR TODAS AS PÁGINAS EM PILHA VERTICAL
                     renderizarApresentacaoCompleta(registros);
 
                 } catch (error) {
@@ -99,137 +97,131 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// FUNÇÃO MESTRA: CONSTRÓI OS 4 SLIDES EMPILHADOS DE UMA SÓ VEZ
+// FUNÇÃO MESTRA: CONSTRÓI AS PÁGINAS EM PILHA VERTICAL (SCROLL)
 // ==============================================================
 function renderizarApresentacaoCompleta(dados) {
     const slideRender = document.getElementById('slide-render');
     
-    // Função auxiliar para empacotar o slide com escala (para caber na tela sem quebrar o 1920x1080)
-    const renderSlideContainer = (htmlConteudo, id) => `
-        <div style="transform: scale(0.65); transform-origin: top center; margin-bottom: -30%; width: 100%; display: flex; justify-content: center;">
-            <div class="slide-wrapper" id="${id}" style="width: 1920px; height: 1080px; background-color: #ebf5ee; position: relative; padding: 60px; box-sizing: border-box; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-                ${htmlConteudo}
+    // Cada página agora é um bloco fluido com largura excelente e margem para rolar para baixo
+    const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
+        <div class="pagina-relatorio" style="width: 100%; max-width: 1300px; margin: 0 auto 40px auto; background-color: #ebf5ee; padding: 50px; border-radius: 16px; border: 1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;">
+            
+            <!-- Cabeçalho Institucional Lebes por Página -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px; margin-bottom: 30px;">
+                <h2 style="color: #115e59; font-size: 1.5rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
+                <span style="font-size: 1.4rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
             </div>
+
+            ${htmlConteudo}
         </div>
     `;
 
     // ---------------------------------------------------------
-    // SLIDE 1: TOP 10 CATEGORIAS & DEPARTAMENTOS
+    // PÁGINA 1: TOP 10 CATEGORIAS & DEPARTAMENTOS
     // ---------------------------------------------------------
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
     const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
 
-    const htmlSlide1 = `
-        <h1 class="slide-title">Top 10 <span>Categorias & Departamentos</span></h1>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; position: relative; z-index: 10;">
+    const htmlPagina1 = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
             <div>
-                <table class="lebes-table">
+                <table class="lebes-table" style="font-size: 0.95rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">PDV</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
-                    <tbody>${gerarLinhas(motivosPDV, dados.length)}</tbody>
+                    <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
+                    <tbody>${gerarLinhas(motivosPDV)}</tbody>
                 </table>
-                <table class="lebes-table" style="margin-top: 30px;">
+                <table class="lebes-table" style="margin-top: 25px; font-size: 0.95rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">ACESSOS</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
-                    <tbody>${gerarLinhas(motivosAcesso, dados.length)}</tbody>
+                    <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
+                    <tbody>${gerarLinhas(motivosAcesso)}</tbody>
                 </table>
             </div>
             <div>
-                <table class="lebes-table">
+                <table class="lebes-table" style="font-size: 0.95rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">OPERAÇÕES/SERVIÇOS</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
-                    <tbody>${gerarLinhas(motivosOperacoes, dados.length)}</tbody>
+                    <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>% MÊS</th></tr></thead>
+                    <tbody>${gerarLinhas(motivosOperacoes)}</tbody>
                 </table>
-                <div style="background: rgba(255,255,255,0.9); padding: 30px; border-radius: 12px; margin-top: 30px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); text-align: center;">
-                    <h4 style="color: #334155; margin-bottom: 20px; font-size: 1.4rem; font-weight: 800;">Tradicional vs EXPRESS</h4>
-                    <canvas id="chartTipoLoja" width="600" height="300"></canvas>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="color: #334155; margin-bottom: 15px; font-size: 1.1rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
+                    <canvas id="chartTipoLoja" style="max-height: 220px;"></canvas>
                 </div>
             </div>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // SLIDE 2: TOP 10 LOJAS (Estrutura visual baseada na imagem)
+    // PÁGINA 2: TOP 10 LOJAS
     // ---------------------------------------------------------
-    const htmlSlide2 = `
-        <h1 class="slide-title">Top 10 <span>Lojas</span></h1>
-        <div style="position: relative; z-index: 10;">
-            <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px;">
-                <table class="lebes-table" style="width: 48%;">
-                    <thead><tr><th colspan="3">URA - Categorias</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;"><th>Categoria</th><th>Quantidade</th><th>% Mês</th></tr></thead>
-                    <tbody>
-                        <tr><td>(I) - PDV</td><td class="highlight">124</td><td class="highlight">22%</td></tr>
-                        <tr><td>(I) - Operações/Serviços</td><td class="highlight">62</td><td class="highlight">11%</td></tr>
-                    </tbody>
-                </table>
-                <table class="lebes-table" style="width: 48%;">
-                    <thead><tr><th colspan="3">URA - Contatos</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;"><th>Contatos</th><th>Quantidade</th><th>% Mês</th></tr></thead>
-                    <tbody>
-                        <tr><td>FL 266</td><td class="highlight">10</td><td class="highlight">2%</td></tr>
-                        <tr><td>FL 08</td><td class="highlight">8</td><td class="highlight">1%</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <table class="lebes-table" style="font-size: 0.9rem;">
-                <thead>
-                    <tr style="background: #94a3b8; color: white;">
-                        <th>Contatos</th><th>(I) Equipamentos</th><th>(I) PDV</th><th>(S) Acessos</th><th>Total</th>
-                    </tr>
-                </thead>
+    const htmlPagina2 = `
+        <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 25px;">
+            <table class="lebes-table" style="width: 48%; font-size: 0.95rem;">
+                <thead><tr><th colspan="3">URA - Categorias</th></tr>
+                <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>Quantidade</th><th>% Mês</th></tr></thead>
                 <tbody>
-                    <tr><td>FL 266</td><td>1</td><td>8</td><td>1</td><td class="highlight">10</td></tr>
-                    <tr><td>FL 08</td><td>0</td><td>6</td><td>2</td><td class="highlight">8</td></tr>
+                    <tr><td>(I) - PDV</td><td class="highlight">124</td><td class="highlight">22%</td></tr>
+                    <tr><td>(I) - Operações/Serviços</td><td class="highlight">62</td><td class="highlight">11%</td></tr>
+                </tbody>
+            </table>
+            <table class="lebes-table" style="width: 48%; font-size: 0.95rem;">
+                <thead><tr><th colspan="3">URA - Contatos</th></tr>
+                <tr style="background:#22c55e; color:white;"><th>Contatos</th><th>Quantidade</th><th>% Mês</th></tr></thead>
+                <tbody>
+                    <tr><td>FL 266</td><td class="highlight">10</td><td class="highlight">2%</td></tr>
+                    <tr><td>FL 08</td><td class="highlight">8</td><td class="highlight">1%</td></tr>
                 </tbody>
             </table>
         </div>
+        <table class="lebes-table" style="font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #94a3b8; color: white;">
+                    <th>Contatos</th><th>(I) Equipamentos</th><th>(I) PDV</th><th>(S) Acessos</th><th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>FL 266</td><td>1</td><td>8</td><td>1</td><td class="highlight">10</td></tr>
+                <tr><td>FL 08</td><td>0</td><td>6</td><td>2</td><td class="highlight">8</td></tr>
+            </tbody>
+        </table>
     `;
 
     // ---------------------------------------------------------
-    // SLIDE 3: FECHAMENTO EVOLUTIVO (Estrutura visual)
+    // PÁGINA 3: FECHAMENTO EVOLUTIVO
     // ---------------------------------------------------------
-    const htmlSlide3 = `
-        <h1 class="slide-title">Fechamento <span>Evolutivo URA Suporte</span></h1>
-        <div style="position: relative; z-index: 10; margin-top: 50px;">
-            <table class="lebes-table" style="text-align: center;">
-                <thead>
-                    <tr style="background: #1e293b;">
-                        <th>LIGAÇÕES RECEBIDAS</th><th>LIGAÇÕES ATENDIDAS</th><th>LIGAÇÕES PERDIDAS</th><th>TME</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Jul: 2170</td><td>Jul: 1989</td><td>Jul: 181</td><td>Jul: 00:02:12</td></tr>
-                    <tr style="background: #f1f5f9;"><td>Jun: 2321</td><td>Jun: 2093</td><td>Jun: 228</td><td>Jun: 00:02:08</td></tr>
-                </tbody>
-            </table>
-            
-            <div style="display: flex; gap: 30px; margin-top: 40px;">
-                <div style="flex: 2; background: white; padding: 20px; border-radius: 8px;">
-                    <h4 style="text-align: center; color: #475569; margin-bottom: 20px;">Volumetria Ligações URA</h4>
-                    <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Barras Evolutivo renderizado aqui ]</div>
-                </div>
-                <div style="flex: 1; background: white; padding: 20px; border-radius: 8px;">
-                    <h4 style="text-align: center; color: #475569; margin-bottom: 20px;">Geral Tipo de Loja</h4>
-                    <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Pizza renderizado aqui ]</div>
-                </div>
+    const htmlPagina3 = `
+        <table class="lebes-table" style="text-align: center; font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #1e293b; color: white;">
+                    <th>LIGAÇÕES RECEBIDAS</th><th>LIGAÇÕES ATENDIDAS</th><th>LIGAÇÕES PERDIDAS</th><th>TME</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Jul: 2170</td><td>Jul: 1989</td><td>Jul: 181</td><td>Jul: 00:02:12</td></tr>
+                <tr style="background: #f1f5f9;"><td>Jun: 2321</td><td>Jun: 2093</td><td>Jun: 228</td><td>Jun: 00:02:08</td></tr>
+            </tbody>
+        </table>
+        <div style="display: flex; gap: 20px; margin-top: 25px;">
+            <div style="flex: 2; background: white; padding: 20px; border-radius: 8px;">
+                <h4 style="text-align: center; color: #475569; margin-bottom: 15px;">Volumetria Ligações URA</h4>
+                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Barras Evolutivo ]</div>
+            </div>
+            <div style="flex: 1; background: white; padding: 20px; border-radius: 8px;">
+                <h4 style="text-align: center; color: #475569; margin-bottom: 15px;">Geral Tipo de Loja</h4>
+                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8;">[ Gráfico de Pizza ]</div>
             </div>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // SLIDE 4: TMAX % TME POR DIA
+    // PÁGINA 4: TMAX & TME POR DIA
     // ---------------------------------------------------------
-    const htmlSlide4 = `
-        <h1 class="slide-title">TMAX & TME <span>por Dia (Ligação vs Chat)</span></h1>
-        <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 40px; margin-top: 50px;">
-            
-            <table class="lebes-table" style="width: 80%; text-align: center;">
+    const htmlPagina4 = `
+        <div style="display: flex; flex-direction: column; gap: 25px; align-items: center;">
+            <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.9rem;">
                 <thead>
-                    <tr><th colspan="7">TMAX % TME POR DIA LIGAÇÃO</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;">
+                    <tr><th colspan="7">TMAX & TME POR DIA - LIGAÇÃO</th></tr>
+                    <tr style="background:#22c55e; color:white;">
                         <th>Data</th><th>13/07/2026</th><th>14/07/2026</th><th>15/07/2026</th><th>16/07/2026</th><th>17/07/2026</th><th>18/07/2026</th>
                     </tr>
                 </thead>
@@ -239,11 +231,10 @@ function renderizarApresentacaoCompleta(dados) {
                     <tr><td style="font-weight: bold; background: #bbf7d0;">TME</td><td>00:01:42</td><td>00:02:37</td><td>00:01:33</td><td>00:01:23</td><td>00:01:20</td><td>00:01:45</td></tr>
                 </tbody>
             </table>
-
-            <table class="lebes-table" style="width: 80%; text-align: center;">
+            <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.9rem;">
                 <thead>
-                    <tr><th colspan="7">TMAX % TME POR DIA CHAT</th></tr>
-                    <tr style="background:#22c55e; font-size:0.9rem;">
+                    <tr><th colspan="7">TMAX & TME POR DIA - CHAT</th></tr>
+                    <tr style="background:#22c55e; color:white;">
                         <th>Data</th><th>20/07/2026</th><th>21/07/2026</th><th>22/07/2026</th><th>23/07/2026</th><th>24/07/2026</th><th>25/07/2026</th>
                     </tr>
                 </thead>
@@ -256,16 +247,14 @@ function renderizarApresentacaoCompleta(dados) {
         </div>
     `;
 
-    // ---------------------------------------------------------
-    // INJETA TODOS OS SLIDES NA TELA
-    // ---------------------------------------------------------
+    // INJETA TODAS AS PÁGINAS EM PILHA VERTICAL
     slideRender.innerHTML = 
-        renderSlideContainer(htmlSlide1, 'pagina-1') + 
-        renderSlideContainer(htmlSlide2, 'pagina-2') + 
-        renderSlideContainer(htmlSlide3, 'pagina-3') + 
-        renderSlideContainer(htmlSlide4, 'pagina-4');
+        renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
+        renderPaginaRelatorio(htmlPagina2, 'Top 10 Lojas') + 
+        renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
+        renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia (Ligação vs Chat)');
 
-    // Inicializa o Gráfico do Slide 1 (Lojas Tradicional vs Express)
+    // Inicializa o Gráfico de Lojas da Página 1
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     
@@ -275,13 +264,13 @@ function renderizarApresentacaoCompleta(dados) {
         type: 'bar',
         data: {
             labels: ['Tradicional', 'EXPRESS'],
-            datasets: [{ label: 'Quantidade', data: [qtdTradicional, qtdExpress], backgroundColor: ['#4ade80', '#16a34a'], borderWidth: 0, barThickness: 80 }]
+            datasets: [{ label: 'Quantidade', data: [qtdTradicional, qtdExpress], backgroundColor: ['#4ade80', '#16a34a'], borderWidth: 0, barThickness: 50 }]
         },
         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 }
 
-// Funções Auxiliares para cálculo do DB
+// Funções Auxiliares
 function agruparCategoria(dados, categoriaDesejada) {
     const filtrados = dados.filter(d => d.categoria === categoriaDesejada);
     const contagem = {};
@@ -289,7 +278,7 @@ function agruparCategoria(dados, categoriaDesejada) {
     return Object.keys(contagem).map(motivo => ({ motivo, qtd: contagem[motivo], perc: ((contagem[motivo] / dados.length) * 100).toFixed(0) })).sort((a, b) => b.qtd - a.qtd);
 }
 
-function gerarLinhas(arrayMotivos, totalAtend) {
+function gerarLinhas(arrayMotivos) {
     if(arrayMotivos.length === 0) return `<tr><td colspan="3" style="text-align:center;">Sem dados no período</td></tr>`;
     return arrayMotivos.map(item => `<tr><td>${item.motivo}</td><td class="highlight" style="text-align:center;">${item.qtd}</td><td class="highlight" style="text-align:center;">${item.perc}%</td></tr>`).join('');
 }
