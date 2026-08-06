@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
+import Datepicker from 'https://esm.sh/vanilla-datepicker@1.3.4';
+import 'https://esm.sh/vanilla-datepicker@1.3.4/dist/js/locales/pt-BR.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -9,15 +11,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        if (typeof window.Datepicker === 'undefined') {
-            console.error("A biblioteca Datepicker não foi carregada corretamente.");
-            return;
-        }
-
         const elemStart = document.getElementById('date-start');
         const elemEnd = document.getElementById('date-end');
 
-        const datepickerStart = new window.Datepicker(elemStart, {
+        const datepickerStart = new Datepicker(elemStart, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
             autohide: true,
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearButton: true
         });
 
-        const datepickerEnd = new window.Datepicker(elemEnd, {
+        const datepickerEnd = new Datepicker(elemEnd, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
             autohide: true,
