@@ -9,9 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        // Locale pt-BR declarado manualmente (o CDN do Flowbite não carrega
-        // arquivos de i18n automaticamente, então precisa registrar aqui)
+        const dateStartEl = document.getElementById('date-start');
+        const dateEndEl = document.getElementById('date-end');
+
         if (window.Datepicker) {
+            // Garante que o objeto de locales exista antes de escrever nele
+            // (nessa versão do bundle ele não vem pré-criado)
+            if (!window.Datepicker.locales) {
+                window.Datepicker.locales = {};
+            }
+
             window.Datepicker.locales['pt-BR'] = {
                 days: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
                 daysShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
@@ -24,13 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 format: 'dd/mm/yyyy',
                 weekStart: 0
             };
-        }
 
-        // Inicializa manualmente os datepickers já com o idioma pt-BR
-        const dateStartEl = document.getElementById('date-start');
-        const dateEndEl = document.getElementById('date-end');
-
-        if (window.Datepicker) {
             const options = {
                 autohide: true,
                 format: 'dd/mm/yyyy',
