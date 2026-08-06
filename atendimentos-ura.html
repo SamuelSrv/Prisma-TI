@@ -6,18 +6,18 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Flatpickr & Estilos Modernos -->
+    <!-- Flatpickr (Calendário) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     
-    <!-- Personalização Avançada para deixar o Flatpickr arredondado e com cara da Microsoft -->
+    <!-- Estilização Avançada para o Calendário com Ícone Embutido -->
     <style>
         .flatpickr-calendar {
             background: var(--bg-card, #1e293b) !important;
             border: 1px solid var(--border-color, #334155) !important;
             border-radius: 16px !important;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
-            padding: 15px !important;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
+            padding: 16px !important;
             font-family: inherit !important;
         }
         .flatpickr-days {
@@ -25,51 +25,76 @@
         }
         .flatpickr-day {
             border-radius: 50% !important;
-            margin: 2px !important;
+            margin: 3px !important;
             color: var(--text-primary, #f8fafc) !important;
+            font-weight: 500;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            transition: all 0.2s ease;
         }
         .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
             background: var(--accent-primary, #10b981) !important;
             border-color: var(--accent-primary, #10b981) !important;
+            color: #ffffff !important;
             border-radius: 50% !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         .flatpickr-day:hover {
             background: rgba(255, 255, 255, 0.1) !important;
             border-radius: 50% !important;
         }
         .flatpickr-months {
-            padding-bottom: 10px;
+            padding-bottom: 12px;
+            align-items: center;
         }
         .flatpickr-month {
             background: transparent !important;
             color: var(--text-primary, #f8fafc) !important;
+            height: 40px !important;
         }
         .flatpickr-current-month {
             font-size: 1rem !important;
             font-weight: 600 !important;
+            padding-top: 0 !important;
         }
         .flatpickr-current-month .numInputWrapper {
-            width: 60px !important;
+            width: 70px !important;
         }
         .flatpickr-current-month input.cur-year, 
         .flatpickr-current-month .flatpickr-monthDropdown-months {
-            background: transparent !important;
-            font-weight: 700 !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            font-weight: 600 !important;
             color: var(--accent-primary, #10b981) !important;
             cursor: pointer;
-            border-radius: 6px;
-            padding: 2px 4px;
+            border-radius: 8px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color, #334155);
+            transition: background 0.2s;
         }
         .flatpickr-current-month input.cur-year:hover, 
         .flatpickr-current-month .flatpickr-monthDropdown-months:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .flatpickr-current-month .flatpickr-monthDropdown-months option {
+            background: var(--bg-card, #1e293b);
+            color: var(--text-primary, #f8fafc);
         }
         span.flatpickr-weekday {
             color: var(--text-secondary, #94a3b8) !important;
             font-weight: 600 !important;
+            font-size: 0.85rem;
+        }
+        .flatpickr-prev-month, .flatpickr-next-month {
+            padding: 10px !important;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .flatpickr-prev-month:hover, .flatpickr-next-month:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .flatpickr-prev-month svg, .flatpickr-next-month svg {
+            fill: var(--text-primary, #f8fafc) !important;
         }
     </style>
 
@@ -89,23 +114,35 @@
                 </div>
             </div>
 
-            <!-- Card com campos separados para Data Inicial e Data Final -->
+            <!-- Card com campos de data estruturados com ícone embutido -->
             <div class="card" style="padding: 40px; max-width: 700px; margin: 0 auto;">
                 <h3 style="margin-bottom: 25px; color: var(--text-primary); text-align: center;">Selecione o Período</h3>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <!-- Data Inicial com Ícone -->
                     <div>
                         <label for="date-start" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Inicial:
                         </label>
-                        <input type="text" id="date-start" class="input-modern" placeholder="Selecione..." style="text-align: center; font-size: 1.05rem; padding: 14px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                        <div style="position: relative; width: 100%;">
+                            <span style="position: absolute; inset-y: 0; left: 0; display: flex; align-items: center; padding-left: 14px; pointer-events: none; color: var(--text-secondary);">
+                                <svg width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
+                            </span>
+                            <input type="text" id="date-start" class="input-modern" placeholder="Selecione..." style="padding-left: 42px; text-align: left; font-size: 1.05rem; padding-top: 14px; padding-bottom: 14px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                        </div>
                     </div>
                     
+                    <!-- Data Final com Ícone -->
                     <div>
                         <label for="date-end" style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
                             Data Final:
                         </label>
-                        <input type="text" id="date-end" class="input-modern" placeholder="Selecione..." style="text-align: center; font-size: 1.05rem; padding: 14px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                        <div style="position: relative; width: 100%;">
+                            <span style="position: absolute; inset-y: 0; left: 0; display: flex; align-items: center; padding-left: 14px; pointer-events: none; color: var(--text-secondary);">
+                                <svg width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/></svg>
+                            </span>
+                            <input type="text" id="date-end" class="input-modern" placeholder="Selecione..." style="padding-left: 42px; text-align: left; font-size: 1.05rem; padding-top: 14px; padding-bottom: 14px; cursor: pointer; width: 100%; box-sizing: border-box;" readonly>
+                        </div>
                     </div>
                 </div>
 

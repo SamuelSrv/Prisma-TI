@@ -11,28 +11,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2. Carrega o menu lateral marcando a opção correta
         carregarMenu('gerar-relatorio');
 
-        // 3. Inicializa os calendários Flatpickr com seletores interativos de mês e ano (Estilo Microsoft)
+        // 3. Instancia o calendário final guardando a referência do objeto Flatpickr
         const pickerEnd = flatpickr("#date-end", {
             dateFormat: "d/m/Y",
             locale: "pt",
-            monthSelectorType: "dropdown", // Permite clicar no mês e abrir o menu de meses
-            yearSelectorType: "dropdown"   // Permite digitar ou alterar o ano rapidamente
+            monthSelectorType: "dropdown",
+            yearSelectorType: "dropdown"
         });
 
-        flatpickr("#date-start", {
+        // 4. Instancia o calendário inicial com tratamento inteligente de intervalo
+        const pickerStart = flatpickr("#date-start", {
             dateFormat: "d/m/Y",
             locale: "pt",
             monthSelectorType: "dropdown",
             yearSelectorType: "dropdown",
             onChange: function(selectedDates) {
-                // Sincroniza o limite mínimo da data final com base na data inicial escolhida
                 if (selectedDates.length > 0) {
-                    pickerEnd.set("minDate", selectedDates[0]);
+                    const dataInicial = selectedDates[0];
+                    
+                    // Define o limite mínimo na data final
+                    pickerEnd.set("minDate", dataInicial);
+                    
+                    // Se a data final já preenchida for anterior à nova inicial, limpa a final para evitar conflito
+                    const dataFinalAtual = pickerEnd.selectedDates[0];
+                    if (dataFinalAtual && dataFinalAtual < dataInicial) {
+                        pickerEnd.clear();
+                    }
+                } else {
+                    // Se o usuário limpar a data inicial, remove a restrição da data final
+                    pickerEnd.set("minDate", null);
                 }
             }
         });
 
-        // 4. Lógica do botão gerar relatório
+        // 5. Lógica do botão gerar relatório
         const btnGerar = document.getElementById('btn-gerar');
         if (btnGerar) {
             btnGerar.addEventListener('click', () => {
@@ -44,6 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
+                // Aqui entra a próxima etapa: disparar a consulta filtrada no Supabase
+                console.log(`Período válido selecionado: ${dataInicio} até ${dataFim}`);
                 alert(`Gerando relatório para o período de ${dataInicio} até ${dataFim}`);
             });
         }
