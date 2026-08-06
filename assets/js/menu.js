@@ -24,9 +24,9 @@ export async function carregarMenu(paginaAtiva) {
 
         // 3. Constrói o HTML base do menu (comum a todos)
         let menuHTML = `
-            <div class="logo">
-                <img src="assets/img/logo.svg" alt="Logo">
-                <span>Prisma TI</span>
+            <div class="logo" style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px; padding: 0 10px;">
+                <img src="assets/img/logo.svg" alt="Logo" style="width: 35px; height: auto;">
+                <span style="font-size: 1.4rem; font-weight: bold; color: #f8fafc;">Prisma TI</span>
             </div>
             
             <nav class="nav-menu">
@@ -43,7 +43,7 @@ export async function carregarMenu(paginaAtiva) {
                 </a>
         `;
 
-        // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona itens exclusivos se for admin ou ti
+        // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona itens exclusivos se for administrador ou ti
         if (nivelAcesso === 'administrador' || nivelAcesso === 'ti') {
             menuHTML += `
                 <!-- Inserir Dados - Restrito -->
