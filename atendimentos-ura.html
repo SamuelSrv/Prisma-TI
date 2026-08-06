@@ -6,11 +6,10 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Flatpickr (Calendário) -->
+    <!-- Flatpickr (Removido o tema padrão escuro antigo para evitar conflitos de estilo) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     
-    <!-- Estilização personalizada do calendário -->
+    <!-- Estilização limpa e moderna do calendário -->
     <style>
         .flatpickr-calendar {
             background: #111827 !important;
@@ -21,38 +20,8 @@
             font-family: inherit !important;
             color: #f3f4f6 !important;
         }
-        .flatpickr-days {
-            border: none !important;
-        }
-        .flatpickr-day {
-            border-radius: 8px !important;
-            margin: 2px !important;
-            color: #f3f4f6 !important;
-            background: transparent;
-            font-weight: 400;
-            height: 38px !important;
-            line-height: 38px !important;
-            max-width: 38px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background 0.15s ease;
-        }
-        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
-            background: #2563eb !important;
-            border-color: #2563eb !important;
-            color: #ffffff !important;
-            border-radius: 8px !important;
-        }
-        .flatpickr-day:hover {
-            background: #374151 !important;
-            border-radius: 8px !important;
-        }
-        .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
-            color: #6b7280 !important;
-        }
         .flatpickr-months {
-            padding-bottom: 12px;
+            padding-bottom: 8px;
             align-items: center;
         }
         .flatpickr-month {
@@ -61,7 +30,7 @@
             height: 40px !important;
         }
         .flatpickr-current-month {
-            font-size: 1rem !important;
+            font-size: 0.95rem !important;
             font-weight: 600 !important;
             color: #f3f4f6 !important;
             padding-top: 0 !important;
@@ -77,10 +46,52 @@
             background: #111827;
             color: #f3f4f6;
         }
+        .flatpickr-weekdays {
+            background: transparent !important;
+            margin-top: 6px;
+        }
         span.flatpickr-weekday {
+            background: transparent !important;
             color: #9ca3af !important;
             font-weight: 600 !important;
             font-size: 0.8rem;
+        }
+        .flatpickr-days {
+            border: none !important;
+        }
+        .flatpickr-day {
+            border-radius: 8px !important;
+            margin: 2px !important;
+            color: #f3f4f6 !important;
+            background: transparent !important;
+            border: none !important;
+            font-weight: 400;
+            height: 38px !important;
+            line-height: 38px !important;
+            max-width: 38px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background 0.15s ease;
+        }
+        /* Dia selecionado totalmente preenchido em azul sólido */
+        .flatpickr-day.selected, 
+        .flatpickr-day.startRange, 
+        .flatpickr-day.endRange,
+        .flatpickr-day.selected:hover,
+        .flatpickr-day.startRange:hover,
+        .flatpickr-day.endRange:hover {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+        }
+        .flatpickr-day:hover {
+            background: #374151 !important;
+            border-radius: 8px !important;
+        }
+        .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+            color: #4b5563 !important;
         }
         .flatpickr-prev-month, .flatpickr-next-month {
             padding: 8px !important;
