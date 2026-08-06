@@ -264,3 +264,79 @@ select:focus,
 .btn-primary-modern:hover {
     background-color: var(--accent-hover);
 }
+
+/* Configurações do Menu Recolhível e Submenus */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.menu-group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.menu-group-title:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.submenu {
+    flex-direction: column;
+    margin-left: 20px;
+    border-left: 1px solid var(--border-color);
+    padding-left: 10px;
+    margin-top: 5px;
+    gap: 4px;
+}
+
+/* Estado de Menu Recolhido */
+body.sidebar-collapsed .sidebar {
+    width: 80px;
+}
+
+body.sidebar-collapsed .menu-text {
+    display: none;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+    padding: 10px 5px;
+}
+
+body.sidebar-collapsed .main-content {
+    margin-left: 80px;
+    max-width: calc(100vw - 80px);
+}
