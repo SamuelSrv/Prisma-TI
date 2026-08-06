@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    
-    <!-- Flatpickr (Efeito Cobrinha nas Datas) e Tema Escuro -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
 </head>
 <body>
     <div class="layout-container">
@@ -20,53 +14,54 @@
             <div class="page-header-flex">
                 <div>
                     <h1 class="header-title">Gerar Relatório de Atendimentos</h1>
-                    <p class="subtitle">Selecione o período exato para gerar a apresentação</p>
+                    <p class="subtitle">Selecione o período exato para gerar a apresentação executiva</p>
                 </div>
             </div>
 
-            <!-- Card Limpo focado APENAS no Período -->
+            <!-- Card Limpo e Profissional para Seleção de Data -->
             <div class="card" style="padding: 40px; max-width: 700px; text-align: center; margin: 0 auto;">
-                <h3 style="margin-bottom: 25px; color: var(--text-primary);">Selecione o Período</h3>
+                <h3 style="margin-bottom: 30px; color: var(--text-primary);">Filtro de Período</h3>
                 
-                <div style="margin-bottom: 30px;">
-                    <label style="display:block; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 10px;">
-                        Data Inicial e Data Final:
-                    </label>
-                    <!-- Input onde o Flatpickr vai operar -->
-                    <input type="text" id="date-range" class="input-modern" placeholder="Selecione o período no calendário..." style="text-align: center; font-size: 1.1rem; padding: 15px; cursor: pointer;" readonly>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 35px;">
+                    <!-- Data Inicial -->
+                    <div style="flex: 1; text-align: left;">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">Data Inicial:</label>
+                        <input type="date" id="data-inicial" class="input-modern" required>
+                    </div>
+                    
+                    <!-- Data Final -->
+                    <div style="flex: 1; text-align: left;">
+                        <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">Data Final:</label>
+                        <input type="date" id="data-final" class="input-modern" required>
+                    </div>
                 </div>
 
-                <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 15px 40px; font-size: 1.1rem;">
-                    Gerar Apresentação
+                <button type="button" id="btn-gerar" class="btn-primary-modern" style="padding: 14px 40px; font-size: 1rem; width: 100%;">
+                    Processar e Gerar Apresentação
                 </button>
             </div>
-            
-            <!-- Resto da tela de visualização de PDF/PPT omitida para brevidade (mantém a sua) -->
         </main>
     </div>
 
-    <script type="module" src="assets/js/menu.js"></script>
     <script type="module">
         import { carregarMenu } from './assets/js/menu.js';
         carregarMenu('gerar-relatorio');
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Inicializando o Flatpickr no modo "Range" (Efeito Cobrinha)
-            flatpickr("#date-range", {
-                mode: "range",
-                dateFormat: "d/m/Y",
-                locale: "pt",
-                showMonths: 2, // Mostra dois meses lado a lado
-                theme: "dark"
-            });
-
             document.getElementById('btn-gerar').addEventListener('click', () => {
-                const periodo = document.getElementById('date-range').value;
-                if(!periodo.includes('até')) {
-                    alert('Por favor, selecione a data inicial e a data final.');
+                const dataInicio = document.getElementById('data-inicial').value;
+                const dataFim = document.getElementById('data-final').value;
+                
+                if(!dataInicio || !dataFim) {
+                    alert('Por favor, preencha ambas as datas para prosseguir.');
                     return;
                 }
-                alert(`Gerando relatório para o período: ${periodo}`);
+                if(dataInicio > dataFim) {
+                    alert('A Data Inicial não pode ser maior que a Data Final.');
+                    return;
+                }
+                
+                alert(`Pesquisando dados de ${dataInicio} até ${dataFim}...`);
             });
         });
     </script>
