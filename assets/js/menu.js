@@ -1,6 +1,13 @@
 import { supabase } from './supabase.js';
 import { ativarBotaoLogout } from './auth.js';
 
+// Injeta o Favicon dinamicamente em todas as telas internas
+const favicon = document.createElement('link');
+favicon.rel = 'icon';
+favicon.type = 'image/svg+xml';
+favicon.href = 'assets/img/logo.svg';
+document.head.appendChild(favicon);
+
 export async function carregarMenu(paginaAtiva) {
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
@@ -15,7 +22,7 @@ export async function carregarMenu(paginaAtiva) {
             .select('cargo')
             .eq('id', session.user.id)
             .maybeSingle();
-        
+
         if (perfil?.cargo) {
             cargo = perfil.cargo;
         }

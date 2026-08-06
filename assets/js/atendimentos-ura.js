@@ -2,31 +2,51 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 
-// 1. A CHAVE MESTRA: Verifica o login e destranca a opacidade da tela
-await verificarAutenticacao();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // 1. Verifica a autenticação de forma segura
+        const authData = await verificarAutenticacao();
+        if (!authData || !authData.session) return;
 
-// 2. Carrega o menu lateral marcando a opção correta
-carregarMenu('gerar-relatorio');
+        // 2. Carrega o menu lateral marcando a opção correta
+        carregarMenu('gerar-relatorio');
 
-// 3. Lógica da Página (Calendário)
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Inicializa o calendário Flatpickr
-    flatpickr("#date-range", {
-        mode: "range",
-        dateFormat: "d/m/Y",
-        locale: "pt",
-        showMonths: 2, // Mostra dois meses lado a lado
-        theme: "dark"
-    });
+        // 3. Inicializa os calendários Flatpickr de forma interligada (Data Inicial e Data Final)
+        const pickerEnd = flatpickr("#date-end", {
+            dateFormat: "d/m/Y",
+            locale: "pt",
+            theme: "dark"
+        });
 
-    // Lógica do botão gerar
-    document.getElementById('btn-gerar')?.addEventListener('click', () => {
-        const periodo = document.getElementById('date-range').value;
-        if(!periodo.includes('até')) {
-            alert('Por favor, selecione a data inicial e a data final.');
-            return;
+        flatpickr("#date-start", {
+            dateFormat: "d/m/Y",
+            locale: "pt",
+            theme: "dark",
+            onChange: function(selectedDates) {
+                // Quando o usuário escolhe a data inicial, define o limite mínimo na data final
+                if (selectedDates.length > 0) {
+                    pickerEnd.set("minDate", selectedDates[0]);
+                }
+            }
+        });
+
+        // 4. Lógica do botão gerar relatório
+        const btnGerar = document.getElementById('btn-gerar');
+        if (btnGerar) {
+            btnGerar.addEventListener('click', () => {
+                const dataInicio = document.getElementById('date-start').value;
+                const dataFim = document.getElementById('date-end').value;
+
+                if (!dataInicio || !dataFim) {
+                    alert('Por favor, selecione tanto a data inicial quanto a data final.');
+                    return;
+                }
+
+                alert(`Gerando relatório para o período de ${dataInicio} até ${dataFim}`);
+            });
         }
-        alert(`Gerando relatório para o período: ${periodo}`);
-    });
+
+    } catch (error) {
+        console.error("Erro crítico ao inicializar a página de relatórios:", error);
+    }
 });
