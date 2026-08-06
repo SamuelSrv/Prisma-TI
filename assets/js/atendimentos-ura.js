@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btnGerar = document.getElementById('btn-gerar');
         const modalApresentacao = document.getElementById('modal-apresentacao');
         const btnFecharModal = document.getElementById('btn-fechar-modal');
+        const btnExportarPdf = document.getElementById('btn-exportar-pdf');
 
         if (btnFecharModal) {
             btnFecharModal.addEventListener('click', () => {
@@ -45,6 +46,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (e.target === modalApresentacao) {
                     modalApresentacao.style.display = 'none';
                 }
+            });
+        }
+
+        // Lógica do Botão Exportar PDF
+        if (btnExportarPdf) {
+            btnExportarPdf.addEventListener('click', () => {
+                const elementoModal = document.getElementById('modal-slides-content');
+                if (!elementoModal) return;
+
+                btnExportarPdf.innerText = 'Gerando PDF...';
+                btnExportarPdf.disabled = true;
+
+                const options = {
+                    margin:       5,
+                    filename:     'relatorio_executivo_grupo_lebes.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, logging: false },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                };
+
+                html2pdf().from(elementoModal).set(options).save().then(() => {
+                    btnExportarPdf.innerText = 'Exportar PDF';
+                    btnExportarPdf.disabled = false;
+                }).catch(err => {
+                    console.error('Erro ao gerar PDF:', err);
+                    alert('Ocorreu um erro ao gerar o arquivo PDF.');
+                    btnExportarPdf.innerText = 'Exportar PDF';
+                    btnExportarPdf.disabled = false;
+                });
             });
         }
 
@@ -96,14 +126,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// CONSTRUTOR DE SLIDES COM TAMANHO UNIFORME E FIXO (16:9)
+// CONSTRUTOR DE SLIDES UNIFORMES COM FLUXO CORRETO DE ALTURA
 // ==============================================================
 function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     const modalSlidesContent = document.getElementById('modal-slides-content');
     
-    // Cada página agora possui largura e altura estritas idênticas (1180x664px)
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 30px;">
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; margin-bottom: 30px; page-break-after: always;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px;">
                     <div>
@@ -121,9 +150,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
 
     const totalAtendimentos = dados.length;
 
-    // ---------------------------------------------------------
     // SLIDE 1: PANORAMA GERAL & VALIDAÇÃO
-    // ---------------------------------------------------------
     const totalLigacoes = dados.filter(d => d.canal === 'Ligação').length;
     const totalChats = dados.filter(d => d.canal === 'Chat').length;
     const totalAtendidas = dados.filter(d => d.status === 'Atendida').length;
@@ -156,9 +183,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // ---------------------------------------------------------
     // SLIDE 2: TOP 10 CATEGORIAS & DEPARTAMENTOS
-    // ---------------------------------------------------------
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
     const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
@@ -191,9 +216,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // ---------------------------------------------------------
     // SLIDE 3: TOP LOJAS
-    // ---------------------------------------------------------
     const filiaisUnicas = [...new Set(dados.map(d => d.filial))];
     const topLojas = filiaisUnicas.map(f => ({
         filial: f,
@@ -218,9 +241,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </table>
     `;
 
-    // ---------------------------------------------------------
     // SLIDE 4: FECHAMENTO EVOLUTIVO
-    // ---------------------------------------------------------
     const totalAtendidasFechamento = dados.filter(d => d.status === 'Atendida').length;
     const totalPerdidas = dados.filter(d => d.status !== 'Atendida').length;
     const tmeMedioSeg = totalAtendimentos > 0 ? (dados.reduce((acc, d) => acc + d.tme_segundos, 0) / totalAtendimentos).toFixed(0) : 0;
@@ -247,9 +268,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // ---------------------------------------------------------
     // SLIDE 5: TMAX & TME POR DIA
-    // ---------------------------------------------------------
     const datasUnicas = [...new Set(dados.map(d => {
         const str = String(d.data_hora);
         return str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
@@ -294,7 +313,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // INJETA AS 5 PÁGINAS UNIFORMES DENTRO DO MODAL
     modalSlidesContent.innerHTML = 
         renderPaginaRelatorio(htmlPanorama, 'Panorama Geral & Validação') +
         renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
@@ -302,7 +320,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
         renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia');
 
-    // Inicializa o Gráfico de Lojas da Página 2 com valores em cima das barras
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     
@@ -352,7 +369,6 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     });
 }
 
-// Funções Auxiliares
 function formatarTempo(segundos) {
     const m = Math.floor(segundos / 60);
     const s = segundos % 60;
