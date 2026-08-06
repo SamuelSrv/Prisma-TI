@@ -96,100 +96,103 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================
-// CONSTRUTOR DE PÁGINAS DO RELATÓRIO EXECUTIVO
+// CONSTRUTOR DE SLIDES UNIFORMES (16:9 / 1920x1080)
 // ==============================================================
 function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     const modalSlidesContent = document.getElementById('modal-slides-content');
     
-    // Função padrão para manter todas as páginas com o mesmo tamanho e exibindo o período
+    // Garante proporção idêntica de slide widescreen (16:9) para TODAS as páginas
     const renderPaginaRelatorio = (htmlConteudo, tituloPagina) => `
-        <div style="width: 100%; max-width: 1200px; background-color: #ebf5ee; padding: 45px 50px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.2); box-sizing: border-box; margin-bottom: 35px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px; margin-bottom: 25px;">
-                <div>
-                    <h2 style="color: #115e59; font-size: 1.35rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
-                    <span style="font-size: 0.85rem; color: #475569; font-weight: 600;">Período Analisado: ${periodoInicio} até ${periodoFim}</span>
+        <div style="width: 100%; max-width: 1250px; aspect-ratio: 16/9; background-color: #ebf5ee; padding: 35px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; margin-bottom: 40px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="color: #115e59; font-size: 1.25rem; font-weight: 700; margin: 0;">${tituloPagina}</h2>
+                        <span style="font-size: 0.78rem; color: #475569; font-weight: 600;">Período Analisado: ${periodoInicio} até ${periodoFim}</span>
+                    </div>
+                    <span style="font-size: 1.15rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
                 </div>
-                <span style="font-size: 1.25rem; font-weight: 700; color: #115e59;">Grupo Lebes</span>
             </div>
-            ${htmlConteudo}
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; padding-bottom: 10px;">
+                ${htmlConteudo}
+            </div>
         </div>
     `;
 
     const totalAtendimentos = dados.length;
 
     // ---------------------------------------------------------
-    // PÁGINA 1: PANORAMA GERAL & VALIDAÇÃO (NOVA PÁGINA)
+    // SLIDE 1: PANORAMA GERAL & VALIDAÇÃO
     // ---------------------------------------------------------
     const totalLigacoes = dados.filter(d => d.canal === 'Ligação').length;
     const totalChats = dados.filter(d => d.canal === 'Chat').length;
     const totalAtendidas = dados.filter(d => d.status === 'Atendida').length;
-    const totalPerdidas = dados.filter(d => d.status !== 'Atendida').length;
     const taxaSucesso = ((totalAtendidas / totalAtendimentos) * 100).toFixed(1);
 
     const htmlPanorama = `
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #16a34a;">
-                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">TOTAL GERAL</span>
-                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${totalAtendimentos}</span>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #16a34a;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block;">TOTAL GERAL</span>
+                <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${totalAtendimentos}</span>
             </div>
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #3b82f6;">
-                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">LIGAÇÕES / CHAT</span>
-                <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${totalLigacoes} / ${totalChats}</span>
+            <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #3b82f6;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block;">LIGAÇÕES / CHAT</span>
+                <span style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">${totalLigacoes} / ${totalChats}</span>
             </div>
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #10b981;">
-                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">ATENDIDAS</span>
-                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${totalAtendidas}</span>
+            <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #10b981;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block;">ATENDIDAS</span>
+                <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${totalAtendidas}</span>
             </div>
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #ef4444;">
-                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600; display: block;">TAXA DE SUCESSO</span>
-                <span style="font-size: 1.8rem; font-weight: 800; color: #1e293b;">${taxaSucesso}%</span>
+            <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #ef4444;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; display: block;">TAXA DE SUCESSO</span>
+                <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${taxaSucesso}%</span>
             </div>
         </div>
-        <div style="background: white; padding: 25px; border-radius: 8px;">
-            <h4 style="color: #334155; font-size: 1rem; font-weight: 700; margin-bottom: 10px;">Validação dos Dados</h4>
-            <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
-                Este panorama geral valida que os registros extraídos do banco de dados refletem consistentemente o intervalo selecionado (${periodoInicio} a ${periodoFim}). A distribuição entre canais e status está ativa para auditoria gerencial.
+        <div style="background: white; padding: 20px; border-radius: 8px;">
+            <h4 style="color: #334155; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Validação Executiva</h4>
+            <p style="color: #475569; font-size: 0.88rem; line-height: 1.4;">
+                Este panorama consolida os registros extraídos do banco de dados para o intervalo selecionado (${periodoInicio} a ${periodoFim}), garantindo conformidade para auditoria gerencial.
             </p>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 2: TOP 10 CATEGORIAS & DEPARTAMENTOS
+    // SLIDE 2: TOP 10 CATEGORIAS & DEPARTAMENTOS
     // ---------------------------------------------------------
     const motivosPDV = agruparCategoria(dados, 'PDV');
     const motivosAcesso = agruparCategoria(dados, 'Acessos');
     const motivosOperacoes = agruparCategoria(dados, 'Operações/Serviços');
 
     const htmlPagina1 = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
             <div>
-                <table class="lebes-table" style="font-size: 0.9rem;">
+                <table class="lebes-table" style="font-size: 0.85rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">PDV</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosPDV)}</tbody>
                 </table>
-                <table class="lebes-table" style="margin-top: 20px; font-size: 0.9rem;">
+                <table class="lebes-table" style="margin-top: 15px; font-size: 0.85rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">ACESSOS</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosAcesso)}</tbody>
                 </table>
             </div>
             <div>
-                <table class="lebes-table" style="font-size: 0.9rem;">
+                <table class="lebes-table" style="font-size: 0.85rem;">
                     <thead><tr><th colspan="3" style="text-align: center;">OPERAÇÕES/SERVIÇOS</th></tr>
                     <tr style="background:#22c55e; color:white;"><th>Categoria</th><th>QNT</th><th>%</th></tr></thead>
                     <tbody>${gerarLinhas(motivosOperacoes)}</tbody>
                 </table>
-                <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
-                    <h4 style="color: #334155; margin-bottom: 10px; font-size: 1rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
-                    <canvas id="chartTipoLoja" style="max-height: 180px;"></canvas>
+                <div style="background: white; padding: 12px; border-radius: 8px; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="color: #334155; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700;">Tradicional vs EXPRESS</h4>
+                    <canvas id="chartTipoLoja" style="max-height: 150px;"></canvas>
                 </div>
             </div>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 3: TOP LOJAS
+    // SLIDE 3: TOP LOJAS
     // ---------------------------------------------------------
     const filiaisUnicas = [...new Set(dados.map(d => d.filial))];
     const topLojas = filiaisUnicas.map(f => ({
@@ -198,7 +201,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     })).sort((a, b) => b.qtd - a.qtd).slice(0, 5);
 
     const htmlPagina2 = `
-        <table class="lebes-table" style="width: 100%; font-size: 0.95rem;">
+        <table class="lebes-table" style="width: 100%; font-size: 0.9rem;">
             <thead>
                 <tr><th colspan="3" style="text-align: center;">Ranking de Lojas / Filiais no Período</th></tr>
                 <tr style="background:#22c55e; color:white;"><th>Filial</th><th>Quantidade de Atendimentos</th><th>% do Período</th></tr>
@@ -216,13 +219,15 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 4: FECHAMENTO EVOLUTIVO
+    // SLIDE 4: FECHAMENTO EVOLUTIVO
     // ---------------------------------------------------------
+    const totalAtendidasFechamento = dados.filter(d => d.status === 'Atendida').length;
+    const totalPerdidas = dados.filter(d => d.status !== 'Atendida').length;
     const tmeMedioSeg = totalAtendimentos > 0 ? (dados.reduce((acc, d) => acc + d.tme_segundos, 0) / totalAtendimentos).toFixed(0) : 0;
-    const tmeFormatado = `00:0${Math.floor(tmeMedioSeg / 60)}:${('0' + (tmeMedioSeg % 60)).slice(-2)}`;
+    const tmeFormatado = formatarTempo(tmeMedioSeg);
 
     const htmlPagina3 = `
-        <table class="lebes-table" style="text-align: center; font-size: 0.95rem;">
+        <table class="lebes-table" style="text-align: center; font-size: 0.9rem;">
             <thead>
                 <tr style="background: #1e293b; color: white;">
                     <th>TOTAL REGISTRADOS</th><th>ATENDIDOS</th><th>PERDIDOS / ABANDONADOS</th><th>TME MÉDIO</th>
@@ -231,43 +236,52 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
             <tbody>
                 <tr>
                     <td class="highlight">${totalAtendimentos}</td>
-                    <td class="highlight">${totalAtendidas}</td>
+                    <td class="highlight">${totalAtendidasFechamento}</td>
                     <td class="highlight" style="color: #ef4444;">${totalPerdidas}</td>
                     <td class="highlight">${tmeFormatado}</td>
                 </tr>
             </tbody>
         </table>
-        <div style="background: white; padding: 25px; border-radius: 8px; margin-top: 25px; text-align: center; color: #64748b;">
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center; color: #64748b; font-size: 0.9rem;">
             <p>Métrica consolidada e calculada em tempo real para o período de ${periodoInicio} a ${periodoFim}.</p>
         </div>
     `;
 
     // ---------------------------------------------------------
-    // PÁGINA 5: TMAX & TME POR DIA (DINÂMICO SEM DATAS ERRADAS)
+    // SLIDE 5: TMAX & TME POR DIA (CORRIGIDO E LIMPO)
     // ---------------------------------------------------------
-    const datasUnicas = [...new Set(dados.map(d => d.data_hora.split(' ')[0]))].sort();
-    const linhasTabelaDatas = datasUnicas.slice(0, 10).map(dataIso => {
-        const [ano, mes, dia] = dataIso.split('-');
-        const dataBr = `${dia}/${mes}/${ano}`;
-        const itensDia = dados.filter(d => d.data_hora.startsWith(dataIso));
+    // Trata corretamente a extração da data independente de formato (espaço ou T)
+    const datasUnicas = [...new Set(dados.map(d => {
+        const str = String(d.data_hora);
+        return str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
+    }))].sort();
+
+    const linhasTabelaDatas = datasUnicas.slice(0, 8).map(dataIso => {
+        const partes = dataIso.split('-');
+        const dataBr = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataIso;
+        
+        const itensDia = dados.filter(d => {
+            const s = String(d.data_hora);
+            return s.startsWith(dataIso);
+        });
         
         const maxTme = itensDia.length > 0 ? Math.max(...itensDia.map(d => d.tme_segundos)) : 0;
         const filialDestaque = itensDia.length > 0 ? itensDia[0].filial : '-';
-        const tmeMedioDia = itensDia.length > 0 ? (itensDia.reduce((a, b) => a + b.tme_segundos, 0) / itensDia.length).toFixed(0) : 0;
+        const tmeMedioDia = itensDia.length > 0 ? Math.round(itensDia.reduce((a, b) => a + b.tme_segundos, 0) / itensDia.length) : 0;
 
         return `
             <tr>
                 <td style="font-weight: bold; background: #bbf7d0;">${dataBr}</td>
-                <td>00:${Math.floor(maxTme / 60)}:${('0' + (maxTme % 60)).slice(-2)}</td>
+                <td>${formatarTempo(maxTme)}</td>
                 <td>${filialDestaque}</td>
-                <td>00:${Math.floor(tmeMedioDia / 60)}:${('0' + (tmeMedioDia % 60)).slice(-2)}</td>
+                <td>${formatarTempo(tmeMedioDia)}</td>
             </tr>
         `;
     }).join('');
 
     const htmlPagina4 = `
-        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-            <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.9rem;">
+        <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+            <table class="lebes-table" style="width: 100%; text-align: center; font-size: 0.85rem;">
                 <thead>
                     <tr><th colspan="4">RESUMO DIÁRIO DE ATENDIMENTOS (TMAX & TME)</th></tr>
                     <tr style="background:#22c55e; color:white;">
@@ -281,7 +295,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         </div>
     `;
 
-    // INJETA TODAS AS 5 PÁGINAS EM PILHA VERTICAL DENTRO DO MODAL
+    // INJETA AS 5 PÁGINAS UNIFORMES DENTRO DO MODAL
     modalSlidesContent.innerHTML = 
         renderPaginaRelatorio(htmlPanorama, 'Panorama Geral & Validação') +
         renderPaginaRelatorio(htmlPagina1, 'Top 10 Categorias & Departamentos') + 
@@ -289,9 +303,7 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
         renderPaginaRelatorio(htmlPagina3, 'Fechamento Evolutivo URA Suporte') + 
         renderPaginaRelatorio(htmlPagina4, 'TMAX & TME por Dia');
 
-    // ==========================================================
-    // GRÁFICO COM OS VALORES EXIBIDOS ACIMA DAS BARRAS
-    // ==========================================================
+    // Inicializa o Gráfico de Lojas da Página 2 (índice 1) com valores em cima das barras
     const qtdTradicional = dados.filter(d => d.tipo_loja === 'Tradicional').length;
     const qtdExpress = dados.filter(d => d.tipo_loja === 'EXPRESS').length;
     
@@ -307,14 +319,13 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
                 data: [qtdTradicional, qtdExpress], 
                 backgroundColor: ['#4ade80', '#16a34a'], 
                 borderWidth: 0, 
-                barThickness: 45 
+                barThickness: 40 
             }]
         },
         options: { 
             responsive: true, 
             plugins: { 
                 legend: { display: false },
-                // Plugin customizado para desenhar o número em cima da barra
                 tooltip: { enabled: true }
             }, 
             scales: { 
@@ -331,12 +342,10 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
                         const porcentagem = totalAtendimentos > 0 ? ((valor / totalAtendimentos) * 100).toFixed(0) + '%' : '0%';
                         
                         ctx.fillStyle = '#1e293b';
-                        ctx.font = 'bold 12px Inter, sans-serif';
+                        ctx.font = 'bold 11px Inter, sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-                        
-                        // Desenha o número e a porcentagem logo em cima da barra
-                        ctx.fillText(`${valor} (${porcentagem})`, bar.x, bar.y - 6);
+                        ctx.fillText(`${valor} (${porcentagem})`, bar.x, bar.y - 5);
                     });
                 });
             }
@@ -345,6 +354,12 @@ function renderizarApresentacaoModal(dados, periodoInicio, periodoFim) {
 }
 
 // Funções Auxiliares
+function formatarTempo(segundos) {
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    return `00:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function agruparCategoria(dados, categoriaDesejada) {
     const filtrados = dados.filter(d => d.categoria === categoriaDesejada);
     const contagem = {};
