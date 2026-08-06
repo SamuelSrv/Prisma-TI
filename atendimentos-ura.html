@@ -6,63 +6,57 @@
     <title>Prisma TI - Gerar Relatórios</title>
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Vanilla JS Datepicker CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/css/datepicker.min.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
-    <!-- Estilização Dark Mode e Alinhamento do Ícone -->
+    <!-- Estilização Dark Mode Profissional e Moderna -->
     <style>
-        .datepicker-picker {
-            background-color: #111827 !important;
+        .flatpickr-calendar {
+            background: #111827 !important;
             border: 1px solid #374151 !important;
             border-radius: 14px !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
+            padding: 16px !important;
             color: #f3f4f6 !important;
             font-family: inherit !important;
-            padding: 15px !important;
         }
-        .datepicker-header .datepicker-controls button {
+        .flatpickr-days {
+            border: none !important;
+        }
+        .flatpickr-day {
+            border-radius: 8px !important;
+            color: #f3f4f6 !important;
             background: transparent !important;
-            color: #f3f4f6 !important;
-            border-radius: 8px !important;
-            transition: background 0.15s;
-        }
-        .datepicker-header .datepicker-controls button:hover {
-            background: #374151 !important;
-        }
-        .datepicker-title {
-            color: #f3f4f6 !important;
-            font-weight: 600 !important;
-        }
-        .datepicker-view .dow {
-            color: #9ca3af !important;
-            font-weight: 600 !important;
-        }
-        .datepicker-cell {
-            border-radius: 8px !important;
-            color: #f3f4f6 !important;
+            border: none !important;
             height: 38px !important;
             line-height: 38px !important;
+            max-width: 38px !important;
             margin: 2px !important;
-            transition: background 0.15s;
         }
-        .datepicker-cell:hover {
-            background-color: #374151 !important;
-        }
-        .datepicker-cell.selected, .datepicker-cell.selected:hover {
-            background-color: #2563eb !important;
+        .flatpickr-day.selected, .flatpickr-day.selected:hover {
+            background: #2563eb !important;
             color: #ffffff !important;
+        }
+        .flatpickr-day:hover {
+            background: #374151 !important;
+        }
+        .flatpickr-month, .flatpickr-current-month, span.flatpickr-weekday {
+            color: #f3f4f6 !important;
+            fill: #f3f4f6 !important;
+        }
+        .flatpickr-current-month input.cur-year, 
+        .flatpickr-current-month .flatpickr-monthDropdown-months {
+            color: #60a5fa !important;
             font-weight: 600 !important;
         }
-        .datepicker-cell.focused {
-            background-color: #374151 !important;
-        }
-        .datepicker-cell.today {
-            border: 1px solid #60a5fa;
+        .flatpickr-prev-month svg, .flatpickr-next-month svg {
+            fill: #9ca3af !important;
         }
     </style>
 
-    <!-- Vanilla JS Datepicker JS (Carregado de forma estável) -->
-    <script src="https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/js/datepicker-full.min.js"></script>
+    <!-- Flatpickr JS (Carregado antes do módulo para garantir acesso global imediato) -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
 </head>
 <body>
     <div class="layout-container">
