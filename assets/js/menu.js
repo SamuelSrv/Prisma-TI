@@ -48,9 +48,20 @@ export async function carregarMenu(paginaAtiva) {
                 </a>
         `;
 
-        // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona "Inserir Dados" se for administrador ou ti
+        // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona menu de ADMIN/TI se o usuário tiver acesso
         if (nivelAcesso === 'administrador' || nivelAcesso === 'ti') {
             menuHTML += `
+                <!-- CATEGORIA: ADMINISTRAÇÃO -->
+                <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    Administração
+                </div>
+
+                <!-- Gerenciar Usuários - Restrito -->
+                <a href="usuarios.html" class="nav-item ${paginaAtiva === 'usuarios' ? 'active' : ''}">
+                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round" stroke-width="2" d="M10 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h2m10 1a3 3 0 0 1-3 3m3-3a3 3 0 0 0-3-3m3 3h1m-4 3a3 3 0 0 1-3-3m3 3v1m-3-4a3 3 0 0 1 3-3m-3 3h-1m4-3v-1m-2.121 1.879-.707-.707m5.656 5.656-.707-.707m-4.242 0-.707.707m5.656-5.656-.707.707M12 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+                    Gerenciar Usuários
+                </a>
+
                 <!-- Inserir Dados - Restrito -->
                 <a href="atualizar-dados.html" class="nav-item ${paginaAtiva === 'atualizar-dados' ? 'active' : ''}">
                     <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v9m-5 0H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2M8 9l4-5 4 5m1 8h.01"/></svg>
