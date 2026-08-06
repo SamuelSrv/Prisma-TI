@@ -4,14 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma TI - Login</title>
+    
+    <!-- Favicon Oficial -->
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+    
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         body.login-body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background-color: var(--bg-main);
+            position: relative;
         }
         .login-card {
             width: 100%;
@@ -22,22 +28,20 @@
             border-radius: 16px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
+        /* Estilo atualizado do Logo Centralizado e Legível */
         .login-brand {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 12px;
             margin-bottom: 30px;
+            text-align: center;
         }
         .login-brand img {
-            width: 40px;
-            height: 40px;
+            width: 64px; /* Aumentado para dar destaque e nitidez */
+            height: 64px;
             filter: brightness(0) invert(1);
-        }
-        .login-brand h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-primary);
+            object-fit: contain;
         }
         .input-group {
             margin-bottom: 20px;
@@ -90,17 +94,42 @@
             color: var(--accent-hover);
             text-decoration: underline;
         }
+
+        /* Rodapé Discreto */
+        .login-footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body class="login-body">
 
     <div class="login-card">
+        <!-- Logo apenas na parte superior, grande e sem texto ao lado -->
         <div class="login-brand">
-            <img src="assets/img/logo.svg" alt="Logo">
-            <h1>Prisma TI</h1>
+            <img src="assets/img/logo.svg" alt="Logo Prisma TI">
         </div>
 
         <form id="form-login">
+            
+            <!-- CAMPOS EXTRAS DE CADASTRO (Ocultos por padrão) -->
+            <div id="signup-fields" style="display: none; flex-direction: column;">
+                <div class="input-group">
+                    <label for="signup-nome">Nome Completo</label>
+                    <input type="text" id="signup-nome" class="input-modern" placeholder="Seu nome completo">
+                </div>
+                
+                <div class="input-group">
+                    <label for="signup-cpf">CPF</label>
+                    <input type="text" id="signup-cpf" class="input-modern" placeholder="Apenas números">
+                </div>
+            </div>
+
+            <!-- Campos Padrão de Acesso -->
             <div class="input-group">
                 <label for="email">E-mail de Acesso</label>
                 <input type="email" id="email" class="input-modern" placeholder="seu.email@empresa.com" required>
@@ -120,6 +149,11 @@
             </div>
         </form>
     </div>
+
+    <!-- Rodapé Discreto -->
+    <footer class="login-footer">
+        Criado por: Grupo Lebes 2026
+    </footer>
 
     <script type="module" src="assets/js/index.js"></script>
 </body>
