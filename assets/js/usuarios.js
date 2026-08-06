@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const authData = await verificarAutenticacao();
         if (!authData || !authData.session) return;
 
-        // VALIDAÇÃO DE SEGURANÇA: Verifica se é TI/Administrador na tabela 'perfis'
+        // VALIDAÇÃO DE SEGURANÇA: Verifica se é TI ou Administrador na tabela 'perfis'
         const { data: perfil } = await supabase
             .from('perfis')
             .select('nivel_acesso')
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Bloqueia quem não for TI ou Administrador
         if (!perfil || (perfil.nivel_acesso !== 'ti' && perfil.nivel_acesso !== 'administrador')) {
-            alert('Acesso negado. Apenas usuários de TI podem acessar o gerenciamento de acessos.');
+            alert('Acesso negado. Apenas usuários autorizados podem acessar o gerenciamento de acessos.');
             window.location.href = 'dashboard.html'; 
             return;
         }
@@ -38,7 +38,7 @@ async function carregarUsuarios() {
     
     tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Buscando no banco de dados...</td></tr>';
 
-    // Busca os perfis cadastrados no seu banco
+    // Busca os perfis cadastrados
     const { data: usuarios, error } = await supabase
         .from('perfis')
         .select('*');
@@ -56,7 +56,7 @@ async function carregarUsuarios() {
 
     tbody.innerHTML = '';
     
-    // Pega o ID de quem está logado (para não deixar a pessoa remover o próprio acesso e se trancar fora)
+    // Pega o ID de quem está logado para proteger contra auto-bloqueio
     const { data: { user } } = await supabase.auth.getUser();
 
     usuarios.forEach(u => {
@@ -65,14 +65,13 @@ async function carregarUsuarios() {
         
         const isMe = user.id === u.id;
         
-        // Formata a data (caso a sua tabela 'perfis' tenha a coluna created_at)
         let dataCadastro = 'N/A';
         if (u.created_at) {
             const dt = new Date(u.created_at);
             dataCadastro = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
 
-        // Renderiza a linha e o seletor com as suas nomenclaturas (padrao, ti, administrador)
+        // Dropdown com os 3 níveis separados
         tr.innerHTML = `
             <td class="px-6 py-4">
                 <div class="font-medium text-white flex items-center gap-2">
@@ -85,7 +84,8 @@ async function carregarUsuarios() {
                 <div class="max-w-[200px] mx-auto">
                     <select onchange="alterarCargo('${u.id}', this.value)" ${isMe ? 'disabled' : ''} class="bg-slate-900 border border-slate-600 text-slate-300 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <option value="padrao" ${u.nivel_acesso === 'padrao' ? 'selected' : ''}>Usuário Comum</option>
-                        <option value="ti" ${(u.nivel_acesso === 'ti' || u.nivel_acesso === 'administrador') ? 'selected' : ''}>Equipe TI (Admin)</option>
+                        <option value="ti" ${u.nivel_acesso === 'ti' ? 'selected' : ''}>Equipe TI</option>
+                        <option value="administrador" ${u.nivel_acesso === 'administrador' ? 'selected' : ''}>Administrador</option>
                     </select>
                     ${isMe ? `<div class="text-[10px] text-emerald-500/70 text-center mt-1">Este é o seu perfil</div>` : ''}
                 </div>
@@ -98,17 +98,19 @@ async function carregarUsuarios() {
     });
 }
 
-// Expõe a função para o HTML poder chamar via onchange (Update no Supabase)
+// Expõe a função para o HTML poder chamar via onchange
 window.alterarCargo = async function(id, novoNivel) {
-    const cargoNome = novoNivel === 'ti' ? 'Equipe TI' : 'Usuário Comum';
+    let cargoNome = 'Usuário Comum';
+    if (novoNivel === 'ti') cargoNome = 'Equipe TI';
+    if (novoNivel === 'administrador') cargoNome = 'Administrador';
+
     const confirmacao = confirm(`Tem certeza que deseja alterar o nível de acesso deste usuário para ${cargoNome}?`);
     
     if (!confirmacao) {
-        carregarUsuarios(); // Atualiza a tela para reverter o select visualmente se a pessoa cancelar
+        carregarUsuarios(); // Reverte visualmente caso cancele
         return;
     }
 
-    // Atualiza a coluna nivel_acesso na tabela perfis
     const { error } = await supabase
         .from('perfis')
         .update({ nivel_acesso: novoNivel })
@@ -119,6 +121,6 @@ window.alterarCargo = async function(id, novoNivel) {
         console.error(error);
         carregarUsuarios();
     } else {
-        carregarUsuarios(); // Recarrega a tabela atualizada com sucesso
+        carregarUsuarios(); // Recarrega a tabela atualizada
     }
 };
