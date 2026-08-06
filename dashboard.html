@@ -8,7 +8,6 @@
     <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Tailwind CSS e correção de aviso no console -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         const originalWarn = console.warn;
@@ -18,45 +17,33 @@
         };
     </script>
     
-    <!-- Flowbite e Datepicker -->
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
-    <!-- Chart.js e Plugin de DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 
 <body class="bg-slate-900 text-slate-100">
     <div class="layout-container">
-        <!-- Menu Lateral dinâmico -->
         <aside class="sidebar"></aside>
         
         <main class="main-content" style="padding: 40px; width: 100%;">
             <div class="page-header-flex" style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h1 class="header-title" style="font-size: 1.8rem; font-weight: 700;">Visão Geral da Operação</h1>
-                    <p class="subtitle" style="color: #94a3b8;">Acompanhe os principais indicadores e volumetria em tempo real</p>
+                    <p class="subtitle" style="color: #94a3b8;">Acompanhe os principais indicadores e volumetria do mês</p>
                 </div>
                 
-                <!-- Seletor de Período Integrado com os Calendários do Sistema -->
+                <!-- Seletor de Mês Reativo (Atualiza automático ao mudar) -->
                 <div style="display: flex; align-items: center; gap: 12px; background: #1e293b; padding: 10px 20px; border-radius: 12px; border: 1px solid #334155;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="font-size: 0.8rem; font-weight: 600; color: #94a3b8;">INÍCIO:</label>
-                        <input id="date-start" type="text" class="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg text-sm cursor-pointer" placeholder="Data inicial" readonly style="width: 130px;">
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="font-size: 0.8rem; font-weight: 600; color: #94a3b8;">FIM:</label>
-                        <input id="date-end" type="text" class="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-100 rounded-lg text-sm cursor-pointer" placeholder="Data final" readonly style="width: 130px;">
-                    </div>
-                    <button id="btn-filtrar-dash" style="background: #10b981; color: white; padding: 6px 16px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: background 0.2s;">
-                        Filtrar
-                    </button>
+                    <label for="filtro-mes" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">MÊS EM EXIBIÇÃO:</label>
+                    <input type="month" id="filtro-mes" value="2026-06" style="background: #0f172a; color: white; padding: 6px 12px; border-radius: 8px; border: 1px solid #334155; font-weight: 600; outline: none; cursor: pointer;">
                 </div>
             </div>
 
-            <!-- Cards de KPIs da Operação -->
+            <!-- Cards de KPIs -->
             <div class="kpi-grid">
                 <div class="card kpi-card">
-                    <span>Total de Atendimentos (Período)</span>
+                    <span>Total de Atendimentos (Mês)</span>
                     <h2 id="kpi-ligacoes-mes">0</h2>
                 </div>
                 <div class="card kpi-card">
@@ -73,7 +60,7 @@
                 </div>
             </div>
 
-            <!-- Gráficos da Operação -->
+            <!-- Gráficos -->
             <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
                 <div class="chart-card" style="background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155;">
                     <h3 style="color: white; font-size: 1.1rem; font-weight: 600; margin-bottom: 20px;">Distribuição de Chamadas por Status</h3>
@@ -87,7 +74,6 @@
         </main>
     </div>
 
-    <!-- Scripts do Sistema -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
