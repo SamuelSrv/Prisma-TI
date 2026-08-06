@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
+import Datepicker from 'https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/js/datepicker-full.js';
+import 'https://cdn.jsdelivr.net/npm/vanilla-datepicker@1.3.4/dist/js/locales/pt-BR.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -9,16 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        // Valida se o script do Datepicker carregou corretamente no escopo global
-        if (typeof Datepicker === 'undefined') {
-            console.error("A biblioteca Vanilla Datepicker não foi carregada no escopo global.");
-            return;
-        }
-
         const elemStart = document.getElementById('date-start');
         const elemEnd = document.getElementById('date-end');
 
-        // Inicializa utilizando a linguagem pt-BR carregada via script
         const datepickerStart = new Datepicker(elemStart, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
