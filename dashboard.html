@@ -26,23 +26,44 @@
         <!-- Conteúdo Principal -->
         <main class="main-content">
             <h1 class="header-title">Monitoramento de Atendimento</h1>
-            <p class="subtitle" style="margin-bottom: 20px;">Importação e Análise de Relatórios URA</p>
+            <p class="subtitle" style="margin-bottom: 20px;">Central de Importação e Distribuição de Dados</p>
 
-            <!-- Card de Upload -->
-            <div class="card upload-card">
-                <div class="loading-overlay" id="loading-overlay">Processando arquivo...</div>
-                <h3>Importar Relatório</h3>
-                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecione o arquivo exportado para salvar os dados no banco.</p>
+            <!-- Card de Importação Inteligente -->
+            <div class="card" style="position: relative; padding: 25px; margin-bottom: 30px;">
+                <div class="loading-overlay" id="loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); justify-content: center; align-items: center; z-index: 10; border-radius: 8px;">
+                    <strong>Processando e salvando no banco...</strong>
+                </div>
                 
-                <div class="upload-section">
-                    <input type="file" id="file-input" accept=".html,.htm,.csv,.txt">
-                    <button type="button" id="btn-processar" class="btn">Processar e Salvar</button>
+                <h3 style="margin-bottom: 20px; color: var(--cor-secundaria);">Importação de Dados (CSV)</h3>
+                
+                <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="input-group" style="flex: 1; min-width: 180px;">
+                        <label for="import-data" style="font-weight: bold; font-size: 0.9rem;">Data de Referência:</label>
+                        <input type="date" id="import-data" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px;" required>
+                    </div>
+
+                    <div class="input-group" style="flex: 1; min-width: 200px;">
+                        <label for="import-tipo" style="font-weight: bold; font-size: 0.9rem;">Destino dos Dados:</label>
+                        <select id="import-tipo" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px;" required>
+                            <option value="">Selecione a tabela...</option>
+                            <option value="volumetria">Volumetria Geral</option>
+                            <option value="categorias">Categorias & PDV</option>
+                            <option value="lojas">Relatório de Lojas</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group" style="flex: 2; min-width: 250px;">
+                        <label for="file-input" style="font-weight: bold; font-size: 0.9rem;">Arquivo CSV:</label>
+                        <input type="file" id="file-input" accept=".csv" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; background: #f9f9f9;" required>
+                    </div>
+
+                    <button type="button" id="btn-processar" class="btn-primary-modern" style="height: 42px; min-width: 150px;">Importar Dados</button>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Chamada correta do arquivo externo -->
+    <!-- Script de processamento -->
     <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>
