@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dateStartEl = document.getElementById('date-start');
         const dateEndEl = document.getElementById('date-end');
         if (window.Datepicker) {
+            // CORREÇÃO: Cria o objeto de idiomas caso ele não exista
+            if (!window.Datepicker.locales) {
+                window.Datepicker.locales = {};
+            }
+            
             window.Datepicker.locales['pt-BR'] = {
                 days: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
                 daysShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
@@ -276,7 +281,7 @@ function renderizarApresentacaoCompleta(dados) {
     });
 }
 
-// Funções Auxiliares para cálculo do DB (mantidas do código anterior)
+// Funções Auxiliares para cálculo do DB
 function agruparCategoria(dados, categoriaDesejada) {
     const filtrados = dados.filter(d => d.categoria === categoriaDesejada);
     const contagem = {};
