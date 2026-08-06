@@ -1,5 +1,13 @@
 import { supabase } from './supabase.js';
 
+// Injeta o Favicon dinamicamente IMEDIATAMENTE
+const favicon = document.createElement('link');
+favicon.rel = 'icon';
+favicon.type = 'image/svg+xml';
+favicon.href = 'assets/img/logo.svg';
+document.head.appendChild(favicon);
+
+// Só depois o sistema espera o HTML carregar para armar o formulário
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('form-login');
     const btnSubmit = document.getElementById('btn-submit');
@@ -27,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
 
@@ -51,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
                 alert('Conta criada com sucesso! Agora você já pode fazer login no sistema.');
                 document.getElementById('password').value = '';
-                linkToggle.click(); 
+                linkToggle.click();
             }
         } catch (error) {
             console.error('Erro:', error.message);
