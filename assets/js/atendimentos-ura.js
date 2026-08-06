@@ -9,10 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         carregarMenu('gerar-relatorio');
 
-        // Inicializa os inputs com o Vanilla Datepicker
+        // Valida se o script do Datepicker carregou corretamente no escopo global
+        if (typeof Datepicker === 'undefined') {
+            console.error("A biblioteca Vanilla Datepicker não foi carregada no escopo global.");
+            return;
+        }
+
         const elemStart = document.getElementById('date-start');
         const elemEnd = document.getElementById('date-end');
 
+        // Inicializa utilizando a linguagem pt-BR carregada via script
         const datepickerStart = new Datepicker(elemStart, {
             format: 'dd/mm/yyyy',
             language: 'pt-BR',
