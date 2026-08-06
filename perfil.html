@@ -34,24 +34,17 @@
 
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">Nome Completo:</label>
-                    <input type="text" id="perfil-nome" class="input-modern" placeholder="Digite seu nome completo">
+                    <input type="text" id="perfil-nome" class="input-modern" readonly style="background-color: rgba(255,255,255,0.02); cursor: not-allowed; color: var(--text-secondary);">
                 </div>
 
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">E-mail de Acesso:</label>
-                    <!-- E-mail continua readonly porque é a chave de login -->
                     <input type="email" id="perfil-email" class="input-modern" readonly style="background-color: rgba(255,255,255,0.02); cursor: not-allowed; color: var(--text-secondary);">
                 </div>
 
                 <div class="input-group" style="margin-bottom: 30px;">
                     <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">CPF:</label>
-                    <input type="text" id="perfil-cpf" class="input-modern" placeholder="Apenas números" maxlength="11">
-                </div>
-
-                <div style="text-align: right;">
-                    <button type="button" id="btn-salvar" style="padding: 12px 30px; font-size: 1rem; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; font-weight: 600; transition: 0.2s;">
-                        Salvar Alterações
-                    </button>
+                    <input type="text" id="perfil-cpf" class="input-modern" readonly style="background-color: rgba(255,255,255,0.02); cursor: not-allowed; color: var(--text-secondary);">
                 </div>
             </div>
         </main>

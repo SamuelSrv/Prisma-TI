@@ -98,10 +98,29 @@ if (cadastroForm) {
         btnCadastrar.innerText = 'Criando Conta...';
         btnCadastrar.disabled = true;
 
-        // Criação no Auth do Supabase
+        // PASSO EXTRA DE SEGURANÇA: Verifica se o CPF já existe antes de criar a conta
+        const { data: cpfExistente } = await supabase
+            .from('perfis')
+            .select('cpf')
+            .eq('cpf', cpfLimpo)
+            .maybeSingle();
+
+        if (cpfExistente) {
+            errorCpf.innerText = 'Este CPF já possui um usuário cadastrado.';
+            restaurarBotao();
+            return;
+        }
+
+        // Criação no Auth do Supabase já enviando Nome e CPF
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
+            options: {
+                data: {
+                    nome: nome,
+                    cpf: cpfLimpo
+                }
+            }
         });
 
         if (authError) {
@@ -115,33 +134,8 @@ if (cadastroForm) {
             return;
         }
 
-        const userId = authData.user?.id;
-
-        if (!userId) {
-            cadastroError.innerText = 'Erro crítico: ID de usuário não retornado.';
-            cadastroError.style.display = 'block';
-            restaurarBotao();
-            return;
-        }
-
-        // Inserção na tabela perfis
-        const { error: dbError } = await supabase.from('perfis').insert({
-            id: userId,
-            nome_completo: nome,
-            cpf: cpfLimpo,
-            nivel_acesso: 'padrao'
-        });
-
-        if (dbError) {
-            if (dbError.code === '23505') { 
-                errorCpf.innerText = 'Este CPF já possui um usuário cadastrado.';
-            } else {
-                cadastroError.innerText = 'Erro ao salvar perfil: ' + dbError.message;
-                cadastroError.style.display = 'block';
-            }
-            restaurarBotao();
-            return;
-        }
+        // Removi o 'insert' manual na tabela 'perfis' daqui, 
+        // porque o nosso Trigger no banco de dados já faz isso automaticamente!
 
         // Sucesso visual sem popup nativo
         btnCadastrar.style.display = 'none';
