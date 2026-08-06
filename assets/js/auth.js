@@ -1,17 +1,30 @@
 import { supabase } from './supabase.js';
 
-// Injeta o Favicon dinamicamente
-const favicon = document.createElement('link');
-favicon.rel = 'icon';
-favicon.type = 'image/svg+xml';
-favicon.href = 'assets/img/logo.svg';
-document.head.appendChild(favicon);
-
-export async function verificarAutenticacao() {
+export async function verificarAutenticacao(cargosPermitidos = []) {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error || !session) {
         window.location.replace('index.html');
+        return null;
+    }
+
+    // Busca o cargo atual do usuário na tabela de perfis
+    const { data: perfil, error: perfilError } = await supabase
+        .from('perfis_usuarios')
+        .select('cargo')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+    if (perfilError) {
+        console.error("Erro ao verificar permissões:", perfilError);
+    }
+
+    const cargoUsuario = perfil?.cargo || 'Colaborador';
+
+    // Se a página exige cargos específicos e o usuário não possui
+    if (cargosPermitidos.length > 0 && !cargosPermitidos.includes(cargoUsuario)) {
+        alert('Acesso negado: Seu perfil não possui permissão para acessar esta página.');
+        window.location.replace('dashboard.html');
         return null;
     }
 
@@ -22,7 +35,9 @@ export async function verificarAutenticacao() {
     });
 
     document.body.classList.add('auth-ok');
-    return session;
+    
+    // Retorna a sessão e o cargo para uso opcional na página
+    return { session, cargo: cargoUsuario };
 }
 
 export function ativarBotaoLogout() {

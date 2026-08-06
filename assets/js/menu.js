@@ -1,8 +1,28 @@
+import { supabase } from './supabase.js';
 import { ativarBotaoLogout } from './auth.js';
 
-export function carregarMenu(paginaAtiva) {
+export async function carregarMenu(paginaAtiva) {
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
+
+    // Descobre o cargo do usuário logado no Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    let cargo = 'Colaborador';
+
+    if (session) {
+        const { data: perfil } = await supabase
+            .from('perfis_usuarios')
+            .select('cargo')
+            .eq('id', session.user.id)
+            .maybeSingle();
+        
+        if (perfil?.cargo) {
+            cargo = perfil.cargo;
+        }
+    }
+
+    // Apenas Administrador e TI podem visualizar a opção de atualizar/alimentar dados
+    const podeEscrever = ['Administrador', 'TI'].includes(cargo);
 
     sidebar.innerHTML = `
         <button id="toggle-sidebar" class="toggle-float-btn" title="Recolher/Expandir Menu">
@@ -34,7 +54,7 @@ export function carregarMenu(paginaAtiva) {
                 </div>
                 <div class="submenu" style="display: ${['gerar-relatorio', 'atualizar-dados'].includes(paginaAtiva) ? 'flex' : 'none'}; flex-direction: column; gap: 4px; margin-left: 20px; padding-left: 10px; border-left: 1px solid var(--border-color);">
                     <a href="atendimentos-ura.html" class="submenu-item ${paginaAtiva === 'gerar-relatorio' ? 'active' : ''}">Gerar Relatório</a>
-                    <a href="atualizar-dados.html" class="submenu-item ${paginaAtiva === 'atualizar-dados' ? 'active' : ''}">Atualizar Dados</a>
+                    ${podeEscrever ? `<a href="atualizar-dados.html" class="submenu-item ${paginaAtiva === 'atualizar-dados' ? 'active' : ''}">Atualizar Dados</a>` : ''}
                 </div>
             </div>
 
@@ -52,21 +72,25 @@ export function carregarMenu(paginaAtiva) {
 
     const toggleSubmenu = sidebar.querySelector('.toggle-submenu');
     const submenu = sidebar.querySelector('.submenu');
-    toggleSubmenu.addEventListener('click', () => {
-        if (document.body.classList.contains('sidebar-collapsed')) return;
-        const isClosed = submenu.style.display === 'none';
-        submenu.style.display = isClosed ? 'flex' : 'none';
-        toggleSubmenu.querySelector('.chevron').textContent = isClosed ? '▲' : '▼';
-    });
+    if (toggleSubmenu && submenu) {
+        toggleSubmenu.addEventListener('click', () => {
+            if (document.body.classList.contains('sidebar-collapsed')) return;
+            const isClosed = submenu.style.display === 'none';
+            submenu.style.display = isClosed ? 'flex' : 'none';
+            toggleSubmenu.querySelector('.chevron').textContent = isClosed ? '▲' : '▼';
+        });
+    }
 
     const toggleSidebar = sidebar.querySelector('#toggle-sidebar');
-    toggleSidebar.addEventListener('click', () => {
-        document.body.classList.toggle('sidebar-collapsed');
-        if (document.body.classList.contains('sidebar-collapsed')) {
-            submenu.style.display = 'none';
-            toggleSubmenu.querySelector('.chevron').textContent = '▼';
-        }
-    });
+    if (toggleSidebar && submenu && toggleSubmenu) {
+        toggleSidebar.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-collapsed');
+            if (document.body.classList.contains('sidebar-collapsed')) {
+                submenu.style.display = 'none';
+                toggleSubmenu.querySelector('.chevron').textContent = '▼';
+            }
+        });
+    }
 
     ativarBotaoLogout();
 }
