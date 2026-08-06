@@ -3,16 +3,22 @@ export function carregarMenu(paginaAtiva) {
     if (!sidebar) return;
 
     sidebar.innerHTML = `
-        <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; gap: 10px;">
-            <a href="dashboard.html" class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none; flex: 1; overflow: hidden;">
-                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar" style="width: 32px; height: 32px; filter: brightness(0) invert(1); flex-shrink: 0;">
-                <h2 class="menu-text" style="font-size: 1.2rem; color: var(--text-primary); font-weight: 700; white-space: nowrap; margin: 0;">Prisma TI</h2>
+        <!-- Botão Flutuante de Recolher/Expandir -->
+        <button id="toggle-sidebar" class="toggle-float-btn" title="Recolher/Expandir Menu">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+
+        <!-- Cabeçalho Limpo (Apenas Logo) -->
+        <div class="sidebar-header" style="display: flex; align-items: center; margin-bottom: 40px; width: 100%;">
+            <a href="dashboard.html" class="sidebar-brand" style="display: flex; align-items: center; gap: 12px; text-decoration: none; overflow: hidden; width: 100%;">
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar" style="width: 36px; height: 36px; filter: brightness(0) invert(1); flex-shrink: 0;">
+                <h2 class="menu-text" style="font-size: 1.3rem; color: var(--text-primary); font-weight: 700; white-space: nowrap; margin: 0;">Prisma TI</h2>
             </a>
-            <button id="toggle-sidebar" class="btn-icon" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;" title="Recolher Menu">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
         </div>
         
+        <!-- Navegação do Menu -->
         <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
             <a href="dashboard.html" class="${paginaAtiva === 'dashboard' ? 'active' : ''}">
                 <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
@@ -39,6 +45,7 @@ export function carregarMenu(paginaAtiva) {
             </a>
         </nav>
         
+        <!-- Botão de Sair -->
         <button id="btn-logout" class="logout-btn" style="display: flex; align-items: center; gap: 12px; background: transparent; border: 1px solid var(--border-color); color: var(--danger); padding: 12px 16px; border-radius: 8px; cursor: pointer; width: 100%;">
             <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
             <span class="menu-text" style="font-weight: 600;">Sair do Sistema</span>
@@ -55,7 +62,7 @@ export function carregarMenu(paginaAtiva) {
         toggleSubmenu.querySelector('.chevron').textContent = isClosed ? '▲' : '▼';
     });
 
-    // Minimizar/Maximizar Menu
+    // Lógica do botão flutuante
     const toggleSidebar = sidebar.querySelector('#toggle-sidebar');
     toggleSidebar.addEventListener('click', () => {
         document.body.classList.toggle('sidebar-collapsed');

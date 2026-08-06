@@ -6,7 +6,6 @@
     <title>Prisma TI - Login</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Estilos específicos centralizados para a tela de login */
         body.login-body {
             display: flex;
             justify-content: center;
@@ -73,6 +72,24 @@
             margin-top: 15px;
             display: none;
         }
+        
+        /* Estilos do botão de alternar entre Login e Cadastro */
+        .toggle-form {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .toggle-form a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .toggle-form a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body class="login-body">
@@ -91,11 +108,16 @@
 
             <div class="input-group">
                 <label for="password">Senha</label>
-                <input type="password" id="password" class="input-modern" placeholder="••••••••" required>
+                <input type="password" id="password" class="input-modern" placeholder="••••••••" required minlength="6">
             </div>
 
-            <button type="submit" class="btn-login">Entrar no Sistema</button>
+            <button type="submit" id="btn-submit" class="btn-login">Entrar no Sistema</button>
             <p id="login-error">E-mail ou senha inválidos.</p>
+            
+            <div class="toggle-form">
+                <span id="toggle-text-pre">Não possui conta? </span>
+                <a href="#" id="link-toggle">Cadastre-se aqui</a>
+            </div>
         </form>
     </div>
 

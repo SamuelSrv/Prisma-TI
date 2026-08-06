@@ -340,3 +340,51 @@ body.sidebar-collapsed .sidebar-brand {
     background: transparent !important;
     padding: 0 !important;
 }
+
+/* --- NOVA ESTRUTURA DO BOTÃO DE MENU --- */
+.sidebar {
+    position: fixed;
+    transition: width 0.3s ease;
+    /* Deixa o abrir/fechar suave */
+}
+
+/* Botão Flutuante posicionado na borda do menu */
+.toggle-float-btn {
+    position: absolute;
+    top: 35px;
+    right: -14px;
+    /* Posiciona exatamente no meio da borda */
+    width: 28px;
+    height: 28px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-float-btn:hover {
+    background-color: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+}
+
+/* Transição de giro da seta */
+.chevron-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Quando recolhido, a seta aponta para o outro lado e centraliza o logo */
+body.sidebar-collapsed .chevron-icon {
+    transform: rotate(180deg);
+}
+
+body.sidebar-collapsed .sidebar-header {
+    justify-content: center;
+}
