@@ -2,59 +2,76 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 
-// Roda a blindagem ANTES de carregar a tela
-await verificarAutenticacao();
+let chartCanal = null;
+let chartStatus = null;
 
-carregarMenu('dashboard');
+document.addEventListener('DOMContentLoaded', async () => {
+    await verificarAutenticacao();
+    carregarMenu('dashboard');
 
-document.addEventListener('DOMContentLoaded', () => {
-    const ctxVolumetria = document.getElementById('chartVolumetria').getContext('2d');
-    let chartVolumetria = new Chart(ctxVolumetria, {
-        type: 'bar',
-        data: {
-            labels: ['Atendidas', 'Transbordadas', 'Fora de Horário', 'Abandonadas'],
-            datasets: [{ label: 'Chamadas', data: [0, 0, 0, 0], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderRadius: 6 }]
-        },
-        plugins: [ChartDataLabels],
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: '#f8fafc', anchor: 'end', align: 'top', font: { weight: 'bold' },
-                    formatter: (value, ctx) => {
-                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        if (sum === 0) return '0%';
-                        return ((value * 100) / sum).toFixed(1) + '%';
-                    }
-                }
-            },
-            scales: { x: { ticks: { color: '#94a3b8' }, grid: { display: false } }, y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } }
-        }
-    });
+    // Inicializa Datepicker (mesmo código que usamos no relatório)
+    const dateStartEl = document.getElementById('date-start');
+    const dateEndEl = document.getElementById('date-end');
+    
+    // Define hoje como padrão
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    dateStartEl.value = hoje;
+    dateEndEl.value = hoje;
 
-    const ctxMidia = document.getElementById('chartMidia').getContext('2d');
-    let chartMidia = new Chart(ctxMidia, {
-        type: 'doughnut',
-        data: { labels: ['Chat / WhatsApp', 'Telefonia / Voz'], datasets: [{ data: [0, 0], backgroundColor: ['#10b981', '#3b82f6'], borderWidth: 0 }] },
-        plugins: [ChartDataLabels],
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 12 } } },
-                datalabels: {
-                    color: '#fff', font: { weight: 'bold', size: 13 },
-                    formatter: (value, ctx) => {
-                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        if (sum === 0) return '0%';
-                        return ((value * 100) / sum).toFixed(1) + '%';
-                    }
-                }
-            }
-        }
-    });
+    if (window.Datepicker) {
+        new window.Datepicker(dateStartEl, { format: 'dd/mm/yyyy', language: 'pt-BR', autohide: true });
+        new window.Datepicker(dateEndEl, { format: 'dd/mm/yyyy', language: 'pt-BR', autohide: true });
+    }
 
-    const atualizarDashboard = () => { console.log('Filtro alterado, buscando dados do banco...'); };
-    document.getElementById('select-mes')?.addEventListener('change', atualizarDashboard);
-    document.getElementById('select-ano')?.addEventListener('change', atualizarDashboard);
+    // Botão de filtrar
+    document.getElementById('btn-filtrar').addEventListener('click', carregarDadosDashboard);
+
+    // Carrega dados iniciais
+    carregarDadosDashboard();
 });
+
+async function carregarDadosDashboard() {
+    const dataInicio = document.getElementById('date-start').value;
+    const dataFim = document.getElementById('date-end').value;
+
+    const [diaI, mesI, anoI] = dataInicio.split('/');
+    const [diaF, mesF, anoF] = dataFim.split('/');
+    const dataInicioISO = `${anoI}-${mesI}-${diaI} 00:00:00`;
+    const dataFimISO = `${anoF}-${mesF}-${diaF} 23:59:59`;
+
+    const { data: registros, error } = await supabase
+        .from('atendimentos_detalhados')
+        .select('*')
+        .gte('data_hora', dataInicioISO)
+        .lte('data_hora', dataFimISO);
+
+    if (error) return console.error(error);
+    
+    atualizarGraficos(registros);
+}
+
+function atualizarGraficos(dados) {
+    // 1. Dados para Gráfico de Canal (Ligação vs Chat)
+    const ligacoes = dados.filter(d => d.canal === 'Ligação').length;
+    const chats = dados.filter(d => d.canal === 'Chat').length;
+
+    // 2. Dados para Gráfico de Status (Atendida, Perdida, etc)
+    const statusLabels = [...new Set(dados.map(d => d.status))];
+    const statusData = statusLabels.map(s => dados.filter(d => d.status === s).length);
+
+    // Destruir gráficos anteriores se existirem
+    if (chartCanal) chartCanal.destroy();
+    if (chartStatus) chartStatus.destroy();
+
+    // Renderizar Gráfico de Canal
+    chartCanal = new Chart(document.getElementById('chartCanal'), {
+        type: 'pie',
+        data: { labels: ['Ligação', 'Chat'], datasets: [{ data: [ligacoes, chats], backgroundColor: ['#3b82f6', '#10b981'] }] }
+    });
+
+    // Renderizar Gráfico de Status
+    chartStatus = new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: { labels: statusLabels, datasets: [{ data: statusData, backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'] }] }
+    });
+}
