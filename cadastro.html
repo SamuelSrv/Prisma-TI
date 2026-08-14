@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Categorias & PDV</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+</head>
+
+<body>
+
+    <div class="layout-container">
+        <!-- Menu Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="assets/img/logo.svg" alt="Logo" class="logo-sidebar">
+                <h2>Menu</h2>
+            </div>
+            <nav>
+                <a href="dashboard.html">Visão Geral URA</a>
+                <a href="lojas.html">Relatório de Lojas</a>
+                <a href="categorias.html" class="active">Categorias & PDV</a>
+            </nav>
+            <button id="btn-logout" class="logout-btn">Sair do Sistema</button>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <div class="page-header-flex">
+                <div>
+                    <h1 class="header-title">Detalhamento de Categorias & PDV</h1>
+                    <p class="subtitle">Análise pontual de ocorrências e chamados por departamento</p>
+                </div>
+                <button type="button" id="btn-abrir-modal" class="btn-primary-modern">Configurar e Gerar
+                    Relatório</button>
+            </div>
+
+            <!-- Container da Apresentação em Slides (16:9) -->
+            <div id="container-slides" style="display: none;">
+                <div class="actions-bar">
+                    <h3>Visualização da Apresentação (1920x1080)</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="btn-exportar-pdf" class="btn-action red">Exportar PDF</button>
+                        <button type="button" id="btn-exportar-pptx" class="btn-action blue">Exportar
+                            PowerPoint</button>
+                    </div>
+                </div>
+
+                <!-- Slide 1 -->
+                <div class="slide-page">
+                    <div class="slide-header">Grupo Lebes - Ocorrências de PDV e Acessos</div>
+                    <div class="slide-body">
+                        <div class="table-container">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Departamento</th>
+                                        <th>Categoria / Motivo</th>
+                                        <th>Quantidade</th>
+                                        <th>% do Mês</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>PDV</td>
+                                        <td>Travamento</td>
+                                        <td>58</td>
+                                        <td>10%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PDV</td>
+                                        <td>Erro ao iniciar Aplicação</td>
+                                        <td>22</td>
+                                        <td>4%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Centralizado de Filtros -->
+    <div id="modal-filtro" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <h3>Parâmetros de Categorias & PDV</h3>
+
+            <div class="input-group">
+                <label>Data de Início:</label>
+                <input type="date" id="modal-data-inicio" class="input-modern">
+            </div>
+
+            <div class="input-group">
+                <label>Data de Fim:</label>
+                <input type="date" id="modal-data-fim" class="input-modern">
+            </div>
+
+            <div class="input-group checkbox-group">
+                <label class="checkbox-title">Comparar com:</label>
+                <label><input type="checkbox" id="chk-mes"> Mês anterior (período equivalente)</label>
+                <label><input type="checkbox" id="chk-semana"> Semana anterior</label>
+                <label><input type="checkbox" id="chk-ano"> Ano anterior</label>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" id="btn-gerar-relatorio" class="btn-primary-modern flex-1">Gerar
+                    Apresentação</button>
+                <button type="button" id="btn-fechar-modal" class="btn-secondary-modern flex-1">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="assets/js/categorias.js"></script>
+</body>
+
+</html>

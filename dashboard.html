@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Dashboard Operacional</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-100">
+    <div class="layout-container">
+        <aside class="sidebar"></aside>
+        
+        <main class="main-content" style="padding: 40px; width: 100%;">
+            <div class="page-header-flex" style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 class="header-title" style="font-size: 1.8rem; font-weight: 700;">Visão Geral da Operação</h1>
+                    <p class="subtitle" style="color: #94a3b8;">Acompanhe os principais indicadores e volumetria do mês</p>
+                </div>
+                
+                <!-- Seletor de Mês Reativo (Atualiza automático ao mudar) -->
+                <div style="display: flex; align-items: center; gap: 12px; background: #1e293b; padding: 10px 20px; border-radius: 12px; border: 1px solid #334155;">
+                    <label for="filtro-mes" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">MÊS EM EXIBIÇÃO:</label>
+                    <input type="month" id="filtro-mes" value="2026-06" style="background: #0f172a; color: white; padding: 6px 12px; border-radius: 8px; border: 1px solid #334155; font-weight: 600; outline: none; cursor: pointer;">
+                </div>
+            </div>
+
+            <!-- Cards de KPIs -->
+            <div class="kpi-grid">
+                <div class="card kpi-card">
+                    <span>Total de Atendimentos (Mês)</span>
+                    <h2 id="kpi-ligacoes-mes">0</h2>
+                </div>
+                <div class="card kpi-card">
+                    <span>Atendidas com Sucesso</span>
+                    <h2 id="kpi-ligacoes-semana">0</h2>
+                </div>
+                <div class="card kpi-card">
+                    <span>Atendimentos (Chat x Ligação)</span>
+                    <h2 id="kpi-atendimentos" style="font-size: 1.8rem; margin-top: 12px;">0 / 0</h2>
+                </div>
+                <div class="card kpi-card alert">
+                    <span>Abandonos / Perdidos</span>
+                    <h2 id="kpi-abandonos">0</h2>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                <div class="chart-card" style="background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155;">
+                    <h3 style="color: white; font-size: 1.1rem; font-weight: 600; margin-bottom: 20px;">Distribuição de Chamadas por Status</h3>
+                    <canvas id="chartVolumetria" style="max-height: 280px;"></canvas>
+                </div>
+                <div class="chart-card" style="background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155;">
+                    <h3 style="color: white; font-size: 1.1rem; font-weight: 600; margin-bottom: 20px;">Volume por Mídia (Chat x Ligação)</h3>
+                    <canvas id="chartMidia" style="max-height: 280px;"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Atualizar Dados</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+</head>
+
+<body>
+    <div class="layout-container">
+        <aside class="sidebar"></aside>
+        <main class="main-content">
+            <div class="page-header-flex">
+                <div>
+                    <h1 class="header-title">Atualização de Dados URA</h1>
+                    <p class="subtitle">Faça o upload diário do relatório CSV gerado pela Dígitro</p>
+                </div>
+            </div>
+
+            <!-- Card de Ingestão -->
+            <div class="card" style="padding: 30px;">
+                <div style="display: flex; gap: 15px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label
+                            style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; display: block;">Selecione
+                            o CSV da Dígitro:</label>
+                        <input type="file" id="file-input" accept=".csv" class="input-modern"
+                            style="padding: 10px; cursor: pointer;">
+                    </div>
+                    <button type="button" id="btn-processar" class="btn-primary-modern"
+                        style="height: 44px; min-width: 150px;">
+                        Processar Dados
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="assets/js/atualizar-dados.js"></script>
+</body>
+
+</html>

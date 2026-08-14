@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma TI - Gestão de Usuários</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
+</head>
+
+<body class="bg-slate-900 text-slate-100 flex min-h-screen">
+    
+    <!-- Menu Lateral Dinâmico -->
+    <aside class="sidebar w-64 bg-slate-950 border-r border-slate-800 flex-shrink-0 h-screen sticky top-0"></aside>
+    
+    <main class="main-content flex-1 p-10 overflow-y-auto w-full">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white">Gerenciamento de Acessos</h1>
+            <p class="text-slate-400 mt-2">Controle os níveis de permissão dos usuários da plataforma Prisma TI.</p>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                <h2 class="text-lg font-semibold text-white">Usuários Cadastrados</h2>
+                <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase rounded-full border border-emerald-500/30 tracking-wider">Área Restrita (TI)</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="text-xs text-slate-400 uppercase bg-slate-900/50 border-b border-slate-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-4">Usuário / Email</th>
+                            <th scope="col" class="px-6 py-4 text-center">Nível de Acesso (Cargo)</th>
+                            <th scope="col" class="px-6 py-4 text-center">Data de Cadastro</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-usuarios">
+                        <tr>
+                            <td colspan="3" class="px-6 py-8 text-center text-slate-500">
+                                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Carregando usuários...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-6 bg-slate-800/30 p-5 rounded-lg border border-slate-700/50">
+            <h3 class="text-emerald-400 font-semibold mb-2"><i class="fa-solid fa-shield-halved mr-2"></i>Como funciona a segurança?</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Novos usuários que criam contas na tela de login entram automaticamente como <strong>"Usuário Comum"</strong>, podendo apenas visualizar dados (leitura). Você, como equipe de TI, deve utilizar os seletores acima para promover quem precisar de acessos administrativos. Somente membros de TI podem ver esta tela.
+            </p>
+        </div>
+    </main>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Lógica da Tela -->
+    <script type="module" src="assets/js/usuarios.js"></script>
+</body>
+
+</html>
