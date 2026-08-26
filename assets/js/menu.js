@@ -46,6 +46,16 @@ export async function carregarMenu(paginaAtiva) {
                     <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 3v4a1 1 0 0 1-1 1H5m4 8h6m-6-4h6m4-8v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1Z"/></svg>
                     Gerar Relatório
                 </a>
+
+                <!-- CATEGORIA: QUALITOR -->
+                <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    Qualitor
+                </div>
+
+                <a href="chamados.html" class="nav-item ${paginaAtiva === 'chamados' ? 'active' : ''}">
+                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-3 5h3m-6 0h.01M12 16h3m-6 0h.01M10 3v4h4V3h-4Z"/></svg>
+                    Relatório de Chamados
+                </a>
         `;
 
         // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona menu de ADMIN/TI se o usuário tiver acesso
