@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (COM CORREÇÃO DE ACENTOS E CONTATO)
+// 1. IMPORTAÇÃO INTELIGENTE (COM NOVA CATEGORIA)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -50,7 +50,7 @@ function processarCSV() {
     Papa.parse(fileInput.files[0], {
         header: true,
         skipEmptyLines: true,
-        encoding: "ISO-8859-1", // <--- CORREÇÃO DOS ACENTOS DOS NOMES
+        encoding: "ISO-8859-1", // Corrige os acentos
         complete: async function(results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
@@ -74,7 +74,8 @@ function processarCSV() {
                         prioridade: linha['Prioridade'] || '',
                         operador: linha['Operador'] || '',
                         descricao: linha['Descrição'] || '',
-                        contato: linha['Contato'] || '' // <--- NOVA COLUNA DE FILIAIS
+                        contato: linha['Contato'] || '', 
+                        categoria: linha['Categoria completa'] || '' // Puxa a coluna nova do arquivo
                     });
                 }
             });
@@ -89,7 +90,7 @@ function processarCSV() {
                 if (error) throw error;
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
-                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados.`;
+                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados e classificados.`;
             } catch (error) {
                 console.error(error);
                 msgEl.className = "text-sm mt-3 text-red-500";
@@ -160,29 +161,32 @@ async function gerarRelatorioChamados() {
 }
 
 // ==========================================
-// 3. INTELIGÊNCIA: EXTRAINDO DADOS 
+// 3. INTELIGÊNCIA E LIMPEZA DE DADOS 
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
-        // 1. Usa a coluna Contato (Ex: "Filial 160")
+        // 1. Filial (Formatando a primeira letra para maiúscula)
         let filial = 'Matriz/Outros';
         if (d.contato && d.contato.trim() !== '') {
             filial = d.contato.trim();
+            filial = filial.charAt(0).toUpperCase() + filial.slice(1);
         } else if (d.descricao) {
-            // Fallback: Se contato vier vazio, tenta pescar da descrição
             const filialMatch = d.descricao.match(/\[Filial:\s*(\d+)\]/i);
             if (filialMatch) filial = 'Filial ' + filialMatch[1];
         }
 
-        // 2. Extrai a Categoria do título
-        const tituloParts = d.titulo ? d.titulo.split(/[\/\-]/) : ['Diversos'];
-        let categoria = tituloParts[0].replace('( I )', '').trim();
+        // 2. Categoria (Limpando o "( I ) -" ou "( S ) -")
+        let categoria = d.categoria || d.titulo || 'Diversos';
+        categoria = categoria.replace(/^\(\s*[IS]\s*\)\s*-\s*/, '').trim();
+        // Quebra na primeira barra e pega só a Macro-Categoria (Ex: PDV, App Resolve, etc)
+        categoria = categoria.split('/')[0].trim();
         if(categoria === '') categoria = 'Diversos';
 
-        // 3. Verifica Status
+        // 3. Status e Prioridade
         const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
+        const prioridade = d.prioridade && d.prioridade.trim() !== '' ? d.prioridade : 'Não Informada';
 
-        return { ...d, filial, categoria, fechado };
+        return { ...d, filial, categoria, fechado, prioridade };
     });
 }
 
@@ -196,7 +200,7 @@ function agruparEContar(array, propriedade) {
 }
 
 // ==========================================
-// 4. RENDERIZAÇÃO DOS SLIDES
+// 4. RENDERIZAÇÃO DE MÚLTIPLOS SLIDES
 // ==========================================
 function renderizarSlides(dados, pInicio, pFim) {
     const container = document.getElementById('modal-slides-content');
@@ -206,12 +210,14 @@ function renderizarSlides(dados, pInicio, pFim) {
     const totalFechados = dados.filter(d => d.fechado).length;
     const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
 
+    // Gerando Rankings Limpos e Expandidos para Top 5
     const topFiliais = agruparEContar(dados, 'filial').filter(f => f.nome !== 'Matriz/Outros' && !f.nome.toLowerCase().includes('semáforo')).slice(0, 5);
-    const topCategorias = agruparEContar(dados, 'categoria').slice(0, 3);
-    const topOperadores = agruparEContar(dados, 'operador').slice(0, 3);
+    const topCategorias = agruparEContar(dados, 'categoria').slice(0, 5);
+    const topOperadores = agruparEContar(dados, 'operador').slice(0, 5);
+    const distPrioridade = agruparEContar(dados, 'prioridade').slice(0, 5);
 
     const renderPagina = (conteudo, titulo) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden;">
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px;">
                 <div>
                     <h2 style="color: #115e59; font-size: 1.3rem; font-weight: 800; margin: 0;">${titulo}</h2>
@@ -225,6 +231,7 @@ function renderizarSlides(dados, pInicio, pFim) {
         </div>
     `;
 
+    // SLIDE 1: Panorama e Gráfico Evolutivo
     const htmlSlide1 = `
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
             <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -245,8 +252,9 @@ function renderizarSlides(dados, pInicio, pFim) {
         </div>
     `;
 
-    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado encontrado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td><td style="text-align: center; color: #64748b; border-bottom: 1px solid #f1f5f9;">${((item.qtd / total) * 100).toFixed(1)}%</td></tr>`).join('');
+    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td><td style="text-align: center; color: #64748b; border-bottom: 1px solid #f1f5f9;">${((item.qtd / total) * 100).toFixed(1)}%</td></tr>`).join('');
 
+    // SLIDE 2: Filiais e Categorias 
     const htmlSlide2 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
@@ -254,42 +262,60 @@ function renderizarSlides(dados, pInicio, pFim) {
                     <i class="fa-solid fa-store mr-2"></i> TOP 5 FILIAIS DEMANDANTES
                 </div>
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                    <table class="lebes-table" style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
                         <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">FILIAL</th><th style="text-align: center;">CHAMADOS</th><th style="text-align: center;">IMPACTO</th></tr></thead>
                         <tbody>${gerarLinhasTabela(topFiliais)}</tbody>
                     </table>
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 30px;">
-                <div>
-                    <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                        <i class="fa-solid fa-tags mr-2"></i> TOP 3 CATEGORIAS (MOTIVOS)
-                    </div>
-                    <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; padding: 15px;">
-                        <table class="lebes-table" style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
-                            <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">CATEGORIA</th><th style="text-align: center;">VOL.</th><th style="text-align: center;">%</th></tr></thead>
-                            <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
-                        </table>
-                    </div>
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                    <i class="fa-solid fa-tags mr-2"></i> TOP 5 CATEGORIAS (MACRO)
                 </div>
-
-                <div>
-                    <div style="background: #0d9488; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                        <i class="fa-solid fa-headset mr-2"></i> TOP 3 OPERADORES (ATENDIMENTOS)
-                    </div>
-                    <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; padding: 15px;">
-                        <table class="lebes-table" style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
-                            <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">NOME DO ANALISTA</th><th style="text-align: center;">TICKETS</th><th style="text-align: center;">%</th></tr></thead>
-                            <tbody>${gerarLinhasTabela(topOperadores)}</tbody>
-                        </table>
-                    </div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
+                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">CATEGORIA</th><th style="text-align: center;">VOL.</th><th style="text-align: center;">%</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
+                    </table>
                 </div>
             </div>
         </div>
     `;
 
-    container.innerHTML = renderPagina(htmlSlide1, 'Visão Geral & Volumetria') + renderPagina(htmlSlide2, 'Análise de Origem e Esforço');
+    // SLIDE 3: Operadores e Prioridade
+    const htmlSlide3 = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #0d9488; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                    <i class="fa-solid fa-headset mr-2"></i> TOP 5 OPERADORES / ANALISTAS
+                </div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
+                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">NOME DO ANALISTA</th><th style="text-align: center;">TICKETS</th><th style="text-align: center;">%</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(topOperadores)}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i> DISTRIBUIÇÃO POR PRIORIDADE
+                </div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
+                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">GRAU DE PRIORIDADE</th><th style="text-align: center;">VOL.</th><th style="text-align: center;">%</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = 
+        renderPagina(htmlSlide1, 'Visão Geral & Volumetria') + 
+        renderPagina(htmlSlide2, 'Top Ofensores: Origem e Categoria') +
+        renderPagina(htmlSlide3, 'Atuação da Equipe e Nível de Criticidade');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
