@@ -10,17 +10,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!authData || !authData.session) return;
         carregarMenu('chamados');
 
-        // Configuração do Datepicker Tailwind
         const opts = { autohide: true, format: 'dd/mm/yyyy', language: 'pt-BR' };
         if (window.Datepicker) {
             new window.Datepicker(document.getElementById('date-start'), opts);
             new window.Datepicker(document.getElementById('date-end'), opts);
         }
 
-        // Eventos dos Botões
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
         document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioChamados);
-        document.getElementById('btn-fechar-modal').addEventListener('click', () => document.getElementById('modal-apresentacao').classList.add('hidden'));
+        
+        // Ajuste de z-index para garantir que o modal fique ACIMA do menu lateral
+        const modal = document.getElementById('modal-apresentacao');
+        if (modal) modal.style.zIndex = '9999';
+        
+        document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
     } catch (error) {
         console.error("Erro na tela de chamados:", error);
@@ -28,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (ANTI-DUPLICAÇÃO)
+// 1. IMPORTAÇÃO INTELIGENTE
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -52,10 +55,8 @@ function processarCSV() {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
 
-            // Limpeza e formatação dos dados para o Supabase
             dadosBrutos.forEach(linha => {
                 if (linha['Atendimento']) {
-                    // O Qualitor envia a data como "24/08/2026 - 22:55". Precisamos converter para "2026-08-24 22:55:00"
                     let dataFormatada = null;
                     if (linha['Abertura']) {
                         const partes = linha['Abertura'].split(' - ');
@@ -77,10 +78,9 @@ function processarCSV() {
                 }
             });
 
-            msgEl.innerText = `Enviando ${chamadosParaSalvar.length} registros para o banco (ignora duplicados)...`;
+            msgEl.innerText = `Enviando ${chamadosParaSalvar.length} registros para o banco...`;
 
             try {
-                // UPSERT: Insere ou Atualiza baseado na Chave Primária (atendimento)
                 const { error } = await supabase
                     .from('chamados_qualitor')
                     .upsert(chamadosParaSalvar, { onConflict: 'atendimento' });
@@ -88,7 +88,7 @@ function processarCSV() {
                 if (error) throw error;
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
-                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados atualizados/inseridos.`;
+                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados.`;
             } catch (error) {
                 console.error(error);
                 msgEl.className = "text-sm mt-3 text-red-500";
@@ -96,14 +96,14 @@ function processarCSV() {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
-                fileInput.value = ''; // Limpa o input
+                fileInput.value = ''; 
             }
         }
     });
 }
 
 // ==========================================
-// 2. BUSCA NO BANCO E GERAÇÃO DE RELATÓRIO
+// 2. BUSCA NO BANCO
 // ==========================================
 async function gerarRelatorioChamados() {
     const dataInicio = document.getElementById('date-start').value;
@@ -125,7 +125,6 @@ async function gerarRelatorioChamados() {
         let inicioBusca = 0;
         let buscando = true;
 
-        // Paginação Contínua
         while (buscando) {
             const { data, error } = await supabase
                 .from('chamados_qualitor')
@@ -147,7 +146,9 @@ async function gerarRelatorioChamados() {
             return;
         }
 
-        renderizarSlideChamados(registros, dataInicio, dataFim);
+        // Processa os dados antes de enviar para o slide
+        const chamadosProcessados = processarDadosQualitor(registros);
+        renderizarSlides(chamadosProcessados, dataInicio, dataFim);
 
     } catch (error) {
         console.error(error);
@@ -159,182 +160,218 @@ async function gerarRelatorioChamados() {
 }
 
 // ==========================================
-// 3. CONSTRUÇÃO DO SLIDE E GRÁFICO COMPLEXO
+// 3. INTELIGÊNCIA: EXTRAINDO DADOS OCULTOS
 // ==========================================
-function renderizarSlideChamados(dados, pInicio, pFim) {
+function processarDadosQualitor(dados) {
+    return dados.map(d => {
+        // 1. Tenta extrair a Filial da descrição (Ex: [Filial: 160])
+        const filialMatch = d.descricao ? d.descricao.match(/\[Filial:\s*(\d+)\]/i) : null;
+        const filial = filialMatch ? filialMatch[1] : 'Matriz/Outros';
+
+        // 2. Extrai a Categoria do título (Ex: "App Resolve / Descontos" -> "App Resolve")
+        const tituloParts = d.titulo ? d.titulo.split(/[\/\-]/) : ['Diversos'];
+        let categoria = tituloParts[0].replace('( I )', '').trim();
+        if(categoria === '') categoria = 'Diversos';
+
+        // 3. Verifica Status Simplificado
+        const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
+
+        return { ...d, filial, categoria, fechado };
+    });
+}
+
+function agruparEContar(array, propriedade) {
+    const contagem = {};
+    array.forEach(item => {
+        const chave = item[propriedade] || 'N/I';
+        contagem[chave] = (contagem[chave] || 0) + 1;
+    });
+    return Object.keys(contagem).map(k => ({ nome: k, qtd: contagem[k] })).sort((a, b) => b.qtd - a.qtd);
+}
+
+// ==========================================
+// 4. RENDERIZAÇÃO DOS SLIDES
+// ==========================================
+function renderizarSlides(dados, pInicio, pFim) {
     const container = document.getElementById('modal-slides-content');
     const modal = document.getElementById('modal-apresentacao');
+    
+    // Totalizadores
+    const total = dados.length;
+    const totalFechados = dados.filter(d => d.fechado).length;
+    const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
 
-    const htmlSlide = `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ffffff; padding: 25px 40px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">
+    // Rankings
+    const topFiliais = agruparEContar(dados, 'filial').filter(f => f.nome !== 'Matriz/Outros').slice(0, 5);
+    const topCategorias = agruparEContar(dados, 'categoria').slice(0, 3);
+    const topOperadores = agruparEContar(dados, 'operador').slice(0, 3);
+
+    // Template Base de Página
+    const renderPagina = (conteudo, titulo) => `
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px;">
                 <div>
-                    <h2 style="color: #1e293b; font-size: 1.4rem; font-weight: 800; margin: 0;">Visão Geral de Demandas TI</h2>
-                    <span style="font-size: 0.8rem; color: #64748b;">Período: ${pInicio} até ${pFim}</span>
+                    <h2 style="color: #115e59; font-size: 1.3rem; font-weight: 800; margin: 0;">${titulo}</h2>
+                    <span style="font-size: 0.8rem; color: #475569; font-weight: 600;">Período Analisado: ${pInicio} até ${pFim}</span>
                 </div>
-                <span style="font-size: 1.1rem; font-weight: 700; color: #10b981;">Grupo Lebes</span>
+                <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Prisma TI - Qualitor</span>
             </div>
-            
-            <div style="flex: 1; position: relative;">
-                <canvas id="chartEvolucaoChamados"></canvas>
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                ${conteudo}
             </div>
         </div>
     `;
 
-    container.innerHTML = htmlSlide;
+    // ----------------------------------------------------
+    // SLIDE 1: PANORAMA E GRÁFICO (Corrigido)
+    // ----------------------------------------------------
+    const htmlSlide1 = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Total de Chamados Abertos</span>
+                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${total}</span>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Chamados Encerrados</span>
+                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Taxa de Resolução</span>
+                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
+            </div>
+        </div>
+        <div style="flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative;">
+            <canvas id="chartEvolucaoChamados"></canvas>
+        </div>
+    `;
+
+    // ----------------------------------------------------
+    // SLIDE 2: RANKINGS E DETALHAMENTO (O que você pediu!)
+    // ----------------------------------------------------
+    const gerarLinhasTabela = (arr) => arr.map(item => `<tr><td style="font-weight: 600;">${item.nome}</td><td style="text-align: center; font-weight: 800;">${item.qtd}</td><td style="text-align: center; color: #64748b;">${((item.qtd / total) * 100).toFixed(1)}%</td></tr>`).join('');
+
+    const htmlSlide2 = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
+            
+            <!-- Coluna Esquerda: Top Filiais -->
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #115e59; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                    <i class="fa-solid fa-store mr-2"></i> TOP 5 FILIAIS DEMANDANTES
+                </div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
+                    <table class="lebes-table" style="width: 100%; font-size: 0.85rem;">
+                        <thead><tr style="background: #f1f5f9;"><th style="padding: 10px;">Filial</th><th style="text-align: center;">Chamados</th><th style="text-align: center;">Impacto</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(topFiliais)}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Categorias e Operadores -->
+            <div style="display: flex; flex-direction: column; gap: 30px;">
+                
+                <div>
+                    <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                        <i class="fa-solid fa-tags mr-2"></i> TOP 3 CATEGORIAS (MOTIVOS)
+                    </div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; padding: 15px;">
+                        <table class="lebes-table" style="width: 100%; font-size: 0.85rem;">
+                            <thead><tr style="background: #f1f5f9;"><th style="padding: 10px;">Categoria Identificada</th><th style="text-align: center;">Vol.</th><th style="text-align: center;">%</th></tr></thead>
+                            <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="background: #0d9488; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
+                        <i class="fa-solid fa-headset mr-2"></i> TOP 3 OPERADORES (ATENDIMENTOS)
+                    </div>
+                    <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; padding: 15px;">
+                        <table class="lebes-table" style="width: 100%; font-size: 0.85rem;">
+                            <thead><tr style="background: #f1f5f9;"><th style="padding: 10px;">Nome do Analista</th><th style="text-align: center;">Tickets</th><th style="text-align: center;">%</th></tr></thead>
+                            <tbody>${gerarLinhasTabela(topOperadores)}</tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = renderPagina(htmlSlide1, 'Visão Geral & Volumetria') + renderPagina(htmlSlide2, 'Análise de Origem e Esforço (Top Ofensores)');
+    
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    // Preparar dados para o Gráfico (Agrupamento fictício por mês para reproduzir a imagem baseada nos dados do CSV)
-    // Extraímos os meses presentes no CSV.
-    const mesesDisponiveis = [...new Set(dados.map(d => {
-        const data = new Date(d.data_abertura);
-        return data.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/');
+    // ==========================================
+    // GRÁFICO CORRIGIDO E CALIBRADO
+    // ==========================================
+    const labelsMeses = [...new Set(dados.map(d => {
+        return new Date(d.data_abertura).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/');
     }))].sort();
 
-    // Arrays para o Chart.js
-    const labelsMeses = mesesDisponiveis;
     const chamadosAbertos = [];
     const chamadosFechados = [];
-    const fechadosPrazo = [];
-    const backlog = [];
-    const zeev = [];
-    
     const pctFechados = [];
-    const pctPrazo = [];
-    const meta = [];
 
     labelsMeses.forEach(mesLabel => {
-        const chamadosDoMes = dados.filter(d => {
-            const m = new Date(d.data_abertura).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/');
-            return m === mesLabel;
-        });
-
+        const chamadosDoMes = dados.filter(d => new Date(d.data_abertura).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/') === mesLabel);
         const abertos = chamadosDoMes.length;
-        // Lógica simplificada de status (Adapte conforme os status reais do Qualitor)
-        const fechados = chamadosDoMes.filter(d => d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado')).length;
-        
-        // Dados MOCK para reproduzir a complexidade do gráfico solicitado (Você precisará cruzar isso com SLA e origens Zeev no futuro)
-        const cFechados = fechados > 0 ? fechados : Math.round(abertos * 0.85); // fallback visual
-        const cPrazo = Math.round(cFechados * 0.6);
-        const cBacklog = Math.round(abertos * 0.05);
-        const cZeev = Math.round(abertos * 4.5); // A barra roxa gigante da imagem
+        const fechados = chamadosDoMes.filter(d => d.fechado).length;
 
         chamadosAbertos.push(abertos);
-        chamadosFechados.push(cFechados);
-        fechadosPrazo.push(cPrazo);
-        backlog.push(cBacklog);
-        zeev.push(cZeev);
-
-        pctFechados.push(((cFechados / (abertos || 1)) * 100).toFixed(0));
-        pctPrazo.push(((cPrazo / (cFechados || 1)) * 100).toFixed(0));
-        meta.push(85); // Linha reta de meta
+        chamadosFechados.push(fechados);
+        pctFechados.push(((fechados / (abertos || 1)) * 100).toFixed(0));
     });
 
     if (chartChamados) chartChamados.destroy();
     
-    // Configuração do Gráfico Complexo (Exatamente como a imagem de referência)
     chartChamados = new Chart(document.getElementById('chartEvolucaoChamados').getContext('2d'), {
         type: 'bar',
         data: {
             labels: labelsMeses,
             datasets: [
                 {
-                    label: '% Fechados',
+                    label: '% Encerrados',
                     data: pctFechados,
                     type: 'line',
-                    borderColor: '#a3e635', // Verde Claro
-                    backgroundColor: '#a3e635',
+                    borderColor: '#10b981', 
+                    backgroundColor: '#10b981',
                     yAxisID: 'y1',
-                    tension: 0.1,
-                    pointRadius: 5
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 6
                 },
                 {
-                    label: '% Fechados no Prazo',
-                    data: pctPrazo,
-                    type: 'line',
-                    borderColor: '#059669', // Verde Escuro
-                    backgroundColor: '#059669',
-                    yAxisID: 'y1',
-                    tension: 0.1,
-                    pointRadius: 5
-                },
-                {
-                    label: 'Meta',
-                    data: meta,
-                    type: 'line',
-                    borderColor: '#65a30d',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    yAxisID: 'y1'
-                },
-                {
-                    label: 'Chamados Abertos',
+                    label: 'Chamados Abertos (Total)',
                     data: chamadosAbertos,
-                    backgroundColor: '#4d7c38',
+                    backgroundColor: '#475569',
                     yAxisID: 'y',
-                    categoryPercentage: 0.8,
-                    barPercentage: 0.9
+                    borderRadius: 4
                 },
                 {
-                    label: 'Chamados Fechados',
+                    label: 'Chamados Encerrados',
                     data: chamadosFechados,
-                    backgroundColor: '#b5d596',
+                    backgroundColor: '#3b82f6',
                     yAxisID: 'y',
-                    categoryPercentage: 0.8,
-                    barPercentage: 0.9
-                },
-                {
-                    label: 'Fechados no Prazo',
-                    data: fechadosPrazo,
-                    backgroundColor: '#d9f0c2',
-                    yAxisID: 'y',
-                    categoryPercentage: 0.8,
-                    barPercentage: 0.9
-                },
-                {
-                    label: 'Backlog',
-                    data: backlog,
-                    backgroundColor: '#ff0000',
-                    yAxisID: 'y',
-                    categoryPercentage: 0.8,
-                    barPercentage: 0.9
-                },
-                {
-                    label: 'Zeev',
-                    data: zeev,
-                    backgroundColor: '#6b21a8', // Roxo
-                    yAxisID: 'y',
-                    categoryPercentage: 0.8,
-                    barPercentage: 0.9
+                    borderRadius: 4
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { boxWidth: 12, usePointStyle: true, padding: 20 }
-                }
-            },
+            plugins: { legend: { position: 'top' } },
             scales: {
                 y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: { display: true, text: 'Volume Absoluto' },
-                    grid: { color: '#f1f5f9' }
+                    type: 'linear', display: true, position: 'left',
+                    title: { display: true, text: 'Volume de Chamados' },
+                    grid: { color: '#e2e8f0' },
+                    beginAtZero: true
                 },
                 y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: { display: true, text: 'Porcentagem (%)' },
-                    min: 0,
-                    max: 105,
+                    type: 'linear', display: true, position: 'right',
+                    title: { display: true, text: 'Taxa de Encerramento (%)' },
+                    min: 0, max: 110,
                     grid: { drawOnChartArea: false }
                 }
             }
