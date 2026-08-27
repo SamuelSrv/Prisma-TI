@@ -183,7 +183,8 @@ async function gerarRelatorioPorEquipe() {
 
         const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
         dtIni.setHours(0,0,0,0);
-        const dtFim = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
+        const dtFim = new Date(`${anoF}-${mesF}-${anoF ? '' : ''}${diaF}T23:59:59`); // Corrigido para anoF
+        const dtFimReal = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
 
         const chamadosProcessados = processarDadosQualitor(registros);
         
@@ -191,16 +192,16 @@ async function gerarRelatorioPorEquipe() {
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
-            return dataObj >= dtIni && dataObj <= dtFim;
+            return dataObj >= dtIni && dataObj <= dtFimReal;
         });
 
-        // Cálculo do Período Anterior (para comparativo)
-        const diffTime = Math.abs(dtFim - dtIni);
+        // Cálculo do Período Anterior
+        const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         
         const antIni = new Date(dtIni);
         antIni.setDate(antIni.getDate() - diffDays);
-        const antFim = new Date(dtFim);
+        const antFim = new Date(dtFimReal);
         antFim.setDate(antFim.getDate() - diffDays);
 
         const chamadosAnterior = chamadosProcessados.filter(d => {
@@ -213,15 +214,13 @@ async function gerarRelatorioPorEquipe() {
         let tipoPeriodo = 'personalizado';
         let subtituloCapa = `${dataInicio} até ${dataFim}`;
 
-        // Verifica se é Mensal (dia 1 até o último dia do mês)
         const ultimoDiaMes = new Date(parseInt(anoI), parseInt(mesI), 0).getDate();
         if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
             tipoPeriodo = 'mensal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
         } 
-        // Verifica se é Semanal (Segunda a Domingo)
-        else if (dtIni.getDay() === 1 && dtFim.getDay() === 0 && diffDays === 7) {
+        else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
             tipoPeriodo = 'semanal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
@@ -241,7 +240,7 @@ async function gerarRelatorioPorEquipe() {
         modal.classList.add('flex');
 
         // Renderizar gráfico diário no Slide 1
-        renderizarGraficoField(chamadosPeriodo, dtIni, dtFim);
+        renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
 
     } catch (error) {
         console.error(error);
@@ -271,13 +270,12 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4. GRÁFICO DIÁRIO DO FIELD SERVICE
+// 4. GRÁFICO DIÁRIO ADAPTÁVEL E COM RÓTULOS FIXOS
 // ==========================================
 function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
 
-    // Gera os dias do período selecionado
     const labelsDias = [];
     const abertosDia = [];
     const fechadosDia = [];
@@ -304,12 +302,53 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
         fechadosDia.push(fechados);
         prazoDia.push(prazo);
 
-        pctFechadosDia.push(abertos > 0 ? Math.round((fechados / abertos) * 100) : 0);
-        pctPrazoDia.push(fechados > 0 ? Math.round((prazo / fechados) * 100) : 0);
+        const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
+        const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
+
+        pctFechadosDia.push(pFechados);
+        pctPrazoDia.push(pPrazo);
         metaDia.push(85);
 
         curr.setDate(curr.getDate() + 1);
     }
+
+    // Adaptação automática do eixo Y da direita (y1) se alguma porcentagem for > 100%
+    const maxPctEncontrado = Math.max(...pctFechadosDia, ...pctPrazoDia, 100);
+    const y1MaxDinamico = maxPctEncontrado <= 100 ? 105 : Math.ceil(maxPctEncontrado / 50) * 50 + 50;
+
+    // Plugin customizado para desenhar os números fixos sem precisar de clique
+    const pluginRotulosFixos = {
+        id: 'rotulosFixosField',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) return;
+                
+                meta.data.forEach((element, index) => {
+                    const value = dataset.data[index];
+                    if (value === null || value === undefined || (value === 0 && dataset.type === 'bar')) return;
+
+                    ctx.save();
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+
+                    const model = element.getProps(['x', 'y'], true);
+                    
+                    if (dataset.type === 'line') {
+                        if (dataset.label !== 'Meta') {
+                            ctx.fillStyle = dataset.borderColor;
+                            ctx.fillText(value + '%', model.x, model.y - 8);
+                        }
+                    } else if (dataset.type === 'bar') {
+                        ctx.fillStyle = '#1e293b';
+                        ctx.fillText(value, model.x, model.y - 5);
+                    }
+                    ctx.restore();
+                });
+            });
+        }
+    };
 
     if (chartField) chartField.destroy();
 
@@ -330,11 +369,14 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } },
+            plugins: { 
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
-                y1: { type: 'linear', display: true, position: 'right', min: 0, max: 105, grid: { drawOnChartArea: false } }
+                y1: { type: 'linear', display: true, position: 'right', min: 0, max: y1MaxDinamico, grid: { drawOnChartArea: false } }
             }
-        }
+        },
+        plugins: [pluginRotulosFixos]
     });
 }
