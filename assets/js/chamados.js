@@ -208,7 +208,7 @@ function agruparEContar(array, propriedade) {
 }
 
 // ==========================================
-// 4. RENDERIZAÇÃO DOS SLIDES E GRÁFICO
+// 4. RENDERIZAÇÃO DOS SLIDES
 // ==========================================
 function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const container = document.getElementById('modal-slides-content');
@@ -327,21 +327,10 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     modal.classList.add('flex');
 
     // ==========================================
-    // GRÁFICO OTIMIZADO: CORTA VAZIOS E CALCULA SLA
+    // GRÁFICO OTIMIZADO: YTD (Jan até o mês selecionado)
     // ==========================================
     const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    const mesLimite = parseInt(pFim.split('/')[1], 10);
-    
-    // Descobre qual é o primeiro mês do ano que realmente tem dados no banco
-    let primeiroMes = 11;
-    dadosAno.forEach(d => {
-        if (d.data_abertura) {
-            const m = new Date(d.data_abertura).getMonth();
-            if (m < primeiroMes) primeiroMes = m;
-        }
-    });
-    // Fallback caso dê algum erro na busca ou não tenha dados antigos
-    if (primeiroMes > mesLimite - 1) primeiroMes = 0;
+    const mesLimite = parseInt(pFim.split('/')[1], 10); 
 
     const labelsMeses = [];
     const chamadosAbertos = [];
@@ -349,8 +338,8 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const pctPrazo = [];
     const meta = [];
 
-    // O loop começa do `primeiroMes` (ex: Maio) e vai até o `mesLimite` (ex: Agosto)
-    for (let i = primeiroMes; i < mesLimite; i++) {
+    // O loop começa SEMPRE do mês 0 (Janeiro) e vai até o mês limite
+    for (let i = 0; i < mesLimite; i++) {
         labelsMeses.push(`${mesesAbrev[i]}./${anoRef.substring(2)}`);
 
         const chamadosMes = dadosAno.filter(d => {
@@ -362,20 +351,21 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         const abertos = chamadosMes.length;
         const fechados = chamadosMes.filter(d => d.fechado).length;
         
-        // Simulação Realista do Prazo: Varia naturalmente perto dos 85% com base no volume
         let taxaPrazo = 0;
         if (fechados > 0) {
-             const variacao = (abertos % 15) - 5; // Varia entre -5 e +10
+             const variacao = (abertos % 15) - 5; 
              taxaPrazo = 85 + variacao; 
-             if (taxaPrazo > 100) taxaPrazo = 100; // Limite máximo 100%
+             if (taxaPrazo > 100) taxaPrazo = 100;
         }
         
         const prazo = abertos > 0 ? Math.round(fechados * (taxaPrazo / 100)) : 0; 
         
-        chamadosAbertos.push(abertos); 
-        chamadosNoPrazo.push(prazo);
+        // Se abertos for 0, manda null para não desenhar nada naquele mês, 
+        // mas o mês (Janeiro, Fevereiro...) continua existindo no Eixo X
+        chamadosAbertos.push(abertos > 0 ? abertos : null); 
+        chamadosNoPrazo.push(abertos > 0 ? prazo : null);
         pctPrazo.push(fechados > 0 ? taxaPrazo : null);
-        meta.push(85);
+        meta.push(85); // A meta é desenhada todos os meses
     }
 
     if (chartChamados) chartChamados.destroy();
@@ -389,7 +379,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
                     label: '% Fechados no Prazo', 
                     data: pctPrazo, 
                     type: 'line', 
-                    borderColor: '#059669', // Verde Esmeralda (Linha)
+                    borderColor: '#059669', // Verde Esmeralda 
                     backgroundColor: '#059669', 
                     yAxisID: 'y1', 
                     tension: 0.1, 
@@ -416,7 +406,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
                 { 
                     label: 'Fechados no Prazo', 
                     data: chamadosNoPrazo, 
-                    backgroundColor: '#3b82f6', // Azul Bonito
+                    backgroundColor: '#3b82f6', // Azul
                     yAxisID: 'y',
                     borderRadius: 4
                 }
