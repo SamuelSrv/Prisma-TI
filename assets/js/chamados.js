@@ -327,21 +327,20 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     modal.classList.add('flex');
 
     // ==========================================
-    // GRÁFICO OTIMIZADO: YTD (Jan até o mês selecionado)
+    // GRÁFICO OTIMIZADO: YTD (Jan a Dez Fixo)
     // ==========================================
     const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    const mesLimite = parseInt(pFim.split('/')[1], 10); 
+    
+    // O gráfico SEMPRE terá 12 meses no eixo X
+    const labelsMeses = mesesAbrev.map(m => `${m}./${anoRef.substring(2)}`);
 
-    const labelsMeses = [];
     const chamadosAbertos = [];
     const chamadosNoPrazo = [];
     const pctPrazo = [];
     const meta = [];
 
-    // O loop começa SEMPRE do mês 0 (Janeiro) e vai até o mês limite
-    for (let i = 0; i < mesLimite; i++) {
-        labelsMeses.push(`${mesesAbrev[i]}./${anoRef.substring(2)}`);
-
+    // O loop varre obrigatoriamente os 12 meses do ano (de 0 a 11)
+    for (let i = 0; i < 12; i++) {
         const chamadosMes = dadosAno.filter(d => {
             if(!d.data_abertura) return false;
             const data = new Date(d.data_abertura);
@@ -360,12 +359,13 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         
         const prazo = abertos > 0 ? Math.round(fechados * (taxaPrazo / 100)) : 0; 
         
-        // Se abertos for 0, manda null para não desenhar nada naquele mês, 
-        // mas o mês (Janeiro, Fevereiro...) continua existindo no Eixo X
+        // Se o mês não tem chamados, passa null. O Chart.js vai pular a barra/linha, mas o mês continua no Eixo X.
         chamadosAbertos.push(abertos > 0 ? abertos : null); 
         chamadosNoPrazo.push(abertos > 0 ? prazo : null);
         pctPrazo.push(fechados > 0 ? taxaPrazo : null);
-        meta.push(85); // A meta é desenhada todos os meses
+        
+        // A meta será desenhada como uma linha reta de Janeiro a Dezembro
+        meta.push(85); 
     }
 
     if (chartChamados) chartChamados.destroy();
@@ -385,7 +385,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
                     tension: 0.1, 
                     borderWidth: 3, 
                     pointRadius: 6,
-                    spanGaps: true 
+                    spanGaps: true // Conecta os pontos mesmo se houver buracos (meses sem dados)
                 },
                 { 
                     label: 'Meta (85%)', 
