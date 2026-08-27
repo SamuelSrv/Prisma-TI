@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE
+// 1. IMPORTAÇÃO INTELIGENTE (COLUNAS EXATAS)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -56,29 +56,44 @@ function processarCSV() {
             const chamadosParaSalvar = [];
 
             dadosBrutos.forEach(linha => {
-                if (linha['Atendimento']) {
-                    let dataFormatada = null;
-                    if (linha['Abertura']) {
-                        const partes = linha['Abertura'].split(' - ');
+                // Tenta ler flexível caso o CSV venha com variações de maiúsculas/minúsculas
+                const getVal = (keys) => {
+                    for (let k of keys) {
+                        if (linha[k] !== undefined) return linha[k];
+                    }
+                    return '';
+                };
+
+                const atendimento = getVal(['Atendimento', 'atendimento']);
+                if (atendimento) {
+                    let aberturaStr = getVal(['Abertura', 'abertura']);
+                    let dataFormatadaISO = null;
+
+                    // Tenta formatar a data para ordenação correta no banco
+                    if (aberturaStr) {
+                        const partes = aberturaStr.split(' - ');
                         if (partes.length === 2) {
                             const [dia, mes, ano] = partes[0].split('/');
-                            dataFormatada = `${ano}-${mes}-${dia} ${partes[1]}:00`;
+                            dataFormatadaISO = `${ano}-${mes}-${dia} ${partes[1]}:00`;
                         }
                     }
 
-                    // Mapeamento correto das colunas do CSV
-                    const catCompleta = linha['Categoria completa'] || linha['Título do chamado'] || 'Diversos';
-
                     chamadosParaSalvar.push({
-                        atendimento: parseInt(linha['Atendimento']),
-                        data_abertura: dataFormatada,
-                        titulo: linha['Título do chamado'] || '',
-                        situacao: linha['Situação'] || '',
-                        prioridade: linha['Prioridade'] || '',
-                        operador: linha['Operador'] || '',
-                        descricao: linha['Descrição'] || '',
-                        contato: linha['Contato'] || 'Não Informado', 
-                        categoria: catCompleta // Categoria 1 / Completa do CSV
+                        atendimento: parseInt(atendimento),
+                        abertura: aberturaStr,
+                        situacao: getVal(['Situação', 'Situacao', 'situação']),
+                        atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço']),
+                        encerramento: getVal(['Encerramento', 'encerramento']),
+                        contato: getVal(['Contato', 'contato']) || 'Não Informado',
+                        categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título do chamado', 'categoria completa']),
+                        categoria_2: getVal(['Categoria 2', 'categoria 2']),
+                        data_da_abertura: getVal(['Data da abertura', 'data da abertura']),
+                        departamento: getVal(['Departamento', 'departamento']),
+                        operador: getVal(['Operador', 'operador']),
+                        responsavel: getVal(['Responsável', 'responsavel']),
+                        equipe: getVal(['Equipe', 'equipe']),
+                        descricao: getVal(['Descrição', 'descrição', 'Descricao']),
+                        descricao_detalhada: getVal(['Descrição.1', 'descricao.1'])
                     });
                 }
             });
@@ -86,14 +101,19 @@ function processarCSV() {
             msgEl.innerText = `Enviando ${chamadosParaSalvar.length} registros para o banco...`;
 
             try {
-                const { error } = await supabase
-                    .from('chamados_qualitor')
-                    .upsert(chamadosParaSalvar, { onConflict: 'atendimento' });
+                // Batch de 500 registros para garantir alta performance
+                const batchSize = 500;
+                for (let i = 0; i < chamadosParaSalvar.length; i += batchSize) {
+                    const lote = chamadosParaSalvar.slice(i, i + batchSize);
+                    const { error } = await supabase
+                        .from('chamados_qualitor')
+                        .upsert(lote, { onConflict: 'atendimento' });
 
-                if (error) throw error;
+                    if (error) throw error;
+                }
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
-                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados.`;
+                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} registros salvos no banco.`;
             } catch (error) {
                 console.error(error);
                 msgEl.className = "text-sm mt-3 text-red-500";
@@ -138,31 +158,54 @@ async function gerarRelatorioChamados() {
             const { data, error } = await supabase
                 .from('chamados_qualitor')
                 .select('*')
-                .gte('data_abertura', startISO_Ano)
-                .lte('data_abertura', endISO_Ano)
+                .gte('abertura', '01/01/0000') // fallback geral
                 .range(inicioBusca, inicioBusca + 999);
 
+            // Como a data textual pode variar, puxamos em blocos e filtramos no JS com segurança
             if (error) throw error;
+            if (!data || data.length === 0) break;
             registros = registros.concat(data);
             if (data.length < 1000) buscando = false;
             else inicioBusca += 1000;
         }
 
         if (registros.length === 0) {
-            alert("Nenhum chamado encontrado neste ano para gerar comparativo.");
+            alert("Nenhum chamado encontrado no banco.");
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
             return;
         }
 
-        const chamadosAnoProcessados = processarDadosQualitor(registros);
-        const chamadosPeriodo = chamadosAnoProcessados.filter(d => d.data_abertura >= startISO_Periodo && d.data_abertura <= endISO_Periodo);
+        // Filtro de data seguro baseado na string de abertura ("dd/mm/aaaa - hh:mm")
+        const parseDataBr = (str) => {
+            if (!str) return null;
+            const partes = str.split(' - ');
+            if (partes.length < 1) return null;
+            const [d, m, a] = partes[0].split('/');
+            const hora = partes[1] || '00:00';
+            return new Date(`${a}-${m}-${d}T${hora}:00`);
+        };
+
+        const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
+        dtIni.setHours(0,0,0,0);
+        const dtFim = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
+
+        const chamadosProcessados = processarDadosQualitor(registros);
+        
+        const chamadosPeriodo = chamadosProcessados.filter(d => {
+            const dataObj = parseDataBr(d.abertura);
+            if (!dataObj) return false;
+            return dataObj >= dtIni && dataObj <= dtFim;
+        });
 
         if(chamadosPeriodo.length === 0) {
-            alert("Existem dados no ano, mas NENHUM no período exato selecionado. Tente ampliar as datas.");
+            alert("Existem dados no banco, mas NENHUM no período exato selecionado. Verifique o formato das datas.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
+            return;
         }
 
-        renderizarSlides(chamadosAnoProcessados, chamadosPeriodo, dataInicio, dataFim, anoI);
+        renderizarSlides(chamadosProcessados, chamadosPeriodo, dataInicio, dataFim, anoI);
 
     } catch (error) {
         console.error(error);
@@ -184,12 +227,26 @@ function processarDadosQualitor(dados) {
             contato = contato.charAt(0).toUpperCase() + contato.slice(1);
         }
 
-        let categoria = d.categoria && d.categoria.trim() !== '' ? d.categoria.trim() : (d.titulo || 'Diversos');
+        let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
 
-        const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
-        const prioridade = d.prioridade && d.prioridade.trim() !== '' ? d.prioridade : 'Não Informada';
+        const fechado = (d.situacao || '').toLowerCase().includes('encerrado') || (d.situacao || '').toLowerCase().includes('fechado') || (d.situacao || '').toLowerCase().includes('resolvido');
+        const prioridade = 'Normal'; // Padrão caso não venha
 
-        return { ...d, contato, categoria, fechado, prioridade };
+        // Extrai o mês (0 a 11) para o gráfico anual
+        let mesIndex = 0;
+        let anoNum = 2026;
+        if (d.abertura) {
+            const partes = d.abertura.split(' - ');
+            if (partes.length > 0) {
+                const [dia, mes, ano] = partes[0].split('/');
+                if (mes && ano) {
+                    mesIndex = parseInt(mes, 10) - 1;
+                    anoNum = parseInt(ano, 10);
+                }
+            }
+        }
+
+        return { ...d, contato, categoria, fechado, prioridade, mesIndex, anoNum };
     });
 }
 
@@ -215,7 +272,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
 
     const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
     const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
-    const distPrioridade = agruparEContar(dadosPeriodo, 'prioridade').slice(0, 5);
+    const distPrioridade = agruparEContar(dadosPeriodo, 'situacao').slice(0, 5); // Usando situação como critério de criticidade
 
     const renderPagina = (conteudo, titulo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
@@ -232,7 +289,6 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         </div>
     `;
 
-    // SLIDE 1: KPIs e Gráfico Evolutivo Anual
     const htmlSlide1 = `
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 15px;">
             <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -258,7 +314,6 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
 
     const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.qtd}</td><td style="text-align: center; color: #475569; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td></tr>`).join('');
 
-    // SLIDE 2: Top 10 Categorias & Top 10 Contatos
     const htmlSlide2 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
@@ -286,15 +341,14 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         </div>
     `;
 
-    // SLIDE 3: Apenas Distribuição por Prioridade (Operadores Removidos conforme pedido)
     const htmlSlide3 = `
         <div style="display: flex; flex-direction: column; height: 100%; max-width: 700px; margin: 0 auto; width: 100%;">
             <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                DISTRIBUIÇÃO POR PRIORIDADE
+                SITUAÇÃO DOS CHAMADOS
             </div>
             <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
                 <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                    <thead><tr style="background: #10b981; color: white; font-size: 0.8rem;"><th style="padding: 10px; text-align: left;">Grau de Prioridade</th><th style="text-align: center;">Volume</th><th style="text-align: center;">% do Total</th></tr></thead>
+                    <thead><tr style="background: #10b981; color: white; font-size: 0.8rem;"><th style="padding: 10px; text-align: left;">Situação</th><th style="text-align: center;">Volume</th><th style="text-align: center;">% do Total</th></tr></thead>
                     <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
                 </table>
             </div>
@@ -304,7 +358,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     container.innerHTML = 
         renderPagina(htmlSlide1, 'Dashboard Gerencial & Evolução') + 
         renderPagina(htmlSlide2, 'Top 10 Categorias & Contatos') +
-        renderPagina(htmlSlide3, 'Nível de Criticidade dos Chamados');
+        renderPagina(htmlSlide3, 'Status e Situação Geral');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -321,11 +375,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const meta = [];
 
     for (let i = 0; i < 12; i++) {
-        const chamadosMes = dadosAno.filter(d => {
-            if(!d.data_abertura) return false;
-            const data = new Date(d.data_abertura);
-            return data.getMonth() === i && data.getFullYear() === parseInt(anoRef);
-        });
+        const chamadosMes = dadosAno.filter(d => d.mesIndex === i && d.anoNum === parseInt(anoRef));
 
         const abertos = chamadosMes.length;
         const fechados = chamadosMes.filter(d => d.fechado).length;
