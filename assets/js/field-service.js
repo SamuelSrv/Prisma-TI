@@ -3,14 +3,10 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
     const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
     const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(0) : 0;
 
-    // Fechados no prazo (verificando se não há atraso ou simulação padrão)
     const fechadosNoPrazo = dadosPeriodo.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
-    
-    // Backlog (chamados abertos em aberto ou aguardando)
     const backlog = dadosPeriodo.filter(d => !d.fechado).length;
 
-    // Período Anterior para Comparativo
     const antTotal = dadosAnterior.length;
     const antFechados = dadosAnterior.filter(d => d.fechado).length;
     const antPrazo = dadosAnterior.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
@@ -26,7 +22,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
 
     const formatDiff = (val) => val > 0 ? `+${val}` : `${val}`;
 
-    // Helper agrupamento
     const agruparEContar = (array, prop) => {
         const contagem = {};
         array.forEach(item => {
@@ -39,7 +34,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
     const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
     const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
 
-    // Template HTML Base dos Slides (Padrão Grupo Lebes 1180x664)
     const renderSlideContent = (conteudo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
             ${conteudo}
@@ -68,7 +62,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
             <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
         
-        <!-- Tabela Comparativa Estilo Executivo -->
         <div style="background: white; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
                 <thead>
@@ -110,8 +103,18 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         </div>
     `);
 
-    // 3. SLIDE 2: TOP 10 CATEGORIAS & CONTATOS
-    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.qtd}</td><td style="text-align: center; color: #475569; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td></tr>`).join('');
+    // 3. SLIDE 2: TOP 10 COM DESTAQUE NO TOP 3 E ALTO CONTRASTE
+    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map((item, index) => {
+        const isTop3 = index < 3;
+        const bgStyle = isTop3 ? 'background-color: #d1fae5; font-weight: 700;' : 'background-color: #ffffff;';
+        const badge = isTop3 ? `<span style="display:inline-block; width:18px; height:18px; background:#047857; color:white; border-radius:50%; text-align:center; font-size:10px; line-height:18px; margin-right:6px;">${index+1}</span>` : `<span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#64748b; font-size:11px;">${index+1}</span>`;
+        
+        return `<tr style="${bgStyle} border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 8px 10px; font-size: 0.8rem; color: #0f172a; display: flex; align-items: center;">${badge}${item.nome}</td>
+            <td style="text-align: center; font-weight: 800; padding: 8px 10px; font-size: 0.8rem; color: #0f172a;">${item.qtd}</td>
+            <td style="text-align: center; padding: 8px 10px; font-size: 0.8rem; color: #0f172a; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td>
+        </tr>`;
+    }).join('');
 
     const htmlSlide2 = renderSlideContent(`
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 15px;">
