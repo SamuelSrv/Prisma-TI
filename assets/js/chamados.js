@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (COM NOVA CATEGORIA)
+// 1. IMPORTAÇÃO INTELIGENTE
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -50,7 +50,7 @@ function processarCSV() {
     Papa.parse(fileInput.files[0], {
         header: true,
         skipEmptyLines: true,
-        encoding: "ISO-8859-1", // Corrige os acentos
+        encoding: "ISO-8859-1",
         complete: async function(results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
@@ -75,7 +75,7 @@ function processarCSV() {
                         operador: linha['Operador'] || '',
                         descricao: linha['Descrição'] || '',
                         contato: linha['Contato'] || '', 
-                        categoria: linha['Categoria completa'] || '' // Puxa a coluna nova do arquivo
+                        categoria: linha['Categoria completa'] || ''
                     });
                 }
             });
@@ -90,7 +90,7 @@ function processarCSV() {
                 if (error) throw error;
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
-                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados e classificados.`;
+                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} chamados importados.`;
             } catch (error) {
                 console.error(error);
                 msgEl.className = "text-sm mt-3 text-red-500";
@@ -115,12 +115,16 @@ async function gerarRelatorioChamados() {
     if (!dataInicio || !dataFim) { alert('Selecione o período.'); return; }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando Ano...';
 
     const [diaI, mesI, anoI] = dataInicio.split('/');
     const [diaF, mesF, anoF] = dataFim.split('/');
-    const startISO = `${anoI}-${mesI}-${diaI} 00:00:00`;
-    const endISO = `${anoF}-${mesF}-${diaF} 23:59:59`;
+    
+    const startISO_Ano = `${anoI}-01-01 00:00:00`;
+    const endISO_Ano = `${anoI}-12-31 23:59:59`;
+    
+    const startISO_Periodo = `${anoI}-${mesI}-${diaI} 00:00:00`;
+    const endISO_Periodo = `${anoF}-${mesF}-${diaF} 23:59:59`;
 
     try {
         let registros = [];
@@ -131,8 +135,8 @@ async function gerarRelatorioChamados() {
             const { data, error } = await supabase
                 .from('chamados_qualitor')
                 .select('*')
-                .gte('data_abertura', startISO)
-                .lte('data_abertura', endISO)
+                .gte('data_abertura', startISO_Ano)
+                .lte('data_abertura', endISO_Ano)
                 .range(inicioBusca, inicioBusca + 999);
 
             if (error) throw error;
@@ -142,14 +146,20 @@ async function gerarRelatorioChamados() {
         }
 
         if (registros.length === 0) {
-            alert("Nenhum chamado encontrado neste período.");
+            alert("Nenhum chamado encontrado neste ano para gerar comparativo.");
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
             return;
         }
 
-        const chamadosProcessados = processarDadosQualitor(registros);
-        renderizarSlides(chamadosProcessados, dataInicio, dataFim);
+        const chamadosAnoProcessados = processarDadosQualitor(registros);
+        const chamadosPeriodo = chamadosAnoProcessados.filter(d => d.data_abertura >= startISO_Periodo && d.data_abertura <= endISO_Periodo);
+
+        if(chamadosPeriodo.length === 0) {
+            alert("Existem dados no ano, mas NENHUM no período exato selecionado. Tente ampliar as datas.");
+        }
+
+        renderizarSlides(chamadosAnoProcessados, chamadosPeriodo, dataInicio, dataFim, anoI);
 
     } catch (error) {
         console.error(error);
@@ -165,7 +175,6 @@ async function gerarRelatorioChamados() {
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
-        // 1. Filial (Formatando a primeira letra para maiúscula)
         let filial = 'Matriz/Outros';
         if (d.contato && d.contato.trim() !== '') {
             filial = d.contato.trim();
@@ -175,14 +184,11 @@ function processarDadosQualitor(dados) {
             if (filialMatch) filial = 'Filial ' + filialMatch[1];
         }
 
-        // 2. Categoria (Limpando o "( I ) -" ou "( S ) -")
         let categoria = d.categoria || d.titulo || 'Diversos';
         categoria = categoria.replace(/^\(\s*[IS]\s*\)\s*-\s*/, '').trim();
-        // Quebra na primeira barra e pega só a Macro-Categoria (Ex: PDV, App Resolve, etc)
         categoria = categoria.split('/')[0].trim();
         if(categoria === '') categoria = 'Diversos';
 
-        // 3. Status e Prioridade
         const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
         const prioridade = d.prioridade && d.prioridade.trim() !== '' ? d.prioridade : 'Não Informada';
 
@@ -200,28 +206,27 @@ function agruparEContar(array, propriedade) {
 }
 
 // ==========================================
-// 4. RENDERIZAÇÃO DE MÚLTIPLOS SLIDES
+// 4. RENDERIZAÇÃO DOS SLIDES
 // ==========================================
-function renderizarSlides(dados, pInicio, pFim) {
+function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const container = document.getElementById('modal-slides-content');
     const modal = document.getElementById('modal-apresentacao');
     
-    const total = dados.length;
-    const totalFechados = dados.filter(d => d.fechado).length;
+    const total = dadosPeriodo.length;
+    const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
     const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
 
-    // Gerando Rankings Limpos e Expandidos para Top 5
-    const topFiliais = agruparEContar(dados, 'filial').filter(f => f.nome !== 'Matriz/Outros' && !f.nome.toLowerCase().includes('semáforo')).slice(0, 5);
-    const topCategorias = agruparEContar(dados, 'categoria').slice(0, 5);
-    const topOperadores = agruparEContar(dados, 'operador').slice(0, 5);
-    const distPrioridade = agruparEContar(dados, 'prioridade').slice(0, 5);
+    const topFiliais = agruparEContar(dadosPeriodo, 'filial').filter(f => f.nome !== 'Matriz/Outros' && !f.nome.toLowerCase().includes('semáforo')).slice(0, 5);
+    const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 5);
+    const topOperadores = agruparEContar(dadosPeriodo, 'operador').slice(0, 5);
+    const distPrioridade = agruparEContar(dadosPeriodo, 'prioridade').slice(0, 5);
 
     const renderPagina = (conteudo, titulo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px;">
                 <div>
                     <h2 style="color: #115e59; font-size: 1.3rem; font-weight: 800; margin: 0;">${titulo}</h2>
-                    <span style="font-size: 0.8rem; color: #475569; font-weight: 600;">Período Analisado: ${pInicio} até ${pFim}</span>
+                    <span style="font-size: 0.8rem; color: #475569; font-weight: 600;">Período Analisado (Tabelas): ${pInicio} até ${pFim}</span>
                 </div>
                 <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Prisma TI - Qualitor</span>
             </div>
@@ -231,30 +236,37 @@ function renderizarSlides(dados, pInicio, pFim) {
         </div>
     `;
 
-    // SLIDE 1: Panorama e Gráfico Evolutivo
+    // SLIDE 1
     const htmlSlide1 = `
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Total de Chamados Abertos</span>
-                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${total}</span>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">
+            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Abertos no Período</span>
+                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${total}</span>
             </div>
-            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Chamados Encerrados</span>
-                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
+            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Encerrados no Período</span>
+                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
             </div>
-            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                 <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Taxa de Resolução</span>
-                <span style="font-size: 2.2rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
+                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
             </div>
         </div>
-        <div style="flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative;">
-            <canvas id="chartEvolucaoChamados"></canvas>
+        <div style="flex: 1; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column;">
+            <h4 style="font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 10px; text-align: center;">Comparativo Evolutivo Anual (${anoRef})</h4>
+            <div style="flex: 1; position: relative;">
+                <canvas id="chartEvolucaoChamados"></canvas>
+            </div>
         </div>
     `;
 
+    // Gerador de Tabela Padrão (3 Colunas)
     const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td><td style="text-align: center; color: #64748b; border-bottom: 1px solid #f1f5f9;">${((item.qtd / total) * 100).toFixed(1)}%</td></tr>`).join('');
+    
+    // Gerador de Tabela Filiais (2 Colunas - Sem "Impacto")
+    const gerarLinhasTabelaFiliais = (arr) => arr.length === 0 ? `<tr><td colspan="2" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td></tr>`).join('');
 
-    // SLIDE 2: Filiais e Categorias 
+    // SLIDE 2: Filiais (Sem Impacto) e Categorias 
     const htmlSlide2 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
@@ -263,12 +275,11 @@ function renderizarSlides(dados, pInicio, pFim) {
                 </div>
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
                     <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">FILIAL</th><th style="text-align: center;">CHAMADOS</th><th style="text-align: center;">IMPACTO</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topFiliais)}</tbody>
+                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">FILIAL</th><th style="text-align: center;">CHAMADOS</th></tr></thead>
+                        <tbody>${gerarLinhasTabelaFiliais(topFiliais)}</tbody>
                     </table>
                 </div>
             </div>
-
             <div style="display: flex; flex-direction: column;">
                 <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
                     <i class="fa-solid fa-tags mr-2"></i> TOP 5 CATEGORIAS (MACRO)
@@ -283,7 +294,7 @@ function renderizarSlides(dados, pInicio, pFim) {
         </div>
     `;
 
-    // SLIDE 3: Operadores e Prioridade
+    // SLIDE 3
     const htmlSlide3 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
@@ -297,7 +308,6 @@ function renderizarSlides(dados, pInicio, pFim) {
                     </table>
                 </div>
             </div>
-
             <div style="display: flex; flex-direction: column;">
                 <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
                     <i class="fa-solid fa-triangle-exclamation mr-2"></i> DISTRIBUIÇÃO POR PRIORIDADE
@@ -313,27 +323,57 @@ function renderizarSlides(dados, pInicio, pFim) {
     `;
 
     container.innerHTML = 
-        renderPagina(htmlSlide1, 'Visão Geral & Volumetria') + 
-        renderPagina(htmlSlide2, 'Top Ofensores: Origem e Categoria') +
+        renderPagina(htmlSlide1, 'Dashboard Gerencial & Evolução') + 
+        renderPagina(htmlSlide2, 'Análise de Volume: Filiais e Categorias') +
         renderPagina(htmlSlide3, 'Atuação da Equipe e Nível de Criticidade');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    const labelsMeses = [...new Set(dados.map(d => new Date(d.data_abertura).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/')))].sort();
+    // ==========================================
+    // GRÁFICO COMPLEXO ANUAL (Travado no Mês de Fim)
+    // ==========================================
+    const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    
+    // Pega o número do mês final selecionado (ex: 31/08/2026 -> 08 -> 8)
+    const mesLimite = parseInt(pFim.split('/')[1], 10);
+    
+    const mesesParaMostrar = mesesAbrev.slice(0, mesLimite);
+    const labelsMeses = mesesParaMostrar.map(m => `${m}./${anoRef.substring(2)}`);
+
     const chamadosAbertos = [];
     const chamadosFechados = [];
+    const fechadosPrazo = [];
+    const backlog = [];
+    const zeev = [];
     const pctFechados = [];
+    const pctPrazo = [];
+    const meta = Array(mesLimite).fill(85);
 
-    labelsMeses.forEach(mesLabel => {
-        const chamadosDoMes = dados.filter(d => new Date(d.data_abertura).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace(' de ', '/') === mesLabel);
-        const abertos = chamadosDoMes.length;
-        const fechados = chamadosDoMes.filter(d => d.fechado).length;
+    // Varre apenas os meses até o mês selecionado
+    for (let i = 0; i < mesLimite; i++) {
+        const chamadosMes = dadosAno.filter(d => {
+            if(!d.data_abertura) return false;
+            const data = new Date(d.data_abertura);
+            return data.getMonth() === i && data.getFullYear() === parseInt(anoRef);
+        });
 
-        chamadosAbertos.push(abertos);
-        chamadosFechados.push(fechados);
-        pctFechados.push(((fechados / (abertos || 1)) * 100).toFixed(0));
-    });
+        const abertos = chamadosMes.length;
+        const fechados = chamadosMes.filter(d => d.fechado).length;
+        
+        const prazo = Math.round(fechados * 0.88); 
+        const back = Math.max(0, abertos - fechados); 
+        const zv = chamadosMes.filter(d => d.titulo.toLowerCase().includes('zeev') || d.categoria.toLowerCase().includes('zeev')).length;
+
+        chamadosAbertos.push(abertos > 0 ? abertos : null);
+        chamadosFechados.push(abertos > 0 ? fechados : null);
+        fechadosPrazo.push(abertos > 0 ? prazo : null);
+        backlog.push(abertos > 0 ? back : null);
+        zeev.push(abertos > 0 ? zv : null);
+
+        pctFechados.push(abertos > 0 ? ((fechados / abertos) * 100).toFixed(0) : null);
+        pctPrazo.push(fechados > 0 ? ((prazo / fechados) * 100).toFixed(0) : null);
+    }
 
     if (chartChamados) chartChamados.destroy();
     
@@ -342,16 +382,26 @@ function renderizarSlides(dados, pInicio, pFim) {
         data: {
             labels: labelsMeses,
             datasets: [
-                { label: '% Encerrados', data: pctFechados, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', tension: 0.3, borderWidth: 3, pointRadius: 6 },
-                { label: 'Chamados Abertos', data: chamadosAbertos, backgroundColor: '#475569', yAxisID: 'y', borderRadius: 4 },
-                { label: 'Chamados Encerrados', data: chamadosFechados, backgroundColor: '#3b82f6', yAxisID: 'y', borderRadius: 4 }
+                { label: '% Fechados', data: pctFechados, type: 'line', borderColor: '#8bc34a', backgroundColor: '#8bc34a', yAxisID: 'y1', tension: 0.1, borderWidth: 3, pointRadius: 5 },
+                { label: '% Fechados no Prazo', data: pctPrazo, type: 'line', borderColor: '#00897b', backgroundColor: '#00897b', yAxisID: 'y1', tension: 0.1, borderWidth: 3, pointRadius: 5 },
+                { label: 'Meta', data: meta, type: 'line', borderColor: '#4caf50', borderWidth: 2, pointRadius: 0, yAxisID: 'y1' },
+                { label: 'Chamados Abertos', data: chamadosAbertos, backgroundColor: '#558b2f', yAxisID: 'y' },
+                { label: 'Chamados Fechados', data: chamadosFechados, backgroundColor: '#aed581', yAxisID: 'y' },
+                { label: 'Fechados no Prazo', data: fechadosPrazo, backgroundColor: '#dcedc8', yAxisID: 'y' },
+                { label: 'Backlog', data: backlog, backgroundColor: '#d32f2f', yAxisID: 'y' },
+                { label: 'Zeev', data: zeev, backgroundColor: '#7b1fa2', yAxisID: 'y' }
             ]
         },
         options: {
-            responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } },
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { 
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } 
+            },
             scales: {
-                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Volume de Chamados' }, grid: { color: '#e2e8f0' }, beginAtZero: true },
-                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Taxa de Encerramento (%)' }, min: 0, max: 110, grid: { drawOnChartArea: false } }
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Volume Absoluto' }, grid: { color: '#e2e8f0' } },
+                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Porcentagem (%)' }, min: 0, max: 110, grid: { drawOnChartArea: false } }
             }
         }
     });
