@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
-        // Exportação PDF
         const btnExportarPdf = document.getElementById('btn-exportar-pdf');
         if (btnExportarPdf) {
             btnExportarPdf.addEventListener('click', () => {
@@ -53,9 +52,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE
-// ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
     const msgEl = document.getElementById('msg-importacao');
@@ -131,9 +127,6 @@ function processarCSV() {
     });
 }
 
-// ==========================================
-// 2. ORQUESTRADOR DE RELATÓRIOS
-// ==========================================
 async function gerarRelatorioPorEquipe() {
     const equipeSelecionada = document.getElementById('select-equipe').value;
     const dataInicio = document.getElementById('date-start').value;
@@ -187,14 +180,12 @@ async function gerarRelatorioPorEquipe() {
 
         const chamadosProcessados = processarDadosQualitor(registros);
         
-        // Período Atual
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= dtIni && dataObj <= dtFimReal;
         });
 
-        // Cálculo do Período Anterior
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         
@@ -209,20 +200,24 @@ async function gerarRelatorioPorEquipe() {
             return dataObj >= antIni && dataObj <= antFim;
         });
 
-        // Regra da Capa Inteligente
         let tipoPeriodo = 'personalizado';
         let subtituloCapa = `${dataInicio} até ${dataFim}`;
 
-        const ultimoDiaMes = new Date(parseInt(anoI), parseInt(mesI), 0).getDate();
-        if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
-            tipoPeriodo = 'mensal';
-            const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
-        } 
-        else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
-            tipoPeriodo = 'semanal';
-            const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+        if (dataInicio === dataFim) {
+            tipoPeriodo = 'diario';
+            subtituloCapa = `FECHAMENTO DIÁRIO - ${dataInicio}`;
+        } else {
+            const ultimoDiaMes = new Date(parseInt(anoI), parseInt(mesI), 0).getDate();
+            if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
+                tipoPeriodo = 'mensal';
+                const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+            } 
+            else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
+                tipoPeriodo = 'semanal';
+                const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+            }
         }
 
         const container = document.getElementById('modal-slides-content');
@@ -238,7 +233,6 @@ async function gerarRelatorioPorEquipe() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Seleção inteligente do gráfico (Mensal ou Diário)
         if (tipoPeriodo === 'mensal') {
             renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
         } else {
@@ -254,9 +248,6 @@ async function gerarRelatorioPorEquipe() {
     }
 }
 
-// ==========================================
-// 3. PROCESSAMENTO DE DADOS
-// ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
         let contato = 'Não Informado';
@@ -266,15 +257,13 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
-        const fechado = (d.situacao || '').toLowerCase().includes('encerrado') || (d.situacao || '').toLowerCase().includes('aguardando confirmação');
+        const sit = (d.situacao || '').toLowerCase();
+        const fechado = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
         return { ...d, contato, categoria, fechado };
     });
 }
 
-// ==========================================
-// 4A. GRÁFICO DIÁRIO (Para Semanal / Personalizado)
-// ==========================================
 function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
@@ -376,9 +365,6 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     });
 }
 
-// ==========================================
-// 4B. GRÁFICO MENSAL (Para Fechamento Mensal - Acumulado Jan até o Mês)
-// ==========================================
 function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
@@ -459,7 +445,7 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             datasets: [
                 { label: 'Chamados Abertos', data: abertosMes, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
                 { label: 'Chamados Fechados', data: fechadosMes, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
-                { label: 'Fechados no Prazo', data: prazoMes, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Fechados no Prazo', data: prazoMes, backgroundColor: '#6ee7b7', yAxisID: 'y',borderRadius: 4 },
                 { label: '% Fechados', data: pctFechadosMes, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
                 { label: '% Fechados no Prazo', data: pctPrazoMes, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
                 { label: 'Meta', data: metaMes, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
