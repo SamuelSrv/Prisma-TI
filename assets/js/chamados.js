@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
         document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioPorEquipe);
-        
+
         const modal = document.getElementById('modal-apresentacao');
         if (modal) modal.style.zIndex = '9999';
-        
+
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
         // Exportação PDF
@@ -75,7 +75,7 @@ function processarCSV() {
         header: true,
         skipEmptyLines: true,
         encoding: "ISO-8859-1",
-        complete: async function(results) {
+        complete: async function (results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
 
@@ -125,7 +125,7 @@ function processarCSV() {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
-                fileInput.value = ''; 
+                fileInput.value = '';
             }
         }
     });
@@ -182,12 +182,12 @@ async function gerarRelatorioPorEquipe() {
         };
 
         const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
-        dtIni.setHours(0,0,0,0);
+        dtIni.setHours(0, 0, 0, 0);
         const dtFim = new Date(`${anoF}-${mesF}-${anoF ? '' : ''}${diaF}T23:59:59`); // Corrigido para anoF
         const dtFimReal = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
 
         const chamadosProcessados = processarDadosQualitor(registros);
-        
+
         // Período Atual
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
@@ -198,7 +198,7 @@ async function gerarRelatorioPorEquipe() {
         // Cálculo do Período Anterior
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        
+
         const antIni = new Date(dtIni);
         antIni.setDate(antIni.getDate() - diffDays);
         const antFim = new Date(dtFimReal);
@@ -218,12 +218,12 @@ async function gerarRelatorioPorEquipe() {
         if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
             tipoPeriodo = 'mensal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
-        } 
+            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI) - 1].toUpperCase()} ${anoI}`;
+        }
         else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
             tipoPeriodo = 'semanal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI) - 1].toUpperCase()} ${anoI}`;
         }
 
         const container = document.getElementById('modal-slides-content');
@@ -270,7 +270,7 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4. GRÁFICO DIÁRIO ADAPTÁVEL E COM RÓTULOS FIXOS
+// 4. GRÁFICO DIÁRIO LIMPO E ADAPTÁVEL
 // ==========================================
 function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -316,36 +316,31 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const maxPctEncontrado = Math.max(...pctFechadosDia, ...pctPrazoDia, 100);
     const y1MaxDinamico = maxPctEncontrado <= 100 ? 105 : Math.ceil(maxPctEncontrado / 50) * 50 + 50;
 
-    // Plugin customizado para desenhar os números fixos sem precisar de clique
-    const pluginRotulosFixos = {
-        id: 'rotulosFixosField',
+    // Plugin customizado para exibir os números APENAS nas linhas de porcentagem
+    const pluginRotulosLinhas = {
+        id: 'rotulosLinhasField',
         afterDatasetsDraw(chart) {
             const { ctx } = chart;
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-                
-                meta.data.forEach((element, index) => {
-                    const value = dataset.data[index];
-                    if (value === null || value === undefined || (value === 0 && dataset.type === 'bar')) return;
 
-                    ctx.save();
-                    ctx.font = 'bold 9px sans-serif';
-                    ctx.textAlign = 'center';
+                // Desenha rótulos apenas para datasets do tipo 'line' (exceto a Meta)
+                if (dataset.type === 'line' && dataset.label !== 'Meta') {
+                    meta.data.forEach((element, index) => {
+                        const value = dataset.data[index];
+                        if (value === null || value === undefined) return;
 
-                    const model = element.getProps(['x', 'y'], true);
-                    
-                    if (dataset.type === 'line') {
-                        if (dataset.label !== 'Meta') {
-                            ctx.fillStyle = dataset.borderColor;
-                            ctx.fillText(value + '%', model.x, model.y - 8);
-                        }
-                    } else if (dataset.type === 'bar') {
-                        ctx.fillStyle = '#1e293b';
-                        ctx.fillText(value, model.x, model.y - 5);
-                    }
-                    ctx.restore();
-                });
+                        ctx.save();
+                        ctx.font = 'bold 10px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = dataset.borderColor;
+
+                        const model = element.getProps(['x', 'y'], true);
+                        ctx.fillText(value + '%', model.x, model.y - 10);
+                        ctx.restore();
+                    });
+                }
             });
         }
     };
@@ -360,8 +355,8 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
                 { label: 'Chamados Abertos', data: abertosDia, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
                 { label: 'Chamados Fechados', data: fechadosDia, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
                 { label: 'Fechados no Prazo', data: prazoDia, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
-                { label: '% Fechados', data: pctFechadosDia, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2, pointRadius: 4 },
-                { label: '% Fechados no Prazo', data: pctPrazoDia, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2, pointRadius: 4 },
+                { label: '% Fechados', data: pctFechadosDia, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
+                { label: '% Fechados no Prazo', data: pctPrazoDia, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
                 { label: 'Meta', data: metaDia, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
             ]
         },
@@ -369,14 +364,14 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
                 y1: { type: 'linear', display: true, position: 'right', min: 0, max: y1MaxDinamico, grid: { drawOnChartArea: false } }
             }
         },
-        plugins: [pluginRotulosFixos]
+        plugins: [pluginRotulosLinhas]
     });
 }
