@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
-import { renderizarFieldService } from './reports/field-service.js';
+import { renderizarFieldService } from './field-service.js';
 
 let chartField = null;
 
