@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE
+// 1. IMPORTAÇÃO INTELIGENTE (CSV REAL)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -69,12 +69,12 @@ function processarCSV() {
                     chamadosParaSalvar.push({
                         atendimento: parseInt(linha['Atendimento']),
                         data_abertura: dataFormatada,
-                        titulo: linha['Título do chamado'] || '',
+                        titulo: linha['Título do chamado'] || 'Diversos', // Categoria 1
                         situacao: linha['Situação'] || '',
                         prioridade: linha['Prioridade'] || '',
                         operador: linha['Operador'] || '',
                         descricao: linha['Descrição'] || '',
-                        contato: linha['Contato'] || '', 
+                        contato: linha['Contato'] || 'Não Informado', // Contato / Requerente
                         categoria: linha['Categoria completa'] || ''
                     });
                 }
@@ -120,11 +120,9 @@ async function gerarRelatorioChamados() {
     const [diaI, mesI, anoI] = dataInicio.split('/');
     const [diaF, mesF, anoF] = dataFim.split('/');
     
-    // Busca do ano inteiro para desenhar o gráfico
     const startISO_Ano = `${anoI}-01-01 00:00:00`;
     const endISO_Ano = `${anoI}-12-31 23:59:59`;
     
-    // Filtro para os cards e tabelas
     const startISO_Periodo = `${anoI}-${mesI}-${diaI} 00:00:00`;
     const endISO_Periodo = `${anoF}-${mesF}-${diaF} 23:59:59`;
 
@@ -177,24 +175,20 @@ async function gerarRelatorioChamados() {
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
-        let filial = 'Matriz/Outros';
+        // Contato / Requerente
+        let contato = 'Não Informado';
         if (d.contato && d.contato.trim() !== '') {
-            filial = d.contato.trim();
-            filial = filial.charAt(0).toUpperCase() + filial.slice(1);
-        } else if (d.descricao) {
-            const filialMatch = d.descricao.match(/\[Filial:\s*(\d+)\]/i);
-            if (filialMatch) filial = 'Filial ' + filialMatch[1];
+            contato = d.contato.trim();
+            contato = contato.charAt(0).toUpperCase() + contato.slice(1);
         }
 
-        let categoria = d.categoria || d.titulo || 'Diversos';
-        categoria = categoria.replace(/^\(\s*[IS]\s*\)\s*-\s*/, '').trim();
-        categoria = categoria.split('/')[0].trim();
-        if(categoria === '') categoria = 'Diversos';
+        // Categoria 1 (Baseada estritamente no Título do Chamado)
+        let categoria = d.titulo && d.titulo.trim() !== '' ? d.titulo.trim() : 'Diversos';
 
         const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
         const prioridade = d.prioridade && d.prioridade.trim() !== '' ? d.prioridade : 'Não Informada';
 
-        return { ...d, filial, categoria, fechado, prioridade };
+        return { ...d, contato, categoria, fechado, prioridade };
     });
 }
 
@@ -208,7 +202,7 @@ function agruparEContar(array, propriedade) {
 }
 
 // ==========================================
-// 4. RENDERIZAÇÃO DOS SLIDES
+// 4. RENDERIZAÇÃO DOS SLIDES (TOP 10 CATEGORIAS & CONTATOS)
 // ==========================================
 function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const container = document.getElementById('modal-slides-content');
@@ -218,17 +212,18 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
     const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
 
-    const topFiliais = agruparEContar(dadosPeriodo, 'filial').filter(f => f.nome !== 'Matriz/Outros' && !f.nome.toLowerCase().includes('semáforo')).slice(0, 5);
-    const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 5);
+    // Rankings expandidos para TOP 10 (igual à sua referência)
+    const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
+    const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
     const topOperadores = agruparEContar(dadosPeriodo, 'operador').slice(0, 5);
     const distPrioridade = agruparEContar(dadosPeriodo, 'prioridade').slice(0, 5);
 
     const renderPagina = (conteudo, titulo) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 30px 45px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px;">
+        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 15px;">
                 <div>
-                    <h2 style="color: #115e59; font-size: 1.3rem; font-weight: 800; margin: 0;">${titulo}</h2>
-                    <span style="font-size: 0.8rem; color: #475569; font-weight: 600;">Período Analisado (Tabelas): ${pInicio} até ${pFim}</span>
+                    <h2 style="color: #115e59; font-size: 1.2rem; font-weight: 800; margin: 0;">${titulo}</h2>
+                    <span style="font-size: 0.75rem; color: #475569; font-weight: 600;">Período Analisado: ${pInicio} até ${pFim} | Total de Registros: ${total}</span>
                 </div>
                 <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
             </div>
@@ -238,79 +233,82 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         </div>
     `;
 
+    // SLIDE 1: KPIs e Gráfico Evolutivo Anual
     const htmlSlide1 = `
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">
-            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Abertos no Período</span>
-                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${total}</span>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 15px;">
+            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Abertos no Período</span>
+                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${total}</span>
             </div>
-            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Encerrados no Período</span>
-                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
+            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Encerrados no Período</span>
+                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
             </div>
-            <div style="background: white; padding: 15px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.8rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Taxa de Resolução</span>
-                <span style="font-size: 2rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
+            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Taxa de Resolução</span>
+                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
             </div>
         </div>
-        <div style="flex: 1; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column;">
-            <h4 style="font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 10px; text-align: center;">Comparativo Evolutivo Anual (${anoRef})</h4>
+        <div style="flex: 1; background: white; padding: 12px 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column;">
+            <h4 style="font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 8px; text-align: center;">Comparativo Evolutivo Anual (${anoRef})</h4>
             <div style="flex: 1; position: relative;">
                 <canvas id="chartEvolucaoChamados"></canvas>
             </div>
         </div>
     `;
 
-    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td><td style="text-align: center; color: #64748b; border-bottom: 1px solid #f1f5f9;">${((item.qtd / total) * 100).toFixed(1)}%</td></tr>`).join('');
-    const gerarLinhasTabelaFiliais = (arr) => arr.length === 0 ? `<tr><td colspan="2" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 12px 10px; border-bottom: 1px solid #f1f5f9;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9;">${item.qtd}</td></tr>`).join('');
+    // Gerador de Linhas com Porcentagem Real Baseada no Total do Relatório
+    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.qtd}</td><td style="text-align: center; color: #475569; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td></tr>`).join('');
 
+    // SLIDE 2: Top 10 Categorias & Top 10 Contatos (Exatamente como sua imagem de referência)
     const htmlSlide2 = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
-                <div style="background: #115e59; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                    <i class="fa-solid fa-store mr-2"></i> TOP 5 FILIAIS DEMANDANTES
+                <div style="background: #115e59; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
+                    TOP 10 CATEGORIAS
                 </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">FILIAL</th><th style="text-align: center;">CHAMADOS</th></tr></thead>
-                        <tbody>${gerarLinhasTabelaFiliais(topFiliais)}</tbody>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
+                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Categoria</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
                     </table>
                 </div>
             </div>
             <div style="display: flex; flex-direction: column;">
-                <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                    <i class="fa-solid fa-tags mr-2"></i> TOP 5 CATEGORIAS (MACRO)
+                <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
+                    TOP 10 CONTATOS
                 </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">CATEGORIA</th><th style="text-align: center;">VOL.</th><th style="text-align: center;">%</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
+                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Requerentes</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
+                        <tbody>${gerarLinhasTabela(topContatos)}</tbody>
                     </table>
                 </div>
             </div>
         </div>
     `;
 
+    // SLIDE 3: Operadores e Prioridade
     const htmlSlide3 = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
-                <div style="background: #0d9488; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                    <i class="fa-solid fa-headset mr-2"></i> TOP 5 OPERADORES / ANALISTAS
+                <div style="background: #0d9488; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
+                    TOP 5 OPERADORES / ANALISTAS
                 </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">NOME DO ANALISTA</th><th style="text-align: center;">TICKETS</th><th style="text-align: center;">%</th></tr></thead>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px;">
+                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Nome do Analista</th><th style="text-align: center;">Tickets</th><th style="text-align: center;">%</th></tr></thead>
                         <tbody>${gerarLinhasTabela(topOperadores)}</tbody>
                     </table>
                 </div>
             </div>
             <div style="display: flex; flex-direction: column;">
-                <div style="background: #0f766e; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;">
-                    <i class="fa-solid fa-triangle-exclamation mr-2"></i> DISTRIBUIÇÃO POR PRIORIDADE
+                <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
+                    DISTRIBUIÇÃO POR PRIORIDADE
                 </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                    <table class="lebes-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white;"><th style="padding: 10px; text-align: left;">GRAU DE PRIORIDADE</th><th style="text-align: center;">VOL.</th><th style="text-align: center;">%</th></tr></thead>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px;">
+                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Grau de Prioridade</th><th style="text-align: center;">Vol.</th><th style="text-align: center;">%</th></tr></thead>
                         <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
                     </table>
                 </div>
@@ -320,18 +318,16 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
 
     container.innerHTML = 
         renderPagina(htmlSlide1, 'Dashboard Gerencial & Evolução') + 
-        renderPagina(htmlSlide2, 'Análise de Volume: Filiais e Categorias') +
+        renderPagina(htmlSlide2, 'Top 10 Categorias & Contatos') +
         renderPagina(htmlSlide3, 'Atuação da Equipe e Nível de Criticidade');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
     // ==========================================
-    // GRÁFICO OTIMIZADO: YTD (Jan a Dez Fixo)
+    // GRÁFICO ANUAL (Jan a Dez)
     // ==========================================
     const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    
-    // O gráfico SEMPRE terá 12 meses no eixo X
     const labelsMeses = mesesAbrev.map(m => `${m}./${anoRef.substring(2)}`);
 
     const chamadosAbertos = [];
@@ -339,7 +335,6 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const pctPrazo = [];
     const meta = [];
 
-    // O loop varre obrigatoriamente os 12 meses do ano (de 0 a 11)
     for (let i = 0; i < 12; i++) {
         const chamadosMes = dadosAno.filter(d => {
             if(!d.data_abertura) return false;
@@ -359,12 +354,9 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         
         const prazo = abertos > 0 ? Math.round(fechados * (taxaPrazo / 100)) : 0; 
         
-        // Se o mês não tem chamados, passa null. O Chart.js vai pular a barra/linha, mas o mês continua no Eixo X.
         chamadosAbertos.push(abertos > 0 ? abertos : null); 
         chamadosNoPrazo.push(abertos > 0 ? prazo : null);
         pctPrazo.push(fechados > 0 ? taxaPrazo : null);
-        
-        // A meta será desenhada como uma linha reta de Janeiro a Dezembro
         meta.push(85); 
     }
 
@@ -379,19 +371,19 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
                     label: '% Fechados no Prazo', 
                     data: pctPrazo, 
                     type: 'line', 
-                    borderColor: '#059669', // Verde Esmeralda 
+                    borderColor: '#059669', 
                     backgroundColor: '#059669', 
                     yAxisID: 'y1', 
                     tension: 0.1, 
                     borderWidth: 3, 
-                    pointRadius: 6,
-                    spanGaps: true // Conecta os pontos mesmo se houver buracos (meses sem dados)
+                    pointRadius: 5,
+                    spanGaps: true 
                 },
                 { 
                     label: 'Meta (85%)', 
                     data: meta, 
                     type: 'line', 
-                    borderColor: '#84cc16', // Verde Limão
+                    borderColor: '#84cc16', 
                     borderWidth: 2, 
                     pointRadius: 0, 
                     yAxisID: 'y1' 
@@ -399,14 +391,14 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
                 { 
                     label: 'Chamados Abertos', 
                     data: chamadosAbertos, 
-                    backgroundColor: '#475569', // Cinza Slate
+                    backgroundColor: '#475569', 
                     yAxisID: 'y',
                     borderRadius: 4
                 },
                 { 
                     label: 'Fechados no Prazo', 
                     data: chamadosNoPrazo, 
-                    backgroundColor: '#3b82f6', // Azul
+                    backgroundColor: '#3b82f6', 
                     yAxisID: 'y',
                     borderRadius: 4
                 }
@@ -417,7 +409,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 15 } } 
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12 } } 
             },
             scales: {
                 y: { 
