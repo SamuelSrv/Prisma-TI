@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (COLUNAS EXATAS)
+// 1. IMPORTAÇÃO INTELIGENTE (BLINDADA)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -56,33 +56,20 @@ function processarCSV() {
             const chamadosParaSalvar = [];
 
             dadosBrutos.forEach(linha => {
-                // Tenta ler flexível caso o CSV venha com variações de maiúsculas/minúsculas
                 const getVal = (keys) => {
                     for (let k of keys) {
-                        if (linha[k] !== undefined) return linha[k];
+                        if (linha[k] !== undefined && linha[k] !== null) return String(linha[k]).trim();
                     }
                     return '';
                 };
 
-                const atendimento = getVal(['Atendimento', 'atendimento']);
-                if (atendimento) {
-                    let aberturaStr = getVal(['Abertura', 'abertura']);
-                    let dataFormatadaISO = null;
-
-                    // Tenta formatar a data para ordenação correta no banco
-                    if (aberturaStr) {
-                        const partes = aberturaStr.split(' - ');
-                        if (partes.length === 2) {
-                            const [dia, mes, ano] = partes[0].split('/');
-                            dataFormatadaISO = `${ano}-${mes}-${dia} ${partes[1]}:00`;
-                        }
-                    }
-
+                const atendimentoStr = getVal(['Atendimento', 'atendimento']);
+                if (atendimentoStr && !isNaN(parseInt(atendimentoStr, 10))) {
                     chamadosParaSalvar.push({
-                        atendimento: parseInt(atendimento),
-                        abertura: aberturaStr,
+                        atendimento: parseInt(atendimentoStr, 10),
+                        abertura: getVal(['Abertura', 'abertura']),
                         situacao: getVal(['Situação', 'Situacao', 'situação']),
-                        atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço']),
+                        atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço', 'Atraso no serviço']),
                         encerramento: getVal(['Encerramento', 'encerramento']),
                         contato: getVal(['Contato', 'contato']) || 'Não Informado',
                         categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título do chamado', 'categoria completa']),
@@ -90,10 +77,10 @@ function processarCSV() {
                         data_da_abertura: getVal(['Data da abertura', 'data da abertura']),
                         departamento: getVal(['Departamento', 'departamento']),
                         operador: getVal(['Operador', 'operador']),
-                        responsavel: getVal(['Responsável', 'responsavel']),
+                        responsavel: getVal(['Responsável', 'responsavel', 'Responsavel']),
                         equipe: getVal(['Equipe', 'equipe']),
                         descricao: getVal(['Descrição', 'descrição', 'Descricao']),
-                        descricao_detalhada: getVal(['Descrição.1', 'descricao.1'])
+                        descricao_detalhada: getVal(['Descrição.1', 'descricao.1', 'descricao.1'])
                     });
                 }
             });
@@ -101,23 +88,26 @@ function processarCSV() {
             msgEl.innerText = `Enviando ${chamadosParaSalvar.length} registros para o banco...`;
 
             try {
-                // Batch de 500 registros para garantir alta performance
-                const batchSize = 500;
+                // Envia em lotes de 200 registros para evitar estouro de requisição no Supabase
+                const batchSize = 200;
                 for (let i = 0; i < chamadosParaSalvar.length; i += batchSize) {
                     const lote = chamadosParaSalvar.slice(i, i + batchSize);
                     const { error } = await supabase
                         .from('chamados_qualitor')
                         .upsert(lote, { onConflict: 'atendimento' });
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error("Erro no lote Supabase:", error);
+                        throw error;
+                    }
                 }
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
                 msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} registros salvos no banco.`;
             } catch (error) {
-                console.error(error);
+                console.error("Erro crítico ao salvar:", error);
                 msgEl.className = "text-sm mt-3 text-red-500";
-                msgEl.innerText = "Erro ao salvar no banco. Verifique o console.";
+                msgEl.innerText = "Erro ao salvar no banco. Verifique o console (F12).";
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
@@ -138,16 +128,10 @@ async function gerarRelatorioChamados() {
     if (!dataInicio || !dataFim) { alert('Selecione o período.'); return; }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando Ano...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando Dados...';
 
     const [diaI, mesI, anoI] = dataInicio.split('/');
     const [diaF, mesF, anoF] = dataFim.split('/');
-    
-    const startISO_Ano = `${anoI}-01-01 00:00:00`;
-    const endISO_Ano = `${anoI}-12-31 23:59:59`;
-    
-    const startISO_Periodo = `${anoI}-${mesI}-${diaI} 00:00:00`;
-    const endISO_Periodo = `${anoF}-${mesF}-${diaF} 23:59:59`;
 
     try {
         let registros = [];
@@ -158,10 +142,8 @@ async function gerarRelatorioChamados() {
             const { data, error } = await supabase
                 .from('chamados_qualitor')
                 .select('*')
-                .gte('abertura', '01/01/0000') // fallback geral
                 .range(inicioBusca, inicioBusca + 999);
 
-            // Como a data textual pode variar, puxamos em blocos e filtramos no JS com segurança
             if (error) throw error;
             if (!data || data.length === 0) break;
             registros = registros.concat(data);
@@ -176,12 +158,12 @@ async function gerarRelatorioChamados() {
             return;
         }
 
-        // Filtro de data seguro baseado na string de abertura ("dd/mm/aaaa - hh:mm")
         const parseDataBr = (str) => {
             if (!str) return null;
             const partes = str.split(' - ');
             if (partes.length < 1) return null;
             const [d, m, a] = partes[0].split('/');
+            if (!d || !m || !a) return null;
             const hora = partes[1] || '00:00';
             return new Date(`${a}-${m}-${d}T${hora}:00`);
         };
@@ -199,7 +181,7 @@ async function gerarRelatorioChamados() {
         });
 
         if(chamadosPeriodo.length === 0) {
-            alert("Existem dados no banco, mas NENHUM no período exato selecionado. Verifique o formato das datas.");
+            alert("Existem dados no banco, mas NENHUM no período exato selecionado. Verifique as datas.");
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
             return;
@@ -230,9 +212,8 @@ function processarDadosQualitor(dados) {
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
 
         const fechado = (d.situacao || '').toLowerCase().includes('encerrado') || (d.situacao || '').toLowerCase().includes('fechado') || (d.situacao || '').toLowerCase().includes('resolvido');
-        const prioridade = 'Normal'; // Padrão caso não venha
+        const prioridade = 'Normal';
 
-        // Extrai o mês (0 a 11) para o gráfico anual
         let mesIndex = 0;
         let anoNum = 2026;
         if (d.abertura) {
@@ -272,7 +253,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
 
     const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
     const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
-    const distPrioridade = agruparEContar(dadosPeriodo, 'situacao').slice(0, 5); // Usando situação como critério de criticidade
+    const distPrioridade = agruparEContar(dadosPeriodo, 'situacao').slice(0, 5);
 
     const renderPagina = (conteudo, titulo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
