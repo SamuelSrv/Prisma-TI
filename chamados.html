@@ -18,8 +18,6 @@
     
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- PapaParse para ler CSV rápido -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 flex min-h-screen">
@@ -29,7 +27,7 @@
     <main class="main-content flex-1 p-10 overflow-y-auto w-full relative">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-white">Relatório de Chamados (Qualitor)</h1>
-            <p class="text-slate-400 mt-2">Importe bases CSV para atualizar o sistema e gere apresentações executivas.</p>
+            <p class="text-slate-400 mt-2">Importe bases CSV e gere apresentações executivas customizadas por equipe.</p>
         </div>
 
         <!-- MÓDULO 1: IMPORTAR DADOS -->
@@ -46,8 +44,18 @@
             <p id="msg-importacao" class="text-sm mt-3 text-emerald-400 hidden"></p>
         </div>
 
-        <!-- MÓDULO 2: GERAR RELATÓRIO -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex gap-4 items-end">
+        <!-- MÓDULO 2: SELEÇÃO DE EQUIPE E PERÍODO -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex gap-4 items-end flex-wrap">
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-sm font-medium text-slate-400 mb-1">Selecione a Equipe</label>
+                <select id="select-equipe" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-emerald-500">
+                    <option value="field">Field Service</option>
+                    <option value="ura" disabled>URA (Em Breve)</option>
+                    <option value="noc" disabled>NOC (Em Breve)</option>
+                    <option value="office" disabled>Office Desk (Em Breve)</option>
+                    <option value="sustentacao" disabled>Sustentação (Em Breve)</option>
+                </select>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1">Data Inicial</label>
                 <input id="date-start" type="text" class="w-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="dd/mm/aaaa" readonly>
@@ -63,13 +71,13 @@
     </main>
 
     <!-- Modal de Visualização (Slides) -->
-    <div id="modal-apresentacao" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col items-center overflow-y-auto pb-10">
+    <div id="modal-apresentacao" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col items-center overflow-y-auto pb-10" style="z-index: 9999;">
         <div class="w-full bg-slate-900 border-b border-slate-700 p-4 sticky top-0 z-10 flex justify-between items-center shadow-lg mb-8">
-            <div class="text-white font-bold text-lg flex items-center gap-3">
-                <i class="fa-solid fa-desktop text-emerald-500"></i> Desempenho de Chamados
+            <div id="modal-titulo-topo" class="text-white font-bold text-lg flex items-center gap-3">
+                <i class="fa-solid fa-desktop text-emerald-500"></i> Relatório Executivo - Grupo Lebes
             </div>
             <div class="flex gap-4">
-                <button id="btn-exportar-pdf" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-bold transition">Exportar PDF</button>
+                <button id="btn-exportar-pdf" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-bold transition shadow-lg">Exportar PDF</button>
                 <button id="btn-fechar-modal" class="bg-slate-700 hover:bg-slate-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
@@ -77,7 +85,6 @@
         <div id="modal-slides-content" class="flex flex-col items-center gap-8"></div>
     </div>
 
-    <!-- Bibliotecas e Script Principal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>

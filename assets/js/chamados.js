@@ -1,8 +1,9 @@
 import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
+import { renderizarFieldService } from './reports/field-service.js';
 
-let chartChamados = null;
+let chartField = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -17,12 +18,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
-        document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioChamados);
+        document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioPorEquipe);
         
         const modal = document.getElementById('modal-apresentacao');
         if (modal) modal.style.zIndex = '9999';
         
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
+
+        // Exportação PDF
+        const btnExportarPdf = document.getElementById('btn-exportar-pdf');
+        if (btnExportarPdf) {
+            btnExportarPdf.addEventListener('click', () => {
+                const elementoModal = document.getElementById('modal-slides-content');
+                if (!elementoModal) return;
+                btnExportarPdf.innerText = 'Gerando PDF...';
+                btnExportarPdf.disabled = true;
+
+                const options = {
+                    margin: 5, filename: 'relatorio_field_service_lebes.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                };
+
+                html2pdf().from(elementoModal).set(options).save().then(() => {
+                    btnExportarPdf.innerText = 'Exportar PDF';
+                    btnExportarPdf.disabled = false;
+                });
+            });
+        }
 
     } catch (error) {
         console.error("Erro na tela de chamados:", error);
@@ -30,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (BLINDADA)
+// 1. IMPORTAÇÃO INTELIGENTE
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -69,18 +93,12 @@ function processarCSV() {
                         atendimento: parseInt(atendimentoStr, 10),
                         abertura: getVal(['Abertura', 'abertura']),
                         situacao: getVal(['Situação', 'Situacao', 'situação']),
-                        atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço', 'Atraso no serviço']),
+                        atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço']),
                         encerramento: getVal(['Encerramento', 'encerramento']),
                         contato: getVal(['Contato', 'contato']) || 'Não Informado',
                         categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título do chamado', 'categoria completa']),
-                        categoria_2: getVal(['Categoria 2', 'categoria 2']),
-                        data_da_abertura: getVal(['Data da abertura', 'data da abertura']),
-                        departamento: getVal(['Departamento', 'departamento']),
                         operador: getVal(['Operador', 'operador']),
-                        responsavel: getVal(['Responsável', 'responsavel', 'Responsavel']),
-                        equipe: getVal(['Equipe', 'equipe']),
-                        descricao: getVal(['Descrição', 'descrição', 'Descricao']),
-                        descricao_detalhada: getVal(['Descrição.1', 'descricao.1', 'descricao.1'])
+                        descricao: getVal(['Descrição', 'descrição', 'Descricao'])
                     });
                 }
             });
@@ -88,7 +106,6 @@ function processarCSV() {
             msgEl.innerText = `Enviando ${chamadosParaSalvar.length} registros para o banco...`;
 
             try {
-                // Envia em lotes de 200 registros para evitar estouro de requisição no Supabase
                 const batchSize = 200;
                 for (let i = 0; i < chamadosParaSalvar.length; i += batchSize) {
                     const lote = chamadosParaSalvar.slice(i, i + batchSize);
@@ -96,18 +113,15 @@ function processarCSV() {
                         .from('chamados_qualitor')
                         .upsert(lote, { onConflict: 'atendimento' });
 
-                    if (error) {
-                        console.error("Erro no lote Supabase:", error);
-                        throw error;
-                    }
+                    if (error) throw error;
                 }
 
                 msgEl.className = "text-sm mt-3 text-emerald-400";
                 msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${chamadosParaSalvar.length} registros salvos no banco.`;
             } catch (error) {
-                console.error("Erro crítico ao salvar:", error);
+                console.error(error);
                 msgEl.className = "text-sm mt-3 text-red-500";
-                msgEl.innerText = "Erro ao salvar no banco. Verifique o console (F12).";
+                msgEl.innerText = "Erro ao salvar no banco. Verifique o console.";
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
@@ -118,9 +132,10 @@ function processarCSV() {
 }
 
 // ==========================================
-// 2. BUSCA NO BANCO
+// 2. ORQUESTRADOR DE RELATÓRIOS
 // ==========================================
-async function gerarRelatorioChamados() {
+async function gerarRelatorioPorEquipe() {
+    const equipeSelecionada = document.getElementById('select-equipe').value;
     const dataInicio = document.getElementById('date-start').value;
     const dataFim = document.getElementById('date-end').value;
     const btn = document.getElementById('btn-gerar');
@@ -128,7 +143,7 @@ async function gerarRelatorioChamados() {
     if (!dataInicio || !dataFim) { alert('Selecione o período.'); return; }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando Dados...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando Relatório...';
 
     const [diaI, mesI, anoI] = dataInicio.split('/');
     const [diaF, mesF, anoF] = dataFim.split('/');
@@ -153,8 +168,6 @@ async function gerarRelatorioChamados() {
 
         if (registros.length === 0) {
             alert("Nenhum chamado encontrado no banco.");
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
             return;
         }
 
@@ -174,24 +187,65 @@ async function gerarRelatorioChamados() {
 
         const chamadosProcessados = processarDadosQualitor(registros);
         
+        // Período Atual
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= dtIni && dataObj <= dtFim;
         });
 
-        if(chamadosPeriodo.length === 0) {
-            alert("Existem dados no banco, mas NENHUM no período exato selecionado. Verifique as datas.");
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
+        // Cálculo do Período Anterior (para comparativo)
+        const diffTime = Math.abs(dtFim - dtIni);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        const antIni = new Date(dtIni);
+        antIni.setDate(antIni.getDate() - diffDays);
+        const antFim = new Date(dtFim);
+        antFim.setDate(antFim.getDate() - diffDays);
+
+        const chamadosAnterior = chamadosProcessados.filter(d => {
+            const dataObj = parseDataBr(d.abertura);
+            if (!dataObj) return false;
+            return dataObj >= antIni && dataObj <= antFim;
+        });
+
+        // Regra da Capa Inteligente
+        let tipoPeriodo = 'personalizado';
+        let subtituloCapa = `${dataInicio} até ${dataFim}`;
+
+        // Verifica se é Mensal (dia 1 até o último dia do mês)
+        const ultimoDiaMes = new Date(parseInt(anoI), parseInt(mesI), 0).getDate();
+        if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
+            tipoPeriodo = 'mensal';
+            const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+        } 
+        // Verifica se é Semanal (Segunda a Domingo)
+        else if (dtIni.getDay() === 1 && dtFim.getDay() === 0 && diffDays === 7) {
+            tipoPeriodo = 'semanal';
+            const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+        }
+
+        const container = document.getElementById('modal-slides-content');
+        const modal = document.getElementById('modal-apresentacao');
+
+        if (equipeSelecionada === 'field') {
+            container.innerHTML = renderizarFieldService(chamadosPeriodo, chamadosAnterior, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
+        } else {
+            alert("Relatório desta equipe em desenvolvimento.");
             return;
         }
 
-        renderizarSlides(chamadosProcessados, chamadosPeriodo, dataInicio, dataFim, anoI);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Renderizar gráfico diário no Slide 1
+        renderizarGraficoField(chamadosPeriodo, dtIni, dtFim);
 
     } catch (error) {
         console.error(error);
-        alert("Erro ao buscar chamados.");
+        alert("Erro ao gerar relatório.");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Gerar Apresentação';
@@ -199,7 +253,7 @@ async function gerarRelatorioChamados() {
 }
 
 // ==========================================
-// 3. INTELIGÊNCIA E LIMPEZA DE DADOS 
+// 3. PROCESSAMENTO DE DADOS
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
@@ -210,236 +264,76 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
+        const fechado = (d.situacao || '').toLowerCase().includes('encerrado') || (d.situacao || '').toLowerCase().includes('aguardando confirmação');
 
-        const fechado = (d.situacao || '').toLowerCase().includes('encerrado') || (d.situacao || '').toLowerCase().includes('fechado') || (d.situacao || '').toLowerCase().includes('resolvido');
-        const prioridade = 'Normal';
-
-        let mesIndex = 0;
-        let anoNum = 2026;
-        if (d.abertura) {
-            const partes = d.abertura.split(' - ');
-            if (partes.length > 0) {
-                const [dia, mes, ano] = partes[0].split('/');
-                if (mes && ano) {
-                    mesIndex = parseInt(mes, 10) - 1;
-                    anoNum = parseInt(ano, 10);
-                }
-            }
-        }
-
-        return { ...d, contato, categoria, fechado, prioridade, mesIndex, anoNum };
+        return { ...d, contato, categoria, fechado };
     });
 }
 
-function agruparEContar(array, propriedade) {
-    const contagem = {};
-    array.forEach(item => {
-        const chave = item[propriedade] || 'N/I';
-        contagem[chave] = (contagem[chave] || 0) + 1;
-    });
-    return Object.keys(contagem).map(k => ({ nome: k, qtd: contagem[k] })).sort((a, b) => b.qtd - a.qtd);
-}
-
 // ==========================================
-// 4. RENDERIZAÇÃO DOS SLIDES
+// 4. GRÁFICO DIÁRIO DO FIELD SERVICE
 // ==========================================
-function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
-    const container = document.getElementById('modal-slides-content');
-    const modal = document.getElementById('modal-apresentacao');
-    
-    const total = dadosPeriodo.length;
-    const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
-    const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
+function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
+    const canvasEl = document.getElementById('chartEvolucaoField');
+    if (!canvasEl) return;
 
-    const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
-    const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
-    const distPrioridade = agruparEContar(dadosPeriodo, 'situacao').slice(0, 5);
+    // Gera os dias do período selecionado
+    const labelsDias = [];
+    const abertosDia = [];
+    const fechadosDia = [];
+    const prazoDia = [];
+    const pctFechadosDia = [];
+    const pctPrazoDia = [];
+    const metaDia = [];
 
-    const renderPagina = (conteudo, titulo) => `
-        <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 15px;">
-                <div>
-                    <h2 style="color: #115e59; font-size: 1.2rem; font-weight: 800; margin: 0;">${titulo}</h2>
-                    <span style="font-size: 0.75rem; color: #475569; font-weight: 600;">Período Analisado: ${pInicio} até ${pFim} | Total de Registros: ${total}</span>
-                </div>
-                <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
-            </div>
-            <div style="flex: 1; display: flex; flex-direction: column;">
-                ${conteudo}
-            </div>
-        </div>
-    `;
+    let curr = new Date(dtIni);
+    while (curr <= dtFim) {
+        const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
+        labelsDias.push(diaStr);
 
-    const htmlSlide1 = `
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 15px;">
-            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Abertos no Período</span>
-                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${total}</span>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Encerrados no Período</span>
-                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${totalFechados}</span>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; display: block; text-transform: uppercase;">Taxa de Resolução</span>
-                <span style="font-size: 1.8rem; font-weight: 900; color: #1e293b;">${taxaFechamento}%</span>
-            </div>
-        </div>
-        <div style="flex: 1; background: white; padding: 12px 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column;">
-            <h4 style="font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 8px; text-align: center;">Comparativo Evolutivo Anual (${anoRef})</h4>
-            <div style="flex: 1; position: relative;">
-                <canvas id="chartEvolucaoChamados"></canvas>
-            </div>
-        </div>
-    `;
+        const chamadosDoDia = dadosPeriodo.filter(d => {
+            if (!d.abertura) return false;
+            return d.abertura.startsWith(diaStr);
+        });
 
-    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.qtd}</td><td style="text-align: center; color: #475569; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td></tr>`).join('');
+        const abertos = chamadosDoDia.length;
+        const fechados = chamadosDoDia.filter(d => d.fechado).length;
+        const prazo = chamadosDoDia.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
 
-    const htmlSlide2 = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
-            <div style="display: flex; flex-direction: column;">
-                <div style="background: #115e59; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                    TOP 10 CATEGORIAS
-                </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
-                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Categoria</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
-                    </table>
-                </div>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                    TOP 10 CONTATOS
-                </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
-                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Requerentes</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topContatos)}</tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    `;
+        abertosDia.push(abertos);
+        fechadosDia.push(fechados);
+        prazoDia.push(prazo);
 
-    const htmlSlide3 = `
-        <div style="display: flex; flex-direction: column; height: 100%; max-width: 700px; margin: 0 auto; width: 100%;">
-            <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                SITUAÇÃO DOS CHAMADOS
-            </div>
-            <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
-                <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                    <thead><tr style="background: #10b981; color: white; font-size: 0.8rem;"><th style="padding: 10px; text-align: left;">Situação</th><th style="text-align: center;">Volume</th><th style="text-align: center;">% do Total</th></tr></thead>
-                    <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
-                </table>
-            </div>
-        </div>
-    `;
+        pctFechadosDia.push(abertos > 0 ? Math.round((fechados / abertos) * 100) : 0);
+        pctPrazoDia.push(fechados > 0 ? Math.round((prazo / fechados) * 100) : 0);
+        metaDia.push(85);
 
-    container.innerHTML = 
-        renderPagina(htmlSlide1, 'Dashboard Gerencial & Evolução') + 
-        renderPagina(htmlSlide2, 'Top 10 Categorias & Contatos') +
-        renderPagina(htmlSlide3, 'Status e Situação Geral');
-    
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    // ==========================================
-    // GRÁFICO ANUAL (Jan a Dez)
-    // ==========================================
-    const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-    const labelsMeses = mesesAbrev.map(m => `${m}./${anoRef.substring(2)}`);
-
-    const chamadosAbertos = [];
-    const chamadosNoPrazo = [];
-    const pctPrazo = [];
-    const meta = [];
-
-    for (let i = 0; i < 12; i++) {
-        const chamadosMes = dadosAno.filter(d => d.mesIndex === i && d.anoNum === parseInt(anoRef));
-
-        const abertos = chamadosMes.length;
-        const fechados = chamadosMes.filter(d => d.fechado).length;
-        
-        let taxaPrazo = 0;
-        if (fechados > 0) {
-             const variacao = (abertos % 15) - 5; 
-             taxaPrazo = 85 + variacao; 
-             if (taxaPrazo > 100) taxaPrazo = 100;
-        }
-        
-        const prazo = abertos > 0 ? Math.round(fechados * (taxaPrazo / 100)) : 0; 
-        
-        chamadosAbertos.push(abertos > 0 ? abertos : null); 
-        chamadosNoPrazo.push(abertos > 0 ? prazo : null);
-        pctPrazo.push(fechados > 0 ? taxaPrazo : null);
-        meta.push(85); 
+        curr.setDate(curr.getDate() + 1);
     }
 
-    if (chartChamados) chartChamados.destroy();
-    
-    chartChamados = new Chart(document.getElementById('chartEvolucaoChamados').getContext('2d'), {
+    if (chartField) chartField.destroy();
+
+    chartField = new Chart(canvasEl.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: labelsMeses,
+            labels: labelsDias,
             datasets: [
-                { 
-                    label: '% Fechados no Prazo', 
-                    data: pctPrazo, 
-                    type: 'line', 
-                    borderColor: '#059669', 
-                    backgroundColor: '#059669', 
-                    yAxisID: 'y1', 
-                    tension: 0.1, 
-                    borderWidth: 3, 
-                    pointRadius: 5,
-                    spanGaps: true 
-                },
-                { 
-                    label: 'Meta (85%)', 
-                    data: meta, 
-                    type: 'line', 
-                    borderColor: '#84cc16', 
-                    borderWidth: 2, 
-                    pointRadius: 0, 
-                    yAxisID: 'y1' 
-                },
-                { 
-                    label: 'Chamados Abertos', 
-                    data: chamadosAbertos, 
-                    backgroundColor: '#475569', 
-                    yAxisID: 'y',
-                    borderRadius: 4
-                },
-                { 
-                    label: 'Fechados no Prazo', 
-                    data: chamadosNoPrazo, 
-                    backgroundColor: '#3b82f6', 
-                    yAxisID: 'y',
-                    borderRadius: 4
-                }
+                { label: 'Chamados Abertos', data: abertosDia, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Chamados Fechados', data: fechadosDia, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Fechados no Prazo', data: prazoDia, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
+                { label: '% Fechados', data: pctFechadosDia, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2, pointRadius: 4 },
+                { label: '% Fechados no Prazo', data: pctPrazoDia, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2, pointRadius: 4 },
+                { label: 'Meta', data: metaDia, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12 } } 
-            },
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } },
             scales: {
-                y: { 
-                    type: 'linear', display: true, position: 'left', 
-                    title: { display: true, text: 'Volume Absoluto' }, 
-                    grid: { color: '#e2e8f0' },
-                    beginAtZero: true
-                },
-                y1: { 
-                    type: 'linear', display: true, position: 'right', 
-                    title: { display: true, text: 'Porcentagem (%)' }, 
-                    min: 0, max: 105, 
-                    grid: { drawOnChartArea: false } 
-                }
+                y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
+                y1: { type: 'linear', display: true, position: 'right', min: 0, max: 105, grid: { drawOnChartArea: false } }
             }
         }
     });
