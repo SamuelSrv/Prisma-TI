@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (CSV REAL)
+// 1. IMPORTAÇÃO INTELIGENTE
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -66,16 +66,19 @@ function processarCSV() {
                         }
                     }
 
+                    // Mapeamento correto das colunas do CSV
+                    const catCompleta = linha['Categoria completa'] || linha['Título do chamado'] || 'Diversos';
+
                     chamadosParaSalvar.push({
                         atendimento: parseInt(linha['Atendimento']),
                         data_abertura: dataFormatada,
-                        titulo: linha['Título do chamado'] || 'Diversos', // Categoria 1
+                        titulo: linha['Título do chamado'] || '',
                         situacao: linha['Situação'] || '',
                         prioridade: linha['Prioridade'] || '',
                         operador: linha['Operador'] || '',
                         descricao: linha['Descrição'] || '',
-                        contato: linha['Contato'] || 'Não Informado', // Contato / Requerente
-                        categoria: linha['Categoria completa'] || ''
+                        contato: linha['Contato'] || 'Não Informado', 
+                        categoria: catCompleta // Categoria 1 / Completa do CSV
                     });
                 }
             });
@@ -175,15 +178,13 @@ async function gerarRelatorioChamados() {
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
-        // Contato / Requerente
         let contato = 'Não Informado';
         if (d.contato && d.contato.trim() !== '') {
             contato = d.contato.trim();
             contato = contato.charAt(0).toUpperCase() + contato.slice(1);
         }
 
-        // Categoria 1 (Baseada estritamente no Título do Chamado)
-        let categoria = d.titulo && d.titulo.trim() !== '' ? d.titulo.trim() : 'Diversos';
+        let categoria = d.categoria && d.categoria.trim() !== '' ? d.categoria.trim() : (d.titulo || 'Diversos');
 
         const fechado = d.situacao.toLowerCase().includes('encerrado') || d.situacao.toLowerCase().includes('fechado') || d.situacao.toLowerCase().includes('resolvido');
         const prioridade = d.prioridade && d.prioridade.trim() !== '' ? d.prioridade : 'Não Informada';
@@ -202,7 +203,7 @@ function agruparEContar(array, propriedade) {
 }
 
 // ==========================================
-// 4. RENDERIZAÇÃO DOS SLIDES (TOP 10 CATEGORIAS & CONTATOS)
+// 4. RENDERIZAÇÃO DOS SLIDES
 // ==========================================
 function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const container = document.getElementById('modal-slides-content');
@@ -212,10 +213,8 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
     const taxaFechamento = total > 0 ? ((totalFechados / total) * 100).toFixed(1) : 0;
 
-    // Rankings expandidos para TOP 10 (igual à sua referência)
     const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
     const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
-    const topOperadores = agruparEContar(dadosPeriodo, 'operador').slice(0, 5);
     const distPrioridade = agruparEContar(dadosPeriodo, 'prioridade').slice(0, 5);
 
     const renderPagina = (conteudo, titulo) => `
@@ -257,10 +256,9 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         </div>
     `;
 
-    // Gerador de Linhas com Porcentagem Real Baseada no Total do Relatório
     const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map(item => `<tr><td style="font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.nome}</td><td style="text-align: center; font-weight: 800; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${item.qtd}</td><td style="text-align: center; color: #475569; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700;">${total > 0 ? ((item.qtd / total) * 100).toFixed(0) : 0}%</td></tr>`).join('');
 
-    // SLIDE 2: Top 10 Categorias & Top 10 Contatos (Exatamente como sua imagem de referência)
+    // SLIDE 2: Top 10 Categorias & Top 10 Contatos
     const htmlSlide2 = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
             <div style="display: flex; flex-direction: column;">
@@ -288,30 +286,17 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
         </div>
     `;
 
-    // SLIDE 3: Operadores e Prioridade
+    // SLIDE 3: Apenas Distribuição por Prioridade (Operadores Removidos conforme pedido)
     const htmlSlide3 = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
-            <div style="display: flex; flex-direction: column;">
-                <div style="background: #0d9488; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                    TOP 5 OPERADORES / ANALISTAS
-                </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px;">
-                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Nome do Analista</th><th style="text-align: center;">Tickets</th><th style="text-align: center;">%</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topOperadores)}</tbody>
-                    </table>
-                </div>
+        <div style="display: flex; flex-direction: column; height: 100%; max-width: 700px; margin: 0 auto; width: 100%;">
+            <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
+                DISTRIBUIÇÃO POR PRIORIDADE
             </div>
-            <div style="display: flex; flex-direction: column;">
-                <div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">
-                    DISTRIBUIÇÃO POR PRIORIDADE
-                </div>
-                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px;">
-                    <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
-                        <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Grau de Prioridade</th><th style="text-align: center;">Vol.</th><th style="text-align: center;">%</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
-                    </table>
-                </div>
+            <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 15px;">
+                <table class="lebes-table" style="width: 100%; border-collapse: collapse;">
+                    <thead><tr style="background: #10b981; color: white; font-size: 0.8rem;"><th style="padding: 10px; text-align: left;">Grau de Prioridade</th><th style="text-align: center;">Volume</th><th style="text-align: center;">% do Total</th></tr></thead>
+                    <tbody>${gerarLinhasTabela(distPrioridade)}</tbody>
+                </table>
             </div>
         </div>
     `;
@@ -319,7 +304,7 @@ function renderizarSlides(dadosAno, dadosPeriodo, pInicio, pFim, anoRef) {
     container.innerHTML = 
         renderPagina(htmlSlide1, 'Dashboard Gerencial & Evolução') + 
         renderPagina(htmlSlide2, 'Top 10 Categorias & Contatos') +
-        renderPagina(htmlSlide3, 'Atuação da Equipe e Nível de Criticidade');
+        renderPagina(htmlSlide3, 'Nível de Criticidade dos Chamados');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
