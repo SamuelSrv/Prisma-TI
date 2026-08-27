@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
         document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioPorEquipe);
-
+        
         const modal = document.getElementById('modal-apresentacao');
         if (modal) modal.style.zIndex = '9999';
-
+        
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
         // Exportação PDF
@@ -75,7 +75,7 @@ function processarCSV() {
         header: true,
         skipEmptyLines: true,
         encoding: "ISO-8859-1",
-        complete: async function (results) {
+        complete: async function(results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
 
@@ -125,7 +125,7 @@ function processarCSV() {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
-                fileInput.value = '';
+                fileInput.value = ''; 
             }
         }
     });
@@ -182,12 +182,11 @@ async function gerarRelatorioPorEquipe() {
         };
 
         const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
-        dtIni.setHours(0, 0, 0, 0);
-        const dtFim = new Date(`${anoF}-${mesF}-${anoF ? '' : ''}${diaF}T23:59:59`); // Corrigido para anoF
+        dtIni.setHours(0,0,0,0);
         const dtFimReal = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
 
         const chamadosProcessados = processarDadosQualitor(registros);
-
+        
         // Período Atual
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
@@ -198,7 +197,7 @@ async function gerarRelatorioPorEquipe() {
         // Cálculo do Período Anterior
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
+        
         const antIni = new Date(dtIni);
         antIni.setDate(antIni.getDate() - diffDays);
         const antFim = new Date(dtFimReal);
@@ -218,12 +217,12 @@ async function gerarRelatorioPorEquipe() {
         if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
             tipoPeriodo = 'mensal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI) - 1].toUpperCase()} ${anoI}`;
-        }
+            subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+        } 
         else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
             tipoPeriodo = 'semanal';
             const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI) - 1].toUpperCase()} ${anoI}`;
+            subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
         }
 
         const container = document.getElementById('modal-slides-content');
@@ -239,8 +238,12 @@ async function gerarRelatorioPorEquipe() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Renderizar gráfico diário no Slide 1
-        renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
+        // Seleção inteligente do gráfico (Mensal ou Diário)
+        if (tipoPeriodo === 'mensal') {
+            renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
+        } else {
+            renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
+        }
 
     } catch (error) {
         console.error(error);
@@ -270,7 +273,7 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4. GRÁFICO DIÁRIO LIMPO E ADAPTÁVEL
+// 4A. GRÁFICO DIÁRIO (Para Semanal / Personalizado)
 // ==========================================
 function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -312,11 +315,9 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
         curr.setDate(curr.getDate() + 1);
     }
 
-    // Adaptação automática do eixo Y da direita (y1) se alguma porcentagem for > 100%
     const maxPctEncontrado = Math.max(...pctFechadosDia, ...pctPrazoDia, 100);
     const y1MaxDinamico = maxPctEncontrado <= 100 ? 105 : Math.ceil(maxPctEncontrado / 50) * 50 + 50;
 
-    // Plugin customizado para exibir os números APENAS nas linhas de porcentagem
     const pluginRotulosLinhas = {
         id: 'rotulosLinhasField',
         afterDatasetsDraw(chart) {
@@ -324,8 +325,7 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-
-                // Desenha rótulos apenas para datasets do tipo 'line' (exceto a Meta)
+                
                 if (dataset.type === 'line' && dataset.label !== 'Meta') {
                     meta.data.forEach((element, index) => {
                         const value = dataset.data[index];
@@ -364,8 +364,113 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
+            plugins: { 
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
+                y1: { type: 'linear', display: true, position: 'right', min: 0, max: y1MaxDinamico, grid: { drawOnChartArea: false } }
+            }
+        },
+        plugins: [pluginRotulosLinhas]
+    });
+}
+
+// ==========================================
+// 4B. GRÁFICO MENSAL (Para Fechamento Mensal - Acumulado Jan até o Mês)
+// ==========================================
+function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
+    const canvasEl = document.getElementById('chartEvolucaoField');
+    if (!canvasEl) return;
+
+    const mesesNomes = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+    const labelsMeses = [];
+    const abertosMes = [];
+    const fechadosMes = [];
+    const prazoMes = [];
+    const pctFechadosMes = [];
+    const pctPrazoMes = [];
+    const metaMes = [];
+
+    for (let i = 0; i < mesLimite; i++) {
+        labelsMeses.push(`${mesesNomes[i]}/${anoRef.substring(2)}`);
+
+        const chamadosDoMes = todosRegistrosProcessados.filter(d => {
+            if (!d.abertura) return false;
+            const partes = d.abertura.split(' - ')[0].split('/');
+            if (partes.length < 3) return false;
+            const m = parseInt(partes[1], 10) - 1;
+            const a = partes[2];
+            return m === i && a === anoRef;
+        });
+
+        const abertos = chamadosDoMes.length;
+        const fechados = chamadosDoMes.filter(d => d.fechado).length;
+        const prazo = chamadosDoMes.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
+
+        abertosMes.push(abertos);
+        fechadosMes.push(fechados);
+        prazoMes.push(prazo);
+
+        const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
+        const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
+
+        pctFechadosMes.push(pFechados);
+        pctPrazoMes.push(pPrazo);
+        metaMes.push(85);
+    }
+
+    const maxPctEncontrado = Math.max(...pctFechadosMes, ...pctPrazoMes, 100);
+    const y1MaxDinamico = maxPctEncontrado <= 100 ? 105 : Math.ceil(maxPctEncontrado / 50) * 50 + 50;
+
+    const pluginRotulosLinhas = {
+        id: 'rotulosLinhasMensal',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) return;
+                
+                if (dataset.type === 'line' && dataset.label !== 'Meta') {
+                    meta.data.forEach((element, index) => {
+                        const value = dataset.data[index];
+                        if (value === null || value === undefined) return;
+
+                        ctx.save();
+                        ctx.font = 'bold 10px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = dataset.borderColor;
+
+                        const model = element.getProps(['x', 'y'], true);
+                        ctx.fillText(value + '%', model.x, model.y - 10);
+                        ctx.restore();
+                    });
+                }
+            });
+        }
+    };
+
+    if (chartField) chartField.destroy();
+
+    chartField = new Chart(canvasEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labelsMeses,
+            datasets: [
+                { label: 'Chamados Abertos', data: abertosMes, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Chamados Fechados', data: fechadosMes, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Fechados no Prazo', data: prazoMes, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
+                { label: '% Fechados', data: pctFechadosMes, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
+                { label: '% Fechados no Prazo', data: pctPrazoMes, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
+                { label: 'Meta', data: metaMes, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { 
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
