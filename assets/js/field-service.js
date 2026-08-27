@@ -31,8 +31,22 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         return Object.keys(contagem).map(k => ({ nome: k, qtd: contagem[k] })).sort((a, b) => b.qtd - a.qtd);
     };
 
-    const topCategorias = agruparEContar(dadosPeriodo, 'categoria').slice(0, 10);
-    const topContatos = agruparEContar(dadosPeriodo, 'contato').slice(0, 10);
+    // Garante exatamente 10 posições preenchendo com vazios se necessário
+    const obterTop10Fixo = (array, prop) => {
+        const agrupado = agruparEContar(array, prop);
+        const resultado = [];
+        for (let i = 0; i < 10; i++) {
+            if (agrupado[i]) {
+                resultado.push(agrupado[i]);
+            } else {
+                resultado.push({ nome: '-', qtd: '-' });
+            }
+        }
+        return resultado;
+    };
+
+    const topCategorias = obterTop10Fixo(dadosPeriodo, 'categoria');
+    const topContatos = obterTop10Fixo(dadosPeriodo, 'contato');
 
     const renderSlideContent = (conteudo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
@@ -103,8 +117,16 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         </div>
     `);
 
-    // 3. SLIDE 2: TOP 10 COM DESTAQUE NO TOP 3 E ALTO CONTRASTE
-    const gerarLinhasTabela = (arr) => arr.length === 0 ? `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">Nenhum dado</td></tr>` : arr.map((item, index) => {
+    // 3. SLIDE 2: TOP 10 FIXO COM DESTAQUE NO TOP 3
+    const gerarLinhasTabelaFixo = (arr) => arr.map((item, index) => {
+        if (item.nome === '-') {
+            return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px 10px; font-size: 0.8rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:11px;">${index+1}</span>-</td>
+                <td style="text-align: center; padding: 8px 10px; font-size: 0.8rem; color: #94a3b8;">-</td>
+                <td style="text-align: center; padding: 8px 10px; font-size: 0.8rem; color: #94a3b8;">-</td>
+            </tr>`;
+        }
+
         const isTop3 = index < 3;
         const bgStyle = isTop3 ? 'background-color: #d1fae5; font-weight: 700;' : 'background-color: #ffffff;';
         const badge = isTop3 ? `<span style="display:inline-block; width:18px; height:18px; background:#047857; color:white; border-radius:50%; text-align:center; font-size:10px; line-height:18px; margin-right:6px;">${index+1}</span>` : `<span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#64748b; font-size:11px;">${index+1}</span>`;
@@ -132,7 +154,7 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Categoria</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topCategorias)}</tbody>
+                        <tbody>${gerarLinhasTabelaFixo(topCategorias)}</tbody>
                     </table>
                 </div>
             </div>
@@ -143,7 +165,7 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Requerentes</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead>
-                        <tbody>${gerarLinhasTabela(topContatos)}</tbody>
+                        <tbody>${gerarLinhasTabelaFixo(topContatos)}</tbody>
                     </table>
                 </div>
             </div>
