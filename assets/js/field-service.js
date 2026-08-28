@@ -16,7 +16,8 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const fechadosNoPrazo = fechadosNoPrazoArr.length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
     
-    // 4. Backlog (Retrato da fila: abertos até dtFim, cujo status NÃO seja Encerrado, Aguardando Confirmação nem Aguardando Verificação)
+    // 4. Backlog (Retrato da fila: abertos até dtFim, cujo status NÃO seja Encerrado, Aguardando Confirmação)
+    // O status "Aguardando verificação" cai no false de d.fechado, então ele já entra no backlog corretamente.
     const backlog = todosProcessados.filter(d => {
         const parseDataBr = (str) => {
             if (!str) return null;
