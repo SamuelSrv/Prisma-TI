@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (CSV NOVO)
+// 1. IMPORTAÇÃO INTELIGENTE
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -186,14 +186,12 @@ async function gerarRelatorioPorEquipe() {
 
         const chamadosProcessados = processarDadosQualitor(registros);
         
-        // Chamados Abertos no Período (baseados na Abertura)
         const chamadosPeriodoAbertura = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= dtIni && dataObj <= dtFimReal;
         });
 
-        // Cálculo do Período Anterior equivalente
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         
@@ -208,7 +206,6 @@ async function gerarRelatorioPorEquipe() {
             return dataObj >= antIni && dataObj <= antFim;
         });
 
-        // Regra da Capa Inteligente
         let tipoPeriodo = 'personalizado';
         let subtituloCapa = `${dataInicio} até ${dataFim}`;
 
@@ -266,7 +263,7 @@ async function gerarRelatorioPorEquipe() {
 }
 
 // ==========================================
-// 3. PROCESSAMENTO DE DADOS (Encerramento Real)
+// 3. PROCESSAMENTO DE DADOS
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
@@ -300,7 +297,7 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4A. GRÁFICO DIÁRIO
+// 4A. GRÁFICO DIÁRIO (Ignora Finais de Semana, inclui 0% nos Dias Úteis)
 // ==========================================
 function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -326,37 +323,41 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
 
     let curr = new Date(dtIni);
     while (curr <= dtFim) {
-        const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
-        labelsDias.push(diaStr);
+        const dow = curr.getDay(); // 0 = Domingo, 6 = Sábado
+        // Ignora totalmente sábado e domingo
+        if (dow !== 0 && dow !== 6) {
+            const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
+            labelsDias.push(diaStr);
 
-        const abertosDoDia = todosProcessados.filter(d => {
-            const dtAbe = parseDataBr(d.abertura);
-            if (!dtAbe) return false;
-            return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
-        });
+            const abertosDoDia = todosProcessados.filter(d => {
+                const dtAbe = parseDataBr(d.abertura);
+                if (!dtAbe) return false;
+                return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+            });
 
-        const fechadosDoDia = todosProcessados.filter(d => {
-            if (!d.fechado || !d.dataEncerramentoObj) return false;
-            return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
-        });
+            const fechadosDoDia = todosProcessados.filter(d => {
+                if (!d.fechado || !d.dataEncerramentoObj) return false;
+                return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+            });
 
-        const prazoDoDia = fechadosDoDia.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
+            const prazoDoDia = fechadosDoDia.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
 
-        const abertos = abertosDoDia.length;
-        const fechados = fechadosDoDia.length;
-        const prazo = prazoDoDia.length;
+            const abertos = abertosDoDia.length;
+            const fechados = fechadosDoDia.length;
+            const prazo = prazoDoDia.length;
 
-        abertosDia.push(abertos);
-        fechadosDia.push(fechados);
-        prazoDia.push(prazo);
+            abertosDia.push(abertos);
+            fechadosDia.push(fechados);
+            prazoDia.push(prazo);
 
-        const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
-        const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
+            // Se for dia útil e abertos > 0, calcula normalmente. Se abertos = 0 mas é dia útil, assume 0% para entrar na média
+            const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
+            const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
 
-        pctFechadosDia.push(pFechados);
-        pctPrazoDia.push(pPrazo);
-        metaDia.push(85);
-
+            pctFechadosDia.push(pFechados);
+            pctPrazoDia.push(pPrazo);
+            metaDia.push(85);
+        }
         curr.setDate(curr.getDate() + 1);
     }
 
