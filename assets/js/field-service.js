@@ -16,7 +16,7 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const fechadosNoPrazo = fechadosNoPrazoArr.length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
     
-    // 4. Backlog (Retrato da fila: chamados abertos até a última data do período que ainda não foram encerrados/aguardando)
+    // 4. Backlog (Retrato da fila: abertos até dtFim, cujo status NÃO seja Encerrado, Aguardando Confirmação nem Aguardando Verificação)
     const backlog = todosProcessados.filter(d => {
         const parseDataBr = (str) => {
             if (!str) return null;
@@ -28,9 +28,8 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
             return new Date(`${a}-${m}-${d}T${hora}:00`);
         };
         const dtAbe = parseDataBr(d.abertura);
-        if (!dtAbe || dtAbe > dtFim) return false; // Aberto até a data final do período
+        if (!dtAbe || dtAbe > dtFim) return false; 
 
-        // Se foi fechado depois da data final do período, ele estava em aberto no momento!
         if (d.dataEncerramentoObj && d.dataEncerramentoObj <= dtFim) return false; 
 
         return !d.fechado;
