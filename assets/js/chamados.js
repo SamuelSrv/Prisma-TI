@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
         document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioPorEquipe);
-        
+
         const modal = document.getElementById('modal-apresentacao');
         if (modal) modal.style.zIndex = '9999';
-        
+
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
         const btnExportarPdf = document.getElementById('btn-exportar-pdf');
@@ -74,7 +74,7 @@ function processarCSV() {
         header: true,
         skipEmptyLines: true,
         encoding: "ISO-8859-1",
-        complete: async function(results) {
+        complete: async function (results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
 
@@ -124,7 +124,7 @@ function processarCSV() {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
-                fileInput.value = ''; 
+                fileInput.value = '';
             }
         }
     });
@@ -181,11 +181,11 @@ async function gerarRelatorioPorEquipe() {
         };
 
         const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
-        dtIni.setHours(0,0,0,0);
+        dtIni.setHours(0, 0, 0, 0);
         const dtFimReal = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
 
         const chamadosProcessados = processarDadosQualitor(registros);
-        
+
         const chamadosPeriodoAbertura = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
@@ -194,7 +194,7 @@ async function gerarRelatorioPorEquipe() {
 
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        
+
         const antIni = new Date(dtIni);
         antIni.setDate(antIni.getDate() - diffDays);
         const antFim = new Date(dtFimReal);
@@ -217,12 +217,12 @@ async function gerarRelatorioPorEquipe() {
             if (parseInt(diaI, 10) === 1 && parseInt(diaF, 10) === ultimoDiaMes && mesI === mesF) {
                 tipoPeriodo = 'mensal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
-            } 
+                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI, 10) - 1].toUpperCase()} ${anoI}`;
+            }
             else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
                 tipoPeriodo = 'semanal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
+                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI, 10) - 1].toUpperCase()} ${anoI}`;
             }
         }
 
@@ -231,12 +231,12 @@ async function gerarRelatorioPorEquipe() {
 
         if (equipeSelecionada === 'field') {
             container.innerHTML = renderizarFieldService(
-                chamadosProcessados, 
-                chamadosPeriodoAbertura, 
-                chamadosAnteriorAbertura, 
-                dtIni, dtFimReal, 
-                antIni, antFim, 
-                dataInicio, dataFim, 
+                chamadosProcessados,
+                chamadosPeriodoAbertura,
+                chamadosAnteriorAbertura,
+                dtIni, dtFimReal,
+                antIni, antFim,
+                dataInicio, dataFim,
                 tipoPeriodo, subtituloCapa
             );
         } else {
@@ -274,7 +274,7 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
-        
+
         const sit = (d.situacao || '').toLowerCase();
         const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
@@ -297,7 +297,7 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4A. GRÁFICO DIÁRIO (Todos os dias no eixo, rótulos nas barras e nas linhas)
+// 4A. GRÁFICO DIÁRIO (Todos os dias no eixo, null nos fins de semana, tipo forçado em bars)
 // ==========================================
 function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -312,6 +312,8 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
         const hora = partes[1] || '00:00';
         return new Date(`${a}-${m}-${d}T${hora}:00`);
     };
+
+    const isSameDay = (d1, d2) => d1 && d2 && d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 
     const labelsDias = [];
     const abertosDia = [];
@@ -329,35 +331,20 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
         const dow = curr.getDay(); // 0 = Domingo, 6 = Sábado
         const isFimDeSemana = (dow === 0 || dow === 6);
 
-        const abertosDoDia = todosProcessados.filter(d => {
-            const dtAbe = parseDataBr(d.abertura);
-            if (!dtAbe) return false;
-            return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
-        });
+        const abertosDoDia = todosProcessados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
+        const fechadosDoDiaArr = todosProcessados.filter(d => d.fechado && isSameDay(d.dataEncerramentoObj, curr));
+        const fechados = fechadosDoDiaArr.length;
+        const prazo = fechadosDoDiaArr.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
 
-        const fechadosDoDia = todosProcessados.filter(d => {
-            if (!d.fechado || !d.dataEncerramentoObj) return false;
-            return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
-        });
-
-        const prazoDoDia = fechadosDoDia.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
-
-        const abertos = abertosDoDia.length;
-        const fechados = fechadosDoDia.length;
-        const prazo = prazoDoDia.length;
-
-        abertosDia.push(abertos);
+        abertosDia.push(abertosDoDia);
         fechadosDia.push(fechados);
         prazoDia.push(prazo);
 
-        // Tratamento da Porcentagem
         if (isFimDeSemana) {
-            // Sábado e domingo: null para pular o ponto e não zerar a linha
             pctFechadosDia.push(null);
             pctPrazoDia.push(null);
         } else {
-            // Dias úteis: calcula normal, se for 0 exibe 0%
-            const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
+            const pFechados = abertosDoDia > 0 ? Math.round((fechados / abertosDoDia) * 100) : 0;
             const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
             pctFechadosDia.push(pFechados);
             pctPrazoDia.push(pPrazo);
@@ -377,26 +364,28 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-                
+
+                const tipoDataset = dataset.type || 'bar';
+
                 meta.data.forEach((element, index) => {
                     const value = dataset.data[index];
-                    if (value === null || value === undefined || (value === 0 && dataset.type === 'bar')) return;
+                    if (value === null || value === undefined) return;
+                    if (tipoDataset === 'bar' && value === 0) return; // Não desenha zero vazio nas barras
 
                     ctx.save();
                     ctx.textAlign = 'center';
+                    ctx.font = 'bold 10px sans-serif';
 
                     const model = element.getProps(['x', 'y'], true);
 
-                    if (dataset.type === 'line') {
-                        if (dataset.label !== 'Meta' && value !== null) {
-                            ctx.font = 'bold 9px sans-serif';
+                    if (tipoDataset === 'line') {
+                        if (dataset.label !== 'Meta') {
                             ctx.fillStyle = dataset.borderColor;
-                            ctx.fillText(value + '%', model.x, model.y - 10);
+                            ctx.fillText(value + '%', model.x, model.y - 12);
                         }
-                    } else if (dataset.type === 'bar') {
-                        ctx.font = 'bold 9px sans-serif';
+                    } else if (tipoDataset === 'bar') {
                         ctx.fillStyle = '#1e293b';
-                        ctx.fillText(value, model.x, model.y - 5);
+                        ctx.fillText(value, model.x, model.y - 6);
                     }
                     ctx.restore();
                 });
@@ -411,20 +400,20 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
         data: {
             labels: labelsDias,
             datasets: [
-                { label: 'Chamados Abertos', data: abertosDia, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
-                { label: 'Chamados Fechados', data: fechadosDia, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
-                { label: 'Fechados no Prazo', data: prazoDia, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Chamados Abertos', type: 'bar', data: abertosDia, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Chamados Fechados', type: 'bar', data: fechadosDia, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
+                { label: 'Fechados no Prazo', type: 'bar', data: prazoDia, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
                 { label: '% Fechados', data: pctFechadosDia, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4, spanGaps: true },
                 { label: '% Fechados no Prazo', data: pctPrazoDia, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4, spanGaps: true },
-                { label: 'Meta', data: metaDia, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
+                { label: 'Meta', data: metaDia, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1', spanGaps: true }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
@@ -503,7 +492,7 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-                
+
                 meta.data.forEach((element, index) => {
                     const value = dataset.data[index];
                     if (value === null || value === undefined || (value === 0 && dataset.type === 'bar')) return;
@@ -549,8 +538,8 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
