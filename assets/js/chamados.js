@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// ==========================================
+// 1. IMPORTAÇÃO INTELIGENTE
+// ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
     const msgEl = document.getElementById('msg-importacao');
@@ -127,6 +130,9 @@ function processarCSV() {
     });
 }
 
+// ==========================================
+// 2. ORQUESTRADOR DE RELATÓRIOS
+// ==========================================
 async function gerarRelatorioPorEquipe() {
     const equipeSelecionada = document.getElementById('select-equipe').value;
     const dataInicio = document.getElementById('date-start').value;
@@ -180,12 +186,14 @@ async function gerarRelatorioPorEquipe() {
 
         const chamadosProcessados = processarDadosQualitor(registros);
         
+        // Chamados Abertos no Período (baseados na Abertura)
         const chamadosPeriodo = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= dtIni && dataObj <= dtFimReal;
         });
 
+        // Cálculo do Período Anterior
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         
@@ -200,6 +208,7 @@ async function gerarRelatorioPorEquipe() {
             return dataObj >= antIni && dataObj <= antFim;
         });
 
+        // Regra da Capa Inteligente
         let tipoPeriodo = 'personalizado';
         let subtituloCapa = `${dataInicio} até ${dataFim}`;
 
@@ -224,7 +233,7 @@ async function gerarRelatorioPorEquipe() {
         const modal = document.getElementById('modal-apresentacao');
 
         if (equipeSelecionada === 'field') {
-            container.innerHTML = renderizarFieldService(chamadosPeriodo, chamadosAnterior, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
+            container.innerHTML = renderizarFieldService(chamadosProcessados, chamadosPeriodo, chamadosAnterior, dtIni, dtFimReal, antIni, antFim, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
         } else {
             alert("Relatório desta equipe em desenvolvimento.");
             return;
@@ -236,7 +245,7 @@ async function gerarRelatorioPorEquipe() {
         if (tipoPeriodo === 'mensal') {
             renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
         } else {
-            renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
+            renderizarGraficoField(chamadosProcessados, dtIni, dtFimReal);
         }
 
     } catch (error) {
@@ -248,6 +257,9 @@ async function gerarRelatorioPorEquipe() {
     }
 }
 
+// ==========================================
+// 3. PROCESSAMENTO DE DADOS (Com Encerramento por Data)
+// ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
         let contato = 'Não Informado';
@@ -257,16 +269,46 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
+        
         const sit = (d.situacao || '').toLowerCase();
-        const fechado = sit.includes('encerrado') || sit.includes('aguardando confirmação');
+        const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
-        return { ...d, contato, categoria, fechado };
+        // Extrai apenas a data do campo encerramento (formato dd/mm/aaaa - hh:mm)
+        let dataEncerramentoObj = null;
+        if (d.encerramento && d.encerramento.trim() !== '') {
+            const partesEncerramento = d.encerramento.split(' - ');
+            if (partesEncerramento.length > 0) {
+                const [dEnc, mEnc, aEnc] = partesEncerramento[0].split('/');
+                if (dEnc && mEnc && aEnc) {
+                    const horaEnc = partesEncerramento[1] || '00:00';
+                    dataEncerramentoObj = new Date(`${aEnc}-${mEnc}-${dEnc}T${horaEnc}:00`);
+                }
+            }
+        }
+
+        // Chamado é considerado fechado no período se o status for válido E a data de encerramento estiver preenchida
+        const fechado = statusEncerramentoValido && dataEncerramentoObj !== null;
+
+        return { ...d, contato, categoria, fechado, dataEncerramentoObj };
     });
 }
 
-function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
+// ==========================================
+// 4A. GRÁFICO DIÁRIO
+// ==========================================
+function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
+
+    const parseDataBr = (str) => {
+        if (!str) return null;
+        const partes = str.split(' - ');
+        if (partes.length < 1) return null;
+        const [d, m, a] = partes[0].split('/');
+        if (!d || !m || !a) return null;
+        const hora = partes[1] || '00:00';
+        return new Date(`${a}-${m}-${d}T${hora}:00`);
+    };
 
     const labelsDias = [];
     const abertosDia = [];
@@ -281,14 +323,24 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
         const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
         labelsDias.push(diaStr);
 
-        const chamadosDoDia = dadosPeriodo.filter(d => {
-            if (!d.abertura) return false;
-            return d.abertura.startsWith(diaStr);
+        // Abertos no dia
+        const abertosDoDia = todosProcessados.filter(d => {
+            const dtAbe = parseDataBr(d.abertura);
+            if (!dtAbe) return false;
+            return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
         });
 
-        const abertos = chamadosDoDia.length;
-        const fechados = chamadosDoDia.filter(d => d.fechado).length;
-        const prazo = chamadosDoDia.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
+        // Fechados no dia (olhando pela data de encerramento)
+        const fechadosDoDia = todosProcessados.filter(d => {
+            if (!d.fechado || !d.dataEncerramentoObj) return false;
+            return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+        });
+
+        const prazoDoDia = fechadosDoDia.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
+
+        const abertos = abertosDoDia.length;
+        const fechados = fechadosDoDia.length;
+        const prazo = prazoDoDia.length;
 
         abertosDia.push(abertos);
         fechadosDia.push(fechados);
@@ -365,9 +417,22 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     });
 }
 
+// ==========================================
+// 4B. GRÁFICO MENSAL
+// ==========================================
 function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
+
+    const parseDataBr = (str) => {
+        if (!str) return null;
+        const partes = str.split(' - ');
+        if (partes.length < 1) return null;
+        const [d, m, a] = partes[0].split('/');
+        if (!d || !m || !a) return null;
+        const hora = partes[1] || '00:00';
+        return new Date(`${a}-${m}-${d}T${hora}:00`);
+    };
 
     const mesesNomes = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
     const labelsMeses = [];
@@ -381,18 +446,24 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
     for (let i = 0; i < mesLimite; i++) {
         labelsMeses.push(`${mesesNomes[i]}/${anoRef.substring(2)}`);
 
-        const chamadosDoMes = todosRegistrosProcessados.filter(d => {
-            if (!d.abertura) return false;
-            const partes = d.abertura.split(' - ')[0].split('/');
-            if (partes.length < 3) return false;
-            const m = parseInt(partes[1], 10) - 1;
-            const a = partes[2];
-            return m === i && a === anoRef;
+        // Abertos no mês
+        const abertosDoMes = todosRegistrosProcessados.filter(d => {
+            const dtAbe = parseDataBr(d.abertura);
+            if (!dtAbe) return false;
+            return dtAbe.getMonth() === i && dtAbe.getFullYear() === parseInt(anoRef, 10);
         });
 
-        const abertos = chamadosDoMes.length;
-        const fechados = chamadosDoMes.filter(d => d.fechado).length;
-        const prazo = chamadosDoMes.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
+        // Fechados no mês (olhando pela data de encerramento)
+        const fechadosDoMes = todosRegistrosProcessados.filter(d => {
+            if (!d.fechado || !d.dataEncerramentoObj) return false;
+            return d.dataEncerramentoObj.getMonth() === i && d.dataEncerramentoObj.getFullYear() === parseInt(anoRef, 10);
+        });
+
+        const prazoDoMes = fechadosDoMes.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
+
+        const abertos = abertosDoMes.length;
+        const fechados = fechadosDoMes.length;
+        const prazo = prazoDoMes.length;
 
         abertosMes.push(abertos);
         fechadosMes.push(fechados);
@@ -445,7 +516,7 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             datasets: [
                 { label: 'Chamados Abertos', data: abertosMes, backgroundColor: '#334155', yAxisID: 'y', borderRadius: 4 },
                 { label: 'Chamados Fechados', data: fechadosMes, backgroundColor: '#10b981', yAxisID: 'y', borderRadius: 4 },
-                { label: 'Fechados no Prazo', data: prazoMes, backgroundColor: '#6ee7b7', yAxisID: 'y',borderRadius: 4 },
+                { label: 'Fechados no Prazo', data: prazoMes, backgroundColor: '#6ee7b7', yAxisID: 'y', borderRadius: 4 },
                 { label: '% Fechados', data: pctFechadosMes, type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
                 { label: '% Fechados no Prazo', data: pctPrazoMes, type: 'line', borderColor: '#047857', backgroundColor: '#047857', yAxisID: 'y1', borderWidth: 2.5, pointRadius: 4 },
                 { label: 'Meta', data: metaMes, type: 'line', borderColor: '#84cc16', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' }
