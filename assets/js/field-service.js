@@ -11,13 +11,30 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
 
     const taxaFechamento = total > 0 ? Math.round((totalFechados / total) * 100) : 0;
 
-    // 3. Fechados no Prazo (dentro dos fechados do período, sem atraso)
+    // 3. Fechados no Prazo (Baseado nos chamados fechados do período, verificando Atraso no serviço != Sim)
     const fechadosNoPrazoArr = fechadosPeriodo.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
     const fechadosNoPrazo = fechadosNoPrazoArr.length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
     
-    // 4. Backlog (chamados abertos que ainda não foram encerrados)
-    const backlog = dadosPeriodoAbertura.filter(d => !d.fechado).length;
+    // 4. Backlog (Retrato da fila: chamados abertos até a última data do período que ainda não foram encerrados/aguardando)
+    const backlog = todosProcessados.filter(d => {
+        const parseDataBr = (str) => {
+            if (!str) return null;
+            const partes = str.split(' - ');
+            if (partes.length < 1) return null;
+            const [d, m, a] = partes[0].split('/');
+            if (!d || !m || !a) return null;
+            const hora = partes[1] || '00:00';
+            return new Date(`${a}-${m}-${d}T${hora}:00`);
+        };
+        const dtAbe = parseDataBr(d.abertura);
+        if (!dtAbe || dtAbe > dtFim) return false; // Aberto até a data final do período
+
+        // Se foi fechado depois da data final do período, ele estava em aberto no momento!
+        if (d.dataEncerramentoObj && d.dataEncerramentoObj <= dtFim) return false; 
+
+        return !d.fechado;
+    }).length;
 
     // Período Anterior
     const antTotal = dadosAnteriorAbertura.length;
@@ -32,7 +49,22 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const antPrazoArr = antFechadosArr.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
     const antPrazo = antPrazoArr.length;
     const antPctPrazo = antFechados > 0 ? Math.round((antPrazo / antFechados) * 100) : 0;
-    const antBacklog = dadosAnteriorAbertura.filter(d => !d.fechado).length;
+    
+    const antBacklog = todosProcessados.filter(d => {
+        const parseDataBr = (str) => {
+            if (!str) return null;
+            const partes = str.split(' - ');
+            if (partes.length < 1) return null;
+            const [d, m, a] = partes[0].split('/');
+            if (!d || !m || !a) return null;
+            const hora = partes[1] || '00:00';
+            return new Date(`${a}-${m}-${d}T${hora}:00`);
+        };
+        const dtAbe = parseDataBr(d.abertura);
+        if (!dtAbe || dtAbe > antFim) return false;
+        if (d.dataEncerramentoObj && d.dataEncerramentoObj <= antFim) return false;
+        return !d.fechado;
+    }).length;
 
     const diffAbertos = total - antTotal;
     const diffFechados = totalFechados - antFechados;
