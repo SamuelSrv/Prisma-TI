@@ -216,16 +216,16 @@ async function gerarRelatorioPorEquipe() {
             tipoPeriodo = 'diario';
             subtituloCapa = `FECHAMENTO DIÁRIO - ${dataInicio}`;
         } else {
-            const ultimoDiaMes = new Date(parseInt(anoI), parseInt(mesI), 0).getDate();
-            if (parseInt(diaI) === 1 && parseInt(diaF) === ultimoDiaMes && mesI === mesF) {
+            const ultimoDiaMes = new Date(parseInt(anoI, 10), parseInt(mesI, 10), 0).getDate();
+            if (parseInt(diaI, 10) === 1 && parseInt(diaF, 10) === ultimoDiaMes && mesI === mesF) {
                 tipoPeriodo = 'mensal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
             } 
             else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
                 tipoPeriodo = 'semanal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI)-1].toUpperCase()} ${anoI}`;
+                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
             }
         }
 
@@ -233,7 +233,7 @@ async function gerarRelatorioPorEquipe() {
         const modal = document.getElementById('modal-apresentacao');
 
         if (equipeSelecionada === 'field') {
-            container.innerHTML = renderizarFieldService(chamadosProcessados, chamadosPeriodo, chamadosAnterior, dtIni, dtFimReal, antIni, antFim, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
+            container.innerHTML = renderizarFieldService(chamadosPeriodo, chamadosAnterior, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
         } else {
             alert("Relatório desta equipe em desenvolvimento.");
             return;
@@ -245,7 +245,7 @@ async function gerarRelatorioPorEquipe() {
         if (tipoPeriodo === 'mensal') {
             renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
         } else {
-            renderizarGraficoField(chamadosProcessados, dtIni, dtFimReal);
+            renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
         }
 
     } catch (error) {
@@ -258,7 +258,7 @@ async function gerarRelatorioPorEquipe() {
 }
 
 // ==========================================
-// 3. PROCESSAMENTO DE DADOS (Com Encerramento por Data)
+// 3. PROCESSAMENTO DE DADOS
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
@@ -273,7 +273,6 @@ function processarDadosQualitor(dados) {
         const sit = (d.situacao || '').toLowerCase();
         const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
-        // Extrai apenas a data do campo encerramento (formato dd/mm/aaaa - hh:mm)
         let dataEncerramentoObj = null;
         if (d.encerramento && d.encerramento.trim() !== '') {
             const partesEncerramento = d.encerramento.split(' - ');
@@ -286,7 +285,6 @@ function processarDadosQualitor(dados) {
             }
         }
 
-        // Chamado é considerado fechado no período se o status for válido E a data de encerramento estiver preenchida
         const fechado = statusEncerramentoValido && dataEncerramentoObj !== null;
 
         return { ...d, contato, categoria, fechado, dataEncerramentoObj };
@@ -296,7 +294,7 @@ function processarDadosQualitor(dados) {
 // ==========================================
 // 4A. GRÁFICO DIÁRIO
 // ==========================================
-function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
+function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
 
@@ -323,15 +321,13 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
         const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
         labelsDias.push(diaStr);
 
-        // Abertos no dia
-        const abertosDoDia = todosProcessados.filter(d => {
+        const abertosDoDia = dadosPeriodo.filter(d => {
             const dtAbe = parseDataBr(d.abertura);
             if (!dtAbe) return false;
             return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
         });
 
-        // Fechados no dia (olhando pela data de encerramento)
-        const fechadosDoDia = todosProcessados.filter(d => {
+        const fechadosDoDia = dadosPeriodo.filter(d => {
             if (!d.fechado || !d.dataEncerramentoObj) return false;
             return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
         });
@@ -446,14 +442,12 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
     for (let i = 0; i < mesLimite; i++) {
         labelsMeses.push(`${mesesNomes[i]}/${anoRef.substring(2)}`);
 
-        // Abertos no mês
         const abertosDoMes = todosRegistrosProcessados.filter(d => {
             const dtAbe = parseDataBr(d.abertura);
             if (!dtAbe) return false;
             return dtAbe.getMonth() === i && dtAbe.getFullYear() === parseInt(anoRef, 10);
         });
 
-        // Fechados no mês (olhando pela data de encerramento)
         const fechadosDoMes = todosRegistrosProcessados.filter(d => {
             if (!d.fechado || !d.dataEncerramentoObj) return false;
             return d.dataEncerramentoObj.getMonth() === i && d.dataEncerramentoObj.getFullYear() === parseInt(anoRef, 10);

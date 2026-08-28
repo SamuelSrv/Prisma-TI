@@ -5,6 +5,8 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
 
     const fechadosNoPrazo = dadosPeriodo.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
+    
+    // Backlog: chamados que ainda estão em aberto (situação não encerrada e não aguardando confirmação)
     const backlog = dadosPeriodo.filter(d => !d.fechado).length;
 
     // Período Anterior
@@ -15,7 +17,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
     const antPctPrazo = antFechados > 0 ? Math.round((antPrazo / antFechados) * 100) : 0;
     const antBacklog = dadosAnterior.filter(d => !d.fechado).length;
 
-    // Deltas (Diferenças)
     const diffAbertos = total - antTotal;
     const diffFechados = totalFechados - antFechados;
     const diffPrazoVal = fechadosNoPrazo - antPrazo;
@@ -24,6 +25,22 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
     const diffBacklog = backlog - antBacklog;
 
     const formatDiff = (val) => val > 0 ? `+${val}` : `${val}`;
+
+    const isDiario = tipoPeriodo === 'diario';
+
+    const backlogHeaders = isDiario ? '' : `
+        <th colspan="2" style="background: #475569; padding: 8px 4px;">BACKLOG</th>
+    `;
+
+    const backlogValues = isDiario ? '' : `
+        <td style="padding: 8px 2px; border-right: 1px solid #e2e8f0;">${backlog}</td>
+        <td style="padding: 8px 2px; color: #334155;">${formatDiff(diffBacklog)}</td>
+    `;
+
+    const backlogAntValues = isDiario ? '' : `
+        <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #e2e8f0;">${antBacklog}</td>
+        <td colspan="1" style="padding: 6px 2px;"><i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1rem;"></i></td>
+    `;
 
     const agruparEContar = (array, prop) => {
         const contagem = {};
@@ -56,19 +73,17 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         </div>
     `;
 
-    // 1. CAPA INICIAL
     const htmlCapa = `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; box-sizing: border-box; margin-bottom: 30px; color: white;">
             <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
             <div>
-                <h1 style="font-size: 3rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase;">${tipoPeriodo === 'semanal' ? 'Semanal Field Service' : tipoPeriodo === 'mensal' ? 'Mensal Field Service' : 'Field Service'}</h1>
+                <h1 style="font-size: 3rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase;">${tipoPeriodo === 'semanal' ? 'Semanal Field Service' : tipoPeriodo === 'mensal' ? 'Mensal Field Service' : tipoPeriodo === 'diario' ? 'Diário Field Service' : 'Field Service'}</h1>
                 <p style="font-size: 1.4rem; font-weight: 600; opacity: 0.9; margin: 0;">${subtituloCapa}</p>
             </div>
             <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
         </div>
     `;
 
-    // 2. SLIDE 1: EVOLUTIVO CHAMADOS (Estilo Exato da Imagem)
     const htmlSlide1 = renderSlideContent(`
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px;">
             <div>
@@ -87,7 +102,7 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                         <th colspan="2" style="background: #ea580c; padding: 8px 4px; border-right: 1px solid rgba(255,255,255,0.2);">FECHADOS NO PRAZO</th>
                         <th colspan="2" style="background: #0284c7; padding: 8px 4px; border-right: 1px solid rgba(255,255,255,0.2);">% FECHADOS</th>
                         <th colspan="2" style="background: #0284c7; padding: 8px 4px; border-right: 1px solid rgba(255,255,255,0.2);">% FECHADOS NO PRAZO</th>
-                        <th colspan="2" style="background: #475569; padding: 8px 4px;">BACKLOG</th>
+                        ${backlogHeaders}
                     </tr>
                 </thead>
                 <tbody>
@@ -102,8 +117,7 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                         <td style="padding: 8px 2px; border-right: 1px solid #cbd5e1; color: #334155;">${formatDiff(diffTaxaFechamento)}%</td>
                         <td style="padding: 8px 2px; border-right: 1px solid #e2e8f0;">${pctPrazo}%</td>
                         <td style="padding: 8px 2px; border-right: 1px solid #cbd5e1; color: #334155;">${formatDiff(diffPctPrazo)}%</td>
-                        <td style="padding: 8px 2px; border-right: 1px solid #e2e8f0;">${backlog}</td>
-                        <td style="padding: 8px 2px; color: #334155;">${formatDiff(diffBacklog)}</td>
+                        ${backlogValues}
                     </tr>
                     <tr style="background: white; font-weight: 700; font-size: 0.85rem; color: #475569;">
                         <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #e2e8f0;">${antTotal}</td>
@@ -116,8 +130,7 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                         <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #cbd5e1;"><i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1rem;"></i></td>
                         <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #e2e8f0;">${antPctPrazo}%</td>
                         <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #cbd5e1;"><i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1rem;"></i></td>
-                        <td colspan="1" style="padding: 6px 2px; border-right: 1px solid #e2e8f0;">${antBacklog}</td>
-                        <td colspan="1" style="padding: 6px 2px;"><i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1rem;"></i></td>
+                        ${backlogAntValues}
                     </tr>
                 </tbody>
             </table>
@@ -131,7 +144,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         </div>
     `);
 
-    // 3. SLIDE 2: TOP 10 FIXO COM DESTAQUE NO TOP 3
     const gerarLinhasTabelaFixo = (arr) => arr.map((item, index) => {
         if (item.nome === '-') {
             return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
@@ -186,7 +198,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         </div>
     `);
 
-    // 4. CAPA FINAL (OBRIGADO!)
     const htmlFim = `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; box-sizing: border-box; margin-bottom: 30px; color: white;">
             <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
@@ -194,7 +205,6 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
                 <h1 style="font-size: 4rem; font-weight: 900; margin: 0; text-transform: uppercase;">Obrigado!</h1>
             </div>
             <div style="font-size: 0.9rem; opacity: 0.8;">Suporte Técnico & Field Service - Grupo Lebes</div>
-            </div>
         </div>
     `;
 
