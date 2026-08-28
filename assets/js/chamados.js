@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE
+// 1. IMPORTAÇÃO INTELIGENTE (CSV NOVO)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -95,7 +95,7 @@ function processarCSV() {
                         atraso_no_servico: getVal(['Atraso no serviço', 'atraso no serviço']),
                         encerramento: getVal(['Encerramento', 'encerramento']),
                         contato: getVal(['Contato', 'contato']) || 'Não Informado',
-                        categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título do chamado', 'categoria completa']),
+                        categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título du chamado']),
                         operador: getVal(['Operador', 'operador']),
                         descricao: getVal(['Descrição', 'descrição', 'Descricao'])
                     });
@@ -187,13 +187,13 @@ async function gerarRelatorioPorEquipe() {
         const chamadosProcessados = processarDadosQualitor(registros);
         
         // Chamados Abertos no Período (baseados na Abertura)
-        const chamadosPeriodo = chamadosProcessados.filter(d => {
+        const chamadosPeriodoAbertura = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= dtIni && dataObj <= dtFimReal;
         });
 
-        // Cálculo do Período Anterior
+        // Cálculo do Período Anterior equivalente
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         
@@ -202,7 +202,7 @@ async function gerarRelatorioPorEquipe() {
         const antFim = new Date(dtFimReal);
         antFim.setDate(antFim.getDate() - diffDays);
 
-        const chamadosAnterior = chamadosProcessados.filter(d => {
+        const chamadosAnteriorAbertura = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
             return dataObj >= antIni && dataObj <= antFim;
@@ -233,7 +233,15 @@ async function gerarRelatorioPorEquipe() {
         const modal = document.getElementById('modal-apresentacao');
 
         if (equipeSelecionada === 'field') {
-            container.innerHTML = renderizarFieldService(chamadosPeriodo, chamadosAnterior, dataInicio, dataFim, tipoPeriodo, subtituloCapa);
+            container.innerHTML = renderizarFieldService(
+                chamadosProcessados, 
+                chamadosPeriodoAbertura, 
+                chamadosAnteriorAbertura, 
+                dtIni, dtFimReal, 
+                antIni, antFim, 
+                dataInicio, dataFim, 
+                tipoPeriodo, subtituloCapa
+            );
         } else {
             alert("Relatório desta equipe em desenvolvimento.");
             return;
@@ -245,7 +253,7 @@ async function gerarRelatorioPorEquipe() {
         if (tipoPeriodo === 'mensal') {
             renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
         } else {
-            renderizarGraficoField(chamadosPeriodo, dtIni, dtFimReal);
+            renderizarGraficoField(chamadosProcessados, dtIni, dtFimReal);
         }
 
     } catch (error) {
@@ -258,7 +266,7 @@ async function gerarRelatorioPorEquipe() {
 }
 
 // ==========================================
-// 3. PROCESSAMENTO DE DADOS
+// 3. PROCESSAMENTO DE DADOS (Encerramento Real)
 // ==========================================
 function processarDadosQualitor(dados) {
     return dados.map(d => {
@@ -274,7 +282,7 @@ function processarDadosQualitor(dados) {
         const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
         let dataEncerramentoObj = null;
-        if (d.encerramento && d.encerramento.trim() !== '') {
+        if (d.encerramento && d.encerramento.trim() !== '' && d.encerramento !== 'nan') {
             const partesEncerramento = d.encerramento.split(' - ');
             if (partesEncerramento.length > 0) {
                 const [dEnc, mEnc, aEnc] = partesEncerramento[0].split('/');
@@ -294,7 +302,7 @@ function processarDadosQualitor(dados) {
 // ==========================================
 // 4A. GRÁFICO DIÁRIO
 // ==========================================
-function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
+function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
     if (!canvasEl) return;
 
@@ -321,13 +329,13 @@ function renderizarGraficoField(dadosPeriodo, dtIni, dtFim) {
         const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
         labelsDias.push(diaStr);
 
-        const abertosDoDia = dadosPeriodo.filter(d => {
+        const abertosDoDia = todosProcessados.filter(d => {
             const dtAbe = parseDataBr(d.abertura);
             if (!dtAbe) return false;
             return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
         });
 
-        const fechadosDoDia = dadosPeriodo.filter(d => {
+        const fechadosDoDia = todosProcessados.filter(d => {
             if (!d.fechado || !d.dataEncerramentoObj) return false;
             return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
         });

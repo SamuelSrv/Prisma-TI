@@ -1,21 +1,38 @@
-export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFim, tipoPeriodo, subtituloCapa) {
-    const total = dadosPeriodo.length;
-    const totalFechados = dadosPeriodo.filter(d => d.fechado).length;
+export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, dadosAnteriorAbertura, dtIni, dtFim, antIni, antFim, pInicio, pFim, tipoPeriodo, subtituloCapa) {
+    // 1. Abertos no Período (baseados na Abertura)
+    const total = dadosPeriodoAbertura.length;
+
+    // 2. Fechados no Período (Busca global no banco inteiro pela Data de Encerramento)
+    const fechadosPeriodo = todosProcessados.filter(d => {
+        if (!d.fechado || !d.dataEncerramentoObj) return false;
+        return d.dataEncerramentoObj >= dtIni && d.dataEncerramentoObj <= dtFim;
+    });
+    const totalFechados = fechadosPeriodo.length;
+
     const taxaFechamento = total > 0 ? Math.round((totalFechados / total) * 100) : 0;
 
-    const fechadosNoPrazo = dadosPeriodo.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
+    // 3. Fechados no Prazo (dentro dos fechados do período, sem atraso)
+    const fechadosNoPrazoArr = fechadosPeriodo.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
+    const fechadosNoPrazo = fechadosNoPrazoArr.length;
     const pctPrazo = totalFechados > 0 ? Math.round((fechadosNoPrazo / totalFechados) * 100) : 0;
     
-    // Backlog: chamados que ainda estão em aberto (situação não encerrada e não aguardando confirmação)
-    const backlog = dadosPeriodo.filter(d => !d.fechado).length;
+    // 4. Backlog (chamados abertos que ainda não foram encerrados)
+    const backlog = dadosPeriodoAbertura.filter(d => !d.fechado).length;
 
     // Período Anterior
-    const antTotal = dadosAnterior.length;
-    const antFechados = dadosAnterior.filter(d => d.fechado).length;
+    const antTotal = dadosAnteriorAbertura.length;
+    
+    const antFechadosArr = todosProcessados.filter(d => {
+        if (!d.fechado || !d.dataEncerramentoObj) return false;
+        return d.dataEncerramentoObj >= antIni && d.dataEncerramentoObj <= antFim;
+    });
+    const antFechados = antFechadosArr.length;
     const antTaxaFechamento = antTotal > 0 ? Math.round((antFechados / antTotal) * 100) : 0;
-    const antPrazo = dadosAnterior.filter(d => d.fechado && (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
+    
+    const antPrazoArr = antFechadosArr.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
+    const antPrazo = antPrazoArr.length;
     const antPctPrazo = antFechados > 0 ? Math.round((antPrazo / antFechados) * 100) : 0;
-    const antBacklog = dadosAnterior.filter(d => !d.fechado).length;
+    const antBacklog = dadosAnteriorAbertura.filter(d => !d.fechado).length;
 
     const diffAbertos = total - antTotal;
     const diffFechados = totalFechados - antFechados;
@@ -64,8 +81,8 @@ export function renderizarFieldService(dadosPeriodo, dadosAnterior, pInicio, pFi
         return resultado;
     };
 
-    const topCategorias = obterTop10Fixo(dadosPeriodo, 'categoria');
-    const topContatos = obterTop10Fixo(dadosPeriodo, 'contato');
+    const topCategorias = obterTop10Fixo(dadosPeriodoAbertura, 'categoria');
+    const topContatos = obterTop10Fixo(dadosPeriodoAbertura, 'contato');
 
     const renderSlideContent = (conteudo) => `
         <div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
