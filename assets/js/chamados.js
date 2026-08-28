@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btn-importar').addEventListener('click', processarCSV);
         document.getElementById('btn-gerar').addEventListener('click', gerarRelatorioPorEquipe);
-        
+
         const modal = document.getElementById('modal-apresentacao');
         if (modal) modal.style.zIndex = '9999';
-        
+
         document.getElementById('btn-fechar-modal').addEventListener('click', () => modal.classList.add('hidden'));
 
         const btnExportarPdf = document.getElementById('btn-exportar-pdf');
@@ -74,7 +74,7 @@ function processarCSV() {
         header: true,
         skipEmptyLines: true,
         encoding: "ISO-8859-1",
-        complete: async function(results) {
+        complete: async function (results) {
             const dadosBrutos = results.data;
             const chamadosParaSalvar = [];
 
@@ -124,7 +124,7 @@ function processarCSV() {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'Processar CSV';
-                fileInput.value = ''; 
+                fileInput.value = '';
             }
         }
     });
@@ -181,11 +181,11 @@ async function gerarRelatorioPorEquipe() {
         };
 
         const dtIni = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
-        dtIni.setHours(0,0,0,0);
+        dtIni.setHours(0, 0, 0, 0);
         const dtFimReal = new Date(`${anoF}-${mesF}-${diaF}T23:59:59`);
 
         const chamadosProcessados = processarDadosQualitor(registros);
-        
+
         const chamadosPeriodoAbertura = chamadosProcessados.filter(d => {
             const dataObj = parseDataBr(d.abertura);
             if (!dataObj) return false;
@@ -194,7 +194,7 @@ async function gerarRelatorioPorEquipe() {
 
         const diffTime = Math.abs(dtFimReal - dtIni);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        
+
         const antIni = new Date(dtIni);
         antIni.setDate(antIni.getDate() - diffDays);
         const antFim = new Date(dtFimReal);
@@ -217,12 +217,12 @@ async function gerarRelatorioPorEquipe() {
             if (parseInt(diaI, 10) === 1 && parseInt(diaF, 10) === ultimoDiaMes && mesI === mesF) {
                 tipoPeriodo = 'mensal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
-            } 
+                subtituloCapa = `FECHAMENTO MENSAL ${mesesExtenso[parseInt(mesI, 10) - 1].toUpperCase()} ${anoI}`;
+            }
             else if (dtIni.getDay() === 1 && dtFimReal.getDay() === 0 && diffDays === 7) {
                 tipoPeriodo = 'semanal';
                 const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI, 10)-1].toUpperCase()} ${anoI}`;
+                subtituloCapa = `FECHAMENTO SEMANAL ${mesesExtenso[parseInt(mesI, 10) - 1].toUpperCase()} ${anoI}`;
             }
         }
 
@@ -231,12 +231,12 @@ async function gerarRelatorioPorEquipe() {
 
         if (equipeSelecionada === 'field') {
             container.innerHTML = renderizarFieldService(
-                chamadosProcessados, 
-                chamadosPeriodoAbertura, 
-                chamadosAnteriorAbertura, 
-                dtIni, dtFimReal, 
-                antIni, antFim, 
-                dataInicio, dataFim, 
+                chamadosProcessados,
+                chamadosPeriodoAbertura,
+                chamadosAnteriorAbertura,
+                dtIni, dtFimReal,
+                antIni, antFim,
+                dataInicio, dataFim,
                 tipoPeriodo, subtituloCapa
             );
         } else {
@@ -274,7 +274,7 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
-        
+
         const sit = (d.situacao || '').toLowerCase();
         const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
 
@@ -297,7 +297,7 @@ function processarDadosQualitor(dados) {
 }
 
 // ==========================================
-// 4A. GRÁFICO DIÁRIO (Ignora Finais de Semana, inclui 0% nos Dias Úteis)
+// 4A. GRÁFICO DIÁRIO (Com Rótulos Fixos nas Barras e nas Linhas)
 // ==========================================
 function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -324,7 +324,6 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     let curr = new Date(dtIni);
     while (curr <= dtFim) {
         const dow = curr.getDay(); // 0 = Domingo, 6 = Sábado
-        // Ignora totalmente sábado e domingo
         if (dow !== 0 && dow !== 6) {
             const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0') + '/' + curr.getFullYear();
             labelsDias.push(diaStr);
@@ -332,12 +331,12 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
             const abertosDoDia = todosProcessados.filter(d => {
                 const dtAbe = parseDataBr(d.abertura);
                 if (!dtAbe) return false;
-                return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+                return dtAbe.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`);
             });
 
             const fechadosDoDia = todosProcessados.filter(d => {
                 if (!d.fechado || !d.dataEncerramentoObj) return false;
-                return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`);
+                return d.dataEncerramentoObj.toISOString().startsWith(`${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`);
             });
 
             const prazoDoDia = fechadosDoDia.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
@@ -350,7 +349,6 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
             fechadosDia.push(fechados);
             prazoDia.push(prazo);
 
-            // Se for dia útil e abertos > 0, calcula normalmente. Se abertos = 0 mas é dia útil, assume 0% para entrar na média
             const pFechados = abertos > 0 ? Math.round((fechados / abertos) * 100) : 0;
             const pPrazo = fechados > 0 ? Math.round((prazo / fechados) * 100) : 0;
 
@@ -364,29 +362,37 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const maxPctEncontrado = Math.max(...pctFechadosDia, ...pctPrazoDia, 100);
     const y1MaxDinamico = maxPctEncontrado <= 100 ? 105 : Math.ceil(maxPctEncontrado / 50) * 50 + 50;
 
-    const pluginRotulosLinhas = {
-        id: 'rotulosLinhasField',
+    // Plugin customizado para exibir os números nas Barras E nas Linhas
+    const pluginRotulosCompletos = {
+        id: 'rotulosCompletosField',
         afterDatasetsDraw(chart) {
             const { ctx } = chart;
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-                
-                if (dataset.type === 'line' && dataset.label !== 'Meta') {
-                    meta.data.forEach((element, index) => {
-                        const value = dataset.data[index];
-                        if (value === null || value === undefined) return;
 
-                        ctx.save();
-                        ctx.font = 'bold 10px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.fillStyle = dataset.borderColor;
+                meta.data.forEach((element, index) => {
+                    const value = dataset.data[index];
+                    if (value === null || value === undefined || (value === 0 && dataset.type === 'bar')) return;
 
-                        const model = element.getProps(['x', 'y'], true);
-                        ctx.fillText(value + '%', model.x, model.y - 10);
-                        ctx.restore();
-                    });
-                }
+                    ctx.save();
+                    ctx.textAlign = 'center';
+
+                    const model = element.getProps(['x', 'y'], true);
+
+                    if (dataset.type === 'line') {
+                        if (dataset.label !== 'Meta') {
+                            ctx.font = 'bold 9px sans-serif';
+                            ctx.fillStyle = dataset.borderColor;
+                            ctx.fillText(value + '%', model.x, model.y - 10);
+                        }
+                    } else if (dataset.type === 'bar') {
+                        ctx.font = 'bold 9px sans-serif';
+                        ctx.fillStyle = '#1e293b';
+                        ctx.fillText(value, model.x, model.y - 5);
+                    }
+                    ctx.restore();
+                });
             });
         }
     };
@@ -410,15 +416,15 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
                 y1: { type: 'linear', display: true, position: 'right', min: 0, max: y1MaxDinamico, grid: { drawOnChartArea: false } }
             }
         },
-        plugins: [pluginRotulosLinhas]
+        plugins: [pluginRotulosCompletos]
     });
 }
 
@@ -490,7 +496,7 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
                 if (meta.hidden) return;
-                
+
                 if (dataset.type === 'line' && dataset.label !== 'Meta') {
                     meta.data.forEach((element, index) => {
                         const value = dataset.data[index];
@@ -529,8 +535,8 @@ function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } 
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }
             },
             scales: {
                 y: { type: 'linear', display: true, position: 'left', grid: { color: '#e2e8f0' }, beginAtZero: true },
