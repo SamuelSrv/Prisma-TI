@@ -168,7 +168,7 @@ export function renderizarURA(
 /**
  * Função responsável por injetar o Gráfico (Chart.js) no slide gerado pelo renderizarURA
  */
-export function renderizarURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
+export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
     // Timeout para garantir que o modal foi injetado no DOM antes de buscar o Canvas
     setTimeout(() => {
         const canvasEl = document.getElementById('chartEvolucaoURA');

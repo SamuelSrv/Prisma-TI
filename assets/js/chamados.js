@@ -2,7 +2,7 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 import { renderizarFieldService } from './field-service.js';
-import { renderizarURA, renderizarURA } from './ura.js';
+import { renderizarURA, renderizarGraficoURA } from './ura.js'; // Conflito de declaração corrigido aqui
 
 let chartField = null;
 
