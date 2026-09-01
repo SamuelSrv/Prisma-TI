@@ -49,8 +49,8 @@
             <div class="flex-1 min-w-[220px]">
                 <label class="block text-sm font-medium text-slate-400 mb-1">Selecione a Equipe</label>
                 <select id="select-equipe" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-emerald-500">
+                    <option value="ura">URA</option>
                     <option value="field">Field Service</option>
-                    <option value="ura" disabled>URA (Em Breve)</option>
                     <option value="noc" disabled>NOC (Em Breve)</option>
                     <option value="office" disabled>Office Desk (Em Breve)</option>
                     <option value="sustentacao" disabled>Sustentação (Em Breve)</option>
@@ -58,11 +58,11 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1">Data Inicial</label>
-                <input id="date-start" type="text" class="w-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="dd/mm/aaaa" readonly>
+                <input id="date-start" type="text" class="w-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="dd/mm/aaaa">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1">Data Final</label>
-                <input id="date-end" type="text" class="w-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="dd/mm/aaaa" readonly>
+                <input id="date-end" type="text" class="w-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="dd/mm/aaaa">
             </div>
             <button id="btn-gerar" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-semibold transition shadow-lg flex items-center gap-2">
                 <i class="fa-solid fa-file-pdf"></i> Gerar Apresentação

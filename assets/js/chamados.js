@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 import { renderizarFieldService } from './field-service.js';
+import { renderizarURA, renderizarGraficoURA } from './ura.js';
 
 let chartField = null;
 
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btnExportarPdf.disabled = true;
 
                 const options = {
-                    margin: 5, filename: 'relatorio_field_service_lebes.pdf',
+                    margin: 5, filename: 'relatorio_executivo_lebes.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -53,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE
+// 1. IMPORTAÇÃO INTELIGENTE (SUPABASE)
 // ==========================================
 function processarCSV() {
     const fileInput = document.getElementById('arquivo-csv');
@@ -96,6 +97,8 @@ function processarCSV() {
                         encerramento: getVal(['Encerramento', 'encerramento']),
                         contato: getVal(['Contato', 'contato']) || 'Não Informado',
                         categoria_1: getVal(['Categoria 1', 'categoria 1', 'Título du chamado']),
+                        categoria_2: getVal(['Categoria 2', 'categoria 2', 'Subcategoria']),
+                        equipe: getVal(['Equipe', 'equipe']),
                         operador: getVal(['Operador', 'operador']),
                         descricao: getVal(['Descrição', 'descrição', 'Descricao'])
                     });
@@ -229,6 +232,7 @@ async function gerarRelatorioPorEquipe() {
         const container = document.getElementById('modal-slides-content');
         const modal = document.getElementById('modal-apresentacao');
 
+        // Roteamento de telas por equipe
         if (equipeSelecionada === 'field') {
             container.innerHTML = renderizarFieldService(
                 chamadosProcessados,
@@ -239,18 +243,37 @@ async function gerarRelatorioPorEquipe() {
                 dataInicio, dataFim,
                 tipoPeriodo, subtituloCapa
             );
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (tipoPeriodo === 'mensal') {
+                renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
+            } else {
+                renderizarGraficoField(chamadosProcessados, dtIni, dtFimReal);
+            }
+
+        } else if (equipeSelecionada === 'ura') {
+            container.innerHTML = renderizarURA(
+                chamadosProcessados,
+                chamadosPeriodoAbertura,
+                chamadosAnteriorAbertura,
+                dtIni, dtFimReal,
+                antIni, antFim,
+                dataInicio, dataFim,
+                tipoPeriodo, subtituloCapa
+            );
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (typeof renderizarGraficoURA === 'function') {
+                renderizarGraficoURA(chamadosProcessados, dtIni, dtFimReal, tipoPeriodo);
+            }
+
         } else {
             alert("Relatório desta equipe em desenvolvimento.");
             return;
-        }
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        if (tipoPeriodo === 'mensal') {
-            renderizarGraficoMensal(chamadosProcessados, parseInt(mesI, 10), anoI);
-        } else {
-            renderizarGraficoField(chamadosProcessados, dtIni, dtFimReal);
         }
 
     } catch (error) {
@@ -274,6 +297,8 @@ function processarDadosQualitor(dados) {
         }
 
         let categoria = (d.categoria_1 && d.categoria_1.trim() !== '') ? d.categoria_1.trim() : 'Diversos';
+        let subcategoria = (d.categoria_2 && d.categoria_2.trim() !== '') ? d.categoria_2.trim() : 'Geral';
+        let equipe = (d.equipe && d.equipe.trim() !== '') ? d.equipe.trim() : '';
 
         const sit = (d.situacao || '').toLowerCase();
         const statusEncerramentoValido = sit.includes('encerrado') || sit.includes('aguardando confirmação');
@@ -292,12 +317,12 @@ function processarDadosQualitor(dados) {
 
         const fechado = statusEncerramentoValido && dataEncerramentoObj !== null;
 
-        return { ...d, contato, categoria, fechado, dataEncerramentoObj };
+        return { ...d, contato, categoria, subcategoria, equipe, fechado, dataEncerramentoObj };
     });
 }
 
 // ==========================================
-// 4A. GRÁFICO DIÁRIO (Todos os dias no eixo, null nos fins de semana, tipo forçado em bars)
+// 4A. GRÁFICO DIÁRIO (FIELD SERVICE)
 // ==========================================
 function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
     const canvasEl = document.getElementById('chartEvolucaoField');
@@ -370,7 +395,7 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
                 meta.data.forEach((element, index) => {
                     const value = dataset.data[index];
                     if (value === null || value === undefined) return;
-                    if (tipoDataset === 'bar' && value === 0) return; // Não desenha zero vazio nas barras
+                    if (tipoDataset === 'bar' && value === 0) return;
 
                     ctx.save();
                     ctx.textAlign = 'center';
@@ -425,7 +450,7 @@ function renderizarGraficoField(todosProcessados, dtIni, dtFim) {
 }
 
 // ==========================================
-// 4B. GRÁFICO MENSAL
+// 4B. GRÁFICO MENSAL (FIELD SERVICE)
 // ==========================================
 function renderizarGraficoMensal(todosRegistrosProcessados, mesLimite, anoRef) {
     const canvasEl = document.getElementById('chartEvolucaoField');
