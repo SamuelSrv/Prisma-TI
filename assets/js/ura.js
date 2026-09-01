@@ -1,5 +1,5 @@
 /**
- * Renderiza o HTML da Apresentação da URA (Grupo Lebes)
+ * Renderiza o HTML da Apresentação da URA (Grupo Lebes) - Padrão Field Service
  */
 export function renderizarURA(
     todosProcessados, 
@@ -37,8 +37,8 @@ export function renderizarURA(
     let qtdExpress = 0;
     const contagemCategorias = {};
     const contagemLojas = {};
-    const matrizCruzamento = {}; // Para o slide de Lojas x Categorias
-    const contagemMacroCategorias = {}; // Categoria 1 -> Categoria 2
+    const matrizCruzamento = {};
+    const contagemMacroCategorias = {};
 
     dadosSafe.forEach(chamado => {
         const loja = getLojaInfo(chamado.contato);
@@ -50,302 +50,253 @@ export function renderizarURA(
         const subcat = escapeHtml(chamado.subcategoria || 'Geral');
         const lojaNome = loja.nome;
 
-        // Contagem Top Categorias
         contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
 
-        // Contagem Top Lojas
         if (lojaNome !== 'Não Informado' && lojaNome !== 'NÃO INFORMADO') {
             contagemLojas[lojaNome] = (contagemLojas[lojaNome] || 0) + 1;
         }
 
-        // Matriz Cruzamento (Loja vs Categoria)
         if (!matrizCruzamento[lojaNome]) matrizCruzamento[lojaNome] = { total: 0, categorias: {} };
         matrizCruzamento[lojaNome].total++;
         matrizCruzamento[lojaNome].categorias[cat] = (matrizCruzamento[lojaNome].categorias[cat] || 0) + 1;
 
-        // Agrupamento para Departamentos (Cat 1 -> Cat 2)
         if (!contagemMacroCategorias[cat]) contagemMacroCategorias[cat] = { total: 0, subcategorias: {} };
         contagemMacroCategorias[cat].total++;
         contagemMacroCategorias[cat].subcategorias[subcat] = (contagemMacroCategorias[cat].subcategorias[subcat] || 0) + 1;
     });
 
-    // Ordenações
-    const topCategorias = Object.entries(contagemCategorias).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const topLojas = Object.entries(contagemLojas).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    // Ordenações e Geração de "Tops" com limite fixo para manter a altura do layout
+    const preencherTopFixo = (obj, limite) => {
+        const sorted = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+        const resultado = [];
+        for (let i = 0; i < limite; i++) {
+            if (sorted[i]) resultado.push({ nome: sorted[i][0], qtd: sorted[i][1] });
+            else resultado.push({ nome: '-', qtd: '-' });
+        }
+        return resultado;
+    };
+
+    const topCategorias = preencherTopFixo(contagemCategorias, 5);
+    const topLojas = preencherTopFixo(contagemLojas, 5);
     
-    // Para a matriz (Top 10 Lojas e Top 8 Categorias)
     const top10LojasPivot = Object.entries(contagemLojas).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
     const top8CategoriasPivot = Object.entries(contagemCategorias).sort((a, b) => b[1] - a[1]).slice(0, 8).map(x => x[0]);
-
-    // Para Categorias & Departamentos (Top 4 Macro)
     const top4Macro = Object.entries(contagemMacroCategorias).sort((a, b) => b[1].total - a[1].total).slice(0, 4);
 
-    // Cálculos de Porcentagem Base
     const pctTrad = totalChamados > 0 ? Math.round((qtdTradicional / totalChamados) * 100) : 0;
     const pctExp = totalChamados > 0 ? Math.round((qtdExpress / totalChamados) * 100) : 0;
 
-    // Variável para formatar as páginas no tamanho A4 Paisagem exato
-    const slideClass = "w-[1123px] h-[794px] bg-[#f8fafc] text-slate-800 p-10 flex flex-col relative shadow-xl shrink-0 border-b border-slate-300 overflow-hidden";
-    const coverClass = "w-[1123px] h-[794px] bg-slate-900 justify-center items-center text-center flex flex-col relative shadow-xl shrink-0 border-b border-slate-300 overflow-hidden";
+    // --- VARIÁVEIS DE ESTILO BASEADAS NO FIELD SERVICE ---
+    const coverStyle = `width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; box-sizing: border-box; margin-bottom: 30px; color: white;`;
+    const slideStyle = `width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);`;
+    const renderSlideContent = (conteudo) => `<div style="${slideStyle}">${conteudo}</div>`;
+    const headerTitleStyle = `display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px;`;
 
-    // --- GERAÇÃO DOS SLIDES (HTML) ---
+    // --- FUNÇÃO PARA RENDERIZAR TABELAS FIXAS (COMO NO FIELD) ---
+    const gerarLinhasTabelaFixo = (arr, totalBase) => arr.map((item, index) => {
+        if (item.nome === '-') {
+            return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:10px;">${index+1}</span>-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td></tr>`;
+        }
+        const isTop3 = index < 3;
+        const bgStyle = isTop3 ? 'background-color: #d1fae5; font-weight: 700;' : 'background-color: #ffffff;';
+        const badge = isTop3 ? `<span style="display:inline-block; width:18px; height:18px; background:#047857; color:white; border-radius:50%; text-align:center; font-size:9px; line-height:18px; margin-right:6px;">${index+1}</span>` : `<span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#64748b; font-size:10px;">${index+1}</span>`;
+        return `<tr style="${bgStyle} border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #0f172a; display: flex; align-items: center;">${badge}${item.nome}</td><td style="text-align: center; font-weight: 800; padding: 6px 10px; font-size: 0.75rem; color: #0f172a;">${item.qtd}</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #0f172a; font-weight: 700;">${totalBase > 0 ? ((item.qtd / totalBase) * 100).toFixed(0) : 0}%</td></tr>`;
+    }).join('');
+
     let html = '';
 
     // ==========================================
-    // Slide 1: Capa (Estilo Field)
+    // Slide 1: Capa (Clonada do Field Service)
     // ==========================================
     html += `
-    <div class="${coverClass}">
-        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(#10b981 1px, transparent 1px); background-size: 30px 30px;"></div>
-        <div class="z-10 p-10 bg-slate-800/80 rounded-3xl border border-slate-700/50 backdrop-blur-md shadow-2xl">
-            <div class="w-20 h-20 bg-emerald-500 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                <i class="fa-solid fa-headset text-4xl text-white"></i>
-            </div>
-            <h1 class="text-7xl font-black text-white mb-2 tracking-tight">URA <span class="text-emerald-400">Lebes</span></h1>
-            <h2 class="text-3xl text-slate-300 font-light tracking-wide uppercase mt-4">${escapeHtml(subtituloCapa)}</h2>
-            <div class="w-32 h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 mx-auto my-10 rounded-full"></div>
-            <div class="inline-block bg-slate-900/50 px-8 py-4 rounded-xl border border-slate-700">
-                <p class="text-lg text-slate-400 font-medium uppercase tracking-widest mb-1">Período de Análise</p>
-                <p class="text-3xl text-white font-bold">${escapeHtml(dataInicio)} <span class="text-emerald-500 mx-2"><i class="fa-solid fa-arrow-right"></i></span> ${escapeHtml(dataFim)}</p>
+    <div style="${coverStyle}">
+        <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
+        <div>
+            <h1 style="font-size: 3rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase;">URA LEBES</h1>
+            <p style="font-size: 1.4rem; font-weight: 600; opacity: 0.9; margin: 0;">${subtituloCapa}</p>
+            <div style="margin-top: 15px; background: rgba(0,0,0,0.15); display: inline-block; padding: 10px 20px; border-radius: 8px;">
+                <p style="font-size: 1.1rem; font-weight: 700; margin: 0;">Período: ${dataInicio} até ${dataFim}</p>
             </div>
         </div>
+        <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
     </div>
     `;
 
     // ==========================================
     // Slide 2: Resumo Executivo
     // ==========================================
-    html += `
-    <div class="${slideClass}">
-        <div class="flex items-center justify-between mb-8 pb-4 border-b-2 border-emerald-500/20">
-            <div class="flex items-center gap-4">
-                <div class="bg-emerald-100 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-chart-pie text-2xl"></i></div>
-                <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">Visão Geral</h2>
-            </div>
-            <img src="https://logodownload.org/wp-content/uploads/2019/09/lebes-logo.png" alt="Lebes" class="h-8 opacity-80 grayscale">
+    html += renderSlideContent(`
+        <div style="${headerTitleStyle}">
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Visão Geral URA</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">Período: ${dataInicio} até ${dataFim}</span></div>
+            <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
         
-        <div class="grid grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl border-l-4 border-slate-700 shadow-sm flex flex-col justify-center items-center">
-                <p class="text-sm text-slate-400 font-bold uppercase tracking-wider mb-2">Total de Atendimentos</p>
-                <p class="text-6xl font-black text-slate-800">${totalChamados}</p>
+        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+            <div style="flex: 1; background: white; border: 1px solid #cbd5e1; border-left: 4px solid #475569; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <p style="font-size: 0.75rem; color: #475569; font-weight: 700; text-transform: uppercase; margin: 0 0 5px 0;">Total de Atendimentos</p>
+                <p style="font-size: 3rem; font-weight: 900; color: #1e293b; margin: 0;">${totalChamados}</p>
             </div>
-            <div class="bg-white p-6 rounded-xl border-l-4 border-emerald-500 shadow-sm flex flex-col justify-center items-center relative overflow-hidden">
-                <div class="absolute -right-4 -bottom-4 opacity-5 text-emerald-500 text-8xl"><i class="fa-solid fa-store"></i></div>
-                <p class="text-sm text-slate-400 font-bold uppercase tracking-wider mb-2">Lojas Tradicionais</p>
-                <p class="text-5xl font-black text-emerald-600 mb-1">${qtdTradicional}</p>
-                <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded">${pctTrad}% do total</span>
+            <div style="flex: 1; background: white; border: 1px solid #cbd5e1; border-left: 4px solid #10b981; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <p style="font-size: 0.75rem; color: #475569; font-weight: 700; text-transform: uppercase; margin: 0 0 5px 0;">Lojas Tradicionais</p>
+                <p style="font-size: 2.5rem; font-weight: 900; color: #047857; margin: 0 0 5px 0;">${qtdTradicional}</p>
+                <span style="background: #d1fae5; color: #065f46; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;">${pctTrad}% do total</span>
             </div>
-            <div class="bg-white p-6 rounded-xl border-l-4 border-blue-500 shadow-sm flex flex-col justify-center items-center relative overflow-hidden">
-                <div class="absolute -right-4 -bottom-4 opacity-5 text-blue-500 text-8xl"><i class="fa-solid fa-bolt"></i></div>
-                <p class="text-sm text-slate-400 font-bold uppercase tracking-wider mb-2">Lojas Express</p>
-                <p class="text-5xl font-black text-blue-600 mb-1">${qtdExpress}</p>
-                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">${pctExp}% do total</span>
+            <div style="flex: 1; background: white; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; border-radius: 6px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <p style="font-size: 0.75rem; color: #475569; font-weight: 700; text-transform: uppercase; margin: 0 0 5px 0;">Lojas Express</p>
+                <p style="font-size: 2.5rem; font-weight: 900; color: #0369a1; margin: 0 0 5px 0;">${qtdExpress}</p>
+                <span style="background: #e0f2fe; color: #075985; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;">${pctExp}% do total</span>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-8 flex-1">
-            <!-- Top Categorias (Sem Demanda) -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                <h3 class="text-xl font-bold text-slate-700 mb-5 flex items-center gap-2 uppercase">
-                    <i class="fa-solid fa-tags text-emerald-500"></i> Top 5 Categorias
-                </h3>
-                <div class="space-y-3 flex-1 flex flex-col justify-center">
-                    ${topCategorias.length ? topCategorias.map((c, i) => `
-                        <div class="flex justify-between items-center bg-slate-50 px-4 py-3 rounded-lg border border-slate-100">
-                            <span class="font-bold text-slate-600 flex items-center gap-3">
-                                <span class="bg-emerald-500 text-white w-6 h-6 flex items-center justify-center rounded text-sm">${i + 1}</span> 
-                                ${c[0]}
-                            </span>
-                            <span class="bg-slate-200 text-slate-700 px-3 py-1 rounded text-sm font-bold">${c[1]}</span>
-                        </div>
-                    `).join('') : '<p class="text-slate-400 italic text-center">Sem dados suficientes.</p>'}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1;">
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #115e59; color: white; padding: 8px 15px; border-radius: 6px 6px 0 0; font-weight: 700; font-size: 0.8rem; text-align: center;">TOP 5 CATEGORIAS</div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; flex: 1; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.7rem;"><th style="padding: 6px; text-align: left;">Categoria</th><th style="text-align: center;">Qtd</th><th style="text-align: center;">%</th></tr></thead>
+                        <tbody>${gerarLinhasTabelaFixo(topCategorias, totalChamados)}</tbody>
+                    </table>
                 </div>
             </div>
-
-            <!-- Top Lojas (Sem Ofensora) -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                <h3 class="text-xl font-bold text-slate-700 mb-5 flex items-center gap-2 uppercase">
-                    <i class="fa-solid fa-map-location-dot text-blue-500"></i> Top 5 Lojas
-                </h3>
-                <div class="space-y-3 flex-1 flex flex-col justify-center">
-                    ${topLojas.length ? topLojas.map((l, i) => `
-                        <div class="flex justify-between items-center bg-slate-50 px-4 py-3 rounded-lg border border-slate-100">
-                            <span class="font-bold text-slate-600 flex items-center gap-3">
-                                <span class="bg-blue-500 text-white w-6 h-6 flex items-center justify-center rounded text-sm">${i + 1}</span> 
-                                ${l[0]}
-                            </span>
-                            <span class="bg-slate-200 text-slate-700 px-3 py-1 rounded text-sm font-bold">${l[1]}</span>
-                        </div>
-                    `).join('') : '<p class="text-slate-400 italic text-center">Sem dados suficientes.</p>'}
+            <div style="display: flex; flex-direction: column;">
+                <div style="background: #0f766e; color: white; padding: 8px 15px; border-radius: 6px 6px 0 0; font-weight: 700; font-size: 0.8rem; text-align: center;">TOP 5 LOJAS</div>
+                <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; flex: 1; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead><tr style="background: #10b981; color: white; font-size: 0.7rem;"><th style="padding: 6px; text-align: left;">Loja</th><th style="text-align: center;">Qtd</th><th style="text-align: center;">%</th></tr></thead>
+                        <tbody>${gerarLinhasTabelaFixo(topLojas, totalChamados)}</tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
-    `;
+    `);
 
     // ==========================================
     // Slide 3: Gráfico (Evolução Diária)
     // ==========================================
-    html += `
-    <div class="${slideClass}">
-        <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-emerald-500/20">
-            <div class="flex items-center gap-4">
-                <div class="bg-emerald-100 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-chart-line text-2xl"></i></div>
-                <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">Evolução de Atendimentos</h2>
-            </div>
-            <div class="flex gap-4 text-xs font-bold">
-                <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#94a3b8] rounded-sm"></span> Dias Anteriores</div>
-                <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#10b981] rounded-sm"></span> Período Selecionado</div>
-            </div>
+    html += renderSlideContent(`
+        <div style="${headerTitleStyle}">
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Evolução de Atendimentos</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">Comparativo com dias anteriores</span></div>
+            <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
-        <div class="flex-1 w-full relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <canvas id="chartEvolucaoURA"></canvas>
+        <div style="flex: 1; background: white; padding: 10px 15px; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column;">
+            <div style="display: flex; gap: 15px; font-size: 0.75rem; font-weight: 700; color: #475569; justify-content: center; margin-bottom: 10px;">
+                <span style="display: flex; align-items: center; gap: 5px;"><span style="display:inline-block; width:12px; height:12px; background:#94a3b8; border-radius:2px;"></span> Dias Anteriores</span>
+                <span style="display: flex; align-items: center; gap: 5px;"><span style="display:inline-block; width:12px; height:12px; background:#10b981; border-radius:2px;"></span> Período Selecionado</span>
+            </div>
+            <div style="flex: 1; position: relative;"><canvas id="chartEvolucaoURA"></canvas></div>
         </div>
-    </div>
-    `;
+    `);
 
     // ==========================================
-    // Slide 4: Categorias & Departamentos (Inspirado na Imagem)
+    // Slide 4: Categorias & Departamentos
     // ==========================================
-    html += `
-    <div class="${slideClass}">
-        <div class="flex items-center justify-between mb-6 pb-2 border-b-2 border-emerald-500/20">
-            <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">Categorias & Departamentos</h2>
-        </div>
+    const macroHtml = top4Macro.map(macro => {
+        const nomeMacro = macro[0];
+        const totalMacro = macro[1].total;
+        const subcats = Object.entries(macro[1].subcategorias).sort((a, b) => b[1] - a[1]).slice(0, 5);
         
-        <div class="flex gap-6 h-full">
-            <!-- Esquerda: Tabelas de Subcategorias -->
-            <div class="w-2/3 grid grid-cols-2 gap-4">
-                ${top4Macro.map(macro => {
-                    const nomeMacro = macro[0];
-                    const totalMacro = macro[1].total;
-                    const subcats = Object.entries(macro[1].subcategorias).sort((a, b) => b[1] - a[1]).slice(0, 6);
-                    
-                    return `
-                    <div class="bg-white border border-slate-200 rounded overflow-hidden shadow-sm flex flex-col h-[280px]">
-                        <div class="bg-emerald-600 text-white font-black text-center py-2 text-sm uppercase tracking-wider">${nomeMacro}</div>
-                        <div class="flex bg-emerald-50 border-b border-emerald-100 text-xs font-bold text-emerald-800 px-3 py-1">
-                            <div class="flex-1">CATEGORIA</div>
-                            <div class="w-12 text-center">QNT</div>
-                            <div class="w-12 text-center">%</div>
-                        </div>
-                        <div class="flex-1 overflow-hidden bg-slate-50">
-                            ${subcats.map((sub, idx) => {
-                                const p = Math.round((sub[1] / totalMacro) * 100);
-                                const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
-                                return `
-                                <div class="flex ${bgClass} px-3 py-1.5 border-b border-slate-100 text-xs">
-                                    <div class="flex-1 text-slate-600 truncate pr-2" title="${sub[0]}">${sub[0]}</div>
-                                    <div class="w-12 text-center font-bold text-slate-700 bg-emerald-100/50 rounded">${sub[1]}</div>
-                                    <div class="w-12 text-center font-bold text-slate-500">${p}%</div>
-                                </div>
-                                `
-                            }).join('')}
-                        </div>
-                    </div>
-                    `;
-                }).join('')}
+        const linhasSubcats = subcats.map((sub, idx) => {
+            const p = Math.round((sub[1] / totalMacro) * 100);
+            const bgClass = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+            return `<tr style="background-color: ${bgClass}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 4px 8px; font-size: 0.7rem; color: #475569; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${sub[0]}</td><td style="padding: 4px; font-size: 0.7rem; font-weight: 800; text-align: center; color: #0f172a;">${sub[1]}</td><td style="padding: 4px; font-size: 0.7rem; font-weight: 700; text-align: center; color: #64748b;">${p}%</td></tr>`;
+        }).join('');
+
+        return `<div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: white;"><div style="background: #115e59; color: white; padding: 6px; font-size: 0.75rem; font-weight: 800; text-align: center; text-transform: uppercase;">${nomeMacro}</div><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #d1fae5; color: #065f46; font-size: 0.65rem;"><th style="padding: 4px 8px; text-align: left;">Subcategoria</th><th style="padding: 4px; text-align: center; width: 40px;">Qtd</th><th style="padding: 4px; text-align: center; width: 40px;">%</th></tr></thead><tbody>${linhasSubcats}</tbody></table></div>`;
+    }).join('');
+
+    html += renderSlideContent(`
+        <div style="${headerTitleStyle}">
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Categorias & Departamentos</h2></div>
+            <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
+        </div>
+        <div style="display: flex; gap: 20px; flex: 1;">
+            <div style="flex: 2; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px;">
+                ${macroHtml}
             </div>
-
-            <!-- Direita: Gráfico Tradicional vs Express (Via HTML/CSS para ser perfeito no PDF) -->
-            <div class="w-1/3 bg-white border border-slate-200 rounded shadow-sm p-6 flex flex-col items-center justify-end relative h-[576px]">
-                <h3 class="absolute top-6 w-full text-center font-black text-slate-700 uppercase tracking-widest text-sm border-b border-slate-100 pb-2">Comparativo de Perfil</h3>
-                
-                <div class="flex items-end justify-center gap-12 w-full h-[350px] mb-8 relative">
-                    <!-- Tradicional -->
-                    <div class="flex flex-col items-center w-24">
-                        <span class="text-sm font-bold text-slate-500 mb-2">${pctTrad}%</span>
-                        <div class="w-full bg-emerald-500 rounded-t-sm relative transition-all" style="height: ${Math.max(pctTrad * 3, 20)}px;">
-                            <span class="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-600 uppercase">Tradicional</span>
-                            <span class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-black">${qtdTradicional}</span>
+            <div style="flex: 1; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative;">
+                <h3 style="position: absolute; top: 15px; width: 100%; text-align: center; font-size: 0.85rem; font-weight: 800; color: #475569; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Perfil de Atendimento</h3>
+                <div style="display: flex; align-items: flex-end; justify-content: center; gap: 40px; width: 100%; height: 350px; margin-bottom: 20px; position: relative;">
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 80px;">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #475569; margin-bottom: 5px;">${pctTrad}%</span>
+                        <div style="width: 100%; background: #10b981; border-radius: 4px 4px 0 0; position: relative; height: ${Math.max(pctTrad * 3, 20)}px;">
+                            <span style="position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tradicional</span>
+                            <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: 900; font-size: 1rem;">${qtdTradicional}</span>
                         </div>
                     </div>
-
-                    <!-- Express -->
-                    <div class="flex flex-col items-center w-24">
-                        <span class="text-sm font-bold text-slate-500 mb-2">${pctExp}%</span>
-                        <div class="w-full bg-emerald-400 rounded-t-sm relative transition-all" style="height: ${Math.max(pctExp * 3, 20)}px;">
-                            <span class="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-600 uppercase">Express</span>
-                            <span class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-black">${qtdExpress}</span>
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 80px;">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #475569; margin-bottom: 5px;">${pctExp}%</span>
+                        <div style="width: 100%; background: #34d399; border-radius: 4px 4px 0 0; position: relative; height: ${Math.max(pctExp * 3, 20)}px;">
+                            <span style="position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase;">Express</span>
+                            <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: 900; font-size: 1rem;">${qtdExpress}</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="flex gap-4 text-xs font-bold border-t border-slate-200 pt-4 w-full justify-center">
-                    <div class="flex items-center gap-1"><span class="w-3 h-3 bg-emerald-500 rounded-sm"></span> Quantidade</div>
-                </div>
             </div>
         </div>
-    </div>
-    `;
+    `);
 
     // ==========================================
-    // Slide 5: Cruzamento Lojas x Categorias (Matriz)
+    // Slide 5: Cruzamento Lojas x Categorias
     // ==========================================
-    html += `
-    <div class="${slideClass}">
-        <div class="flex items-center justify-between mb-6 pb-2 border-b-2 border-emerald-500/20">
-            <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">Matriz: Lojas x Categorias</h2>
+    let matrizTrs = top10LojasPivot.map((loja, index) => {
+        const dadosLoja = matrizCruzamento[loja];
+        const trClass = index % 2 === 0 ? '#f8fafc' : '#ffffff';
+        let colsHTML = '';
+        let somaLinha = 0;
+
+        top8CategoriasPivot.forEach(cat => {
+            const val = dadosLoja.categorias[cat] || 0;
+            somaLinha += val;
+            const valFormatado = val > 0 ? `<span style="font-weight: 800; color: #0f172a;">${val}</span>` : `<span style="color: #cbd5e1;">-</span>`;
+            colsHTML += `<td style="padding: 8px 4px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center;">${valFormatado}</td>`;
+        });
+
+        return `
+        <tr style="background-color: ${trClass}; font-size: 0.7rem;">
+            <td style="padding: 8px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; font-weight: 800; color: #334155; text-transform: uppercase; background: #f1f5f9;">${loja}</td>
+            ${colsHTML}
+            <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: 900; text-align: center; background: #d1fae5; color: #065f46;">${somaLinha}</td>
+        </tr>
+        `;
+    }).join('');
+
+    let matrizThs = top8CategoriasPivot.map(cat => `<th style="padding: 8px 4px; border-right: 1px solid rgba(255,255,255,0.2); text-transform: uppercase; text-align: center; font-weight: 700; width: 90px;"><div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px;" title="${cat}">${cat}</div></th>`).join('');
+
+    html += renderSlideContent(`
+        <div style="${headerTitleStyle}">
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Matriz: Lojas x Categorias</h2></div>
+            <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
-        
-        <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex-1 flex flex-col">
-            <table class="w-full text-left border-collapse text-xs">
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; flex: 1; display: flex; flex-direction: column;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.7rem;">
                 <thead>
-                    <tr class="bg-emerald-600 text-white">
-                        <th class="p-3 border-r border-emerald-500/50 uppercase font-black w-32">LOJA</th>
-                        ${top8CategoriasPivot.map(cat => `<th class="p-3 border-r border-emerald-500/50 uppercase font-bold text-center leading-tight"><div class="truncate w-[90px]" title="${cat}">${cat}</div></th>`).join('')}
-                        <th class="p-3 uppercase font-black text-center bg-emerald-700 w-20">TOTAL</th>
+                    <tr style="background: #10b981; color: white;">
+                        <th style="padding: 8px; border-right: 1px solid rgba(255,255,255,0.2); text-transform: uppercase; font-weight: 900; width: 120px;">LOJA</th>
+                        ${matrizThs}
+                        <th style="padding: 8px; text-transform: uppercase; font-weight: 900; text-align: center; background: #047857; width: 60px;">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${top10LojasPivot.map((loja, index) => {
-                        const dadosLoja = matrizCruzamento[loja];
-                        const trClass = index % 2 === 0 ? 'bg-slate-50' : 'bg-white';
-                        
-                        let colsHTML = '';
-                        let somaLinha = 0;
-
-                        top8CategoriasPivot.forEach(cat => {
-                            const val = dadosLoja.categorias[cat] || 0;
-                            somaLinha += val;
-                            const valFormatado = val > 0 ? `<span class="font-bold text-slate-700">${val}</span>` : `<span class="text-slate-300">-</span>`;
-                            colsHTML += `<td class="p-3 border-r border-b border-slate-200 text-center">${valFormatado}</td>`;
-                        });
-
-                        return `
-                        <tr class="${trClass}">
-                            <td class="p-3 border-r border-b border-slate-200 font-bold text-slate-700 uppercase bg-slate-100">${loja}</td>
-                            ${colsHTML}
-                            <td class="p-3 border-b border-slate-200 font-black text-center bg-emerald-50 text-emerald-700">${somaLinha}</td>
-                        </tr>
-                        `;
-                    }).join('')}
+                    ${matrizTrs}
                 </tbody>
             </table>
-            <div class="p-4 bg-slate-100 text-slate-500 text-xs italic mt-auto border-t border-slate-200">
-                * Exibindo apenas o cruzamento das 10 lojas de maior volume contra as 8 categorias de maior volume no período selecionado.
+            <div style="padding: 10px; background: #f8fafc; color: #64748b; font-size: 0.7rem; font-style: italic; margin-top: auto; border-top: 1px solid #e2e8f0;">
+                * Cruzamento restrito ao Top 10 Lojas vs Top 8 Categorias no período.
             </div>
         </div>
-    </div>
-    `;
+    `);
 
     // ==========================================
-    // Slide 6: Encerramento (Estilo Field)
+    // Slide 6: Encerramento (Clonada do Field)
     // ==========================================
     html += `
-    <div class="${coverClass}">
-        <div class="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style="background-image: linear-gradient(45deg, #10b981 25%, transparent 25%, transparent 75%, #10b981 75%, #10b981), linear-gradient(45deg, #10b981 25%, transparent 25%, transparent 75%, #10b981 75%, #10b981); background-size: 60px 60px; background-position: 0 0, 30px 30px;"></div>
-        
-        <div class="z-10 flex flex-col items-center justify-center">
-            <i class="fa-solid fa-circle-check text-7xl text-emerald-500 mb-6 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]"></i>
-            <h1 class="text-7xl font-black text-white mb-4 tracking-tighter">MUITO OBRIGADO!</h1>
-            <p class="text-2xl text-slate-400 font-light mb-12">Fim da Apresentação URA Lebes</p>
-            
-            <div class="w-48 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent mb-12 opacity-50"></div>
-            
-            <img src="https://logodownload.org/wp-content/uploads/2019/09/lebes-logo.png" alt="Lebes" class="h-10 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+    <div style="${coverStyle}">
+        <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
+        <div>
+            <h1 style="font-size: 4rem; font-weight: 900; margin: 0; text-transform: uppercase;">Obrigado!</h1>
+            <p style="font-size: 1.2rem; font-weight: 500; margin-top: 10px;">Fim da Apresentação URA Lebes</p>
         </div>
+        <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
     </div>
     `;
 
@@ -353,7 +304,7 @@ export function renderizarURA(
 }
 
 /**
- * Função responsável por injetar o Gráfico (Chart.js) no slide gerado
+ * Função responsável por injetar o Gráfico (Chart.js)
  */
 export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
     setTimeout(() => {
@@ -376,7 +327,6 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
         const dadosDia = [];
         const coresDia = [];
 
-        // Voltar 3 dias no tempo para o gráfico
         let curr = new Date(dtIni);
         curr.setDate(curr.getDate() - 3); 
 
@@ -384,21 +334,18 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
             const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0');
             labelsDias.push(diaStr);
 
-            // Contar chamados do dia
             const chamadosDoDia = todosProcessados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
             dadosDia.push(chamadosDoDia);
 
-            // Se a data atual (curr) for menor que o início oficial (dtIni), pinta de cinza
             if (curr < dtIni) {
-                coresDia.push('#94a3b8'); // Cinza (Dias Anteriores)
+                coresDia.push('#94a3b8'); 
             } else {
-                coresDia.push('#10b981'); // Esmeralda (Período Selecionado)
+                coresDia.push('#10b981'); 
             }
 
             curr.setDate(curr.getDate() + 1);
         }
 
-        // Plugin customizado para desenhar os números no topo das barras
         const pluginRotulosGerais = {
             id: 'rotulosTopBar',
             afterDatasetsDraw(chart) {
@@ -409,12 +356,12 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
 
                     meta.data.forEach((element, index) => {
                         const value = dataset.data[index];
-                        if (value === 0) return; // Não desenha zero para manter limpo
+                        if (value === 0) return; 
 
                         ctx.save();
                         ctx.textAlign = 'center';
                         ctx.font = 'bold 12px sans-serif';
-                        ctx.fillStyle = '#334155'; // Cor do texto numérico
+                        ctx.fillStyle = '#334155'; 
 
                         const model = element.getProps(['x', 'y'], true);
                         ctx.fillText(value, model.x, model.y - 8);
@@ -445,10 +392,10 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
                 responsive: true,
                 maintainAspectRatio: false,
                 layout: {
-                    padding: { top: 20 } // Espaço para os rótulos numéricos não cortarem
+                    padding: { top: 20 }
                 },
                 plugins: {
-                    legend: { display: false }, // Oculto pois a legenda já foi feita em HTML
+                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             title: (context) => 'Dia ' + context[0].label,
