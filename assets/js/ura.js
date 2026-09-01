@@ -18,7 +18,7 @@ export function renderizarURA(
     };
 
     const dadosSafe = Array.isArray(chamadosPeriodoAbertura) ? chamadosPeriodoAbertura : [];
-    const totalChamados = dadosSafe.length;
+    const totalChamados = dadosSafe.length; // O TOTAL GERAL PERMANECE INTACTO
 
     // --- FUNÇÕES AUXILIARES DE NEGÓCIO ---
     const getLojaInfo = (contatoStr) => {
@@ -35,40 +35,57 @@ export function renderizarURA(
     // --- PROCESSAMENTO E AGREGAÇÃO DE DADOS ---
     let qtdTradicional = 0;
     let qtdExpress = 0;
+    
     const contagemCategorias = {};
     const contagemLojas = {};
     const matrizCruzamento = {};
     const contagemMacroCategorias = {};
 
+    // Categorias de "ruído" que não devem poluir os rankings qualitativos
+    const categoriasIgnoradas = [
+        "( s ) - dúvidas/orientações - ti",
+        "( i ) - whatsapp / atendimento encerrado por falta de retorno"
+    ];
+
     dadosSafe.forEach(chamado => {
         const loja = getLojaInfo(chamado.contato);
+        const lojaNome = loja.nome;
         
+        // Contabiliza SEMPRE para as Lojas e Totais (Independente da categoria)
         if (loja.tipo === 'TRADICIONAL') qtdTradicional++;
         else if (loja.tipo === 'EXPRESS') qtdExpress++;
-
-        const cat = escapeHtml(chamado.categoria || 'Sem Categoria');
-        
-        // CORREÇÃO: Puxando da coluna "Categoria 2" com fallback de segurança
-        const subcat = escapeHtml(chamado['Categoria 2'] || chamado.categoria2 || chamado.subcategoria || 'Geral');
-        
-        const lojaNome = loja.nome;
-
-        contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
 
         if (lojaNome !== 'Não Informado' && lojaNome !== 'NÃO INFORMADO') {
             contagemLojas[lojaNome] = (contagemLojas[lojaNome] || 0) + 1;
         }
 
-        if (!matrizCruzamento[lojaNome]) matrizCruzamento[lojaNome] = { total: 0, categorias: {} };
-        matrizCruzamento[lojaNome].total++;
-        matrizCruzamento[lojaNome].categorias[cat] = (matrizCruzamento[lojaNome].categorias[cat] || 0) + 1;
+        // Tratamento de Categorias
+        const cat = escapeHtml(chamado.categoria || 'Sem Categoria');
+        const catNormalizada = cat.toLowerCase().trim();
+        const isIgnorada = categoriasIgnoradas.includes(catNormalizada);
 
-        if (!contagemMacroCategorias[cat]) contagemMacroCategorias[cat] = { total: 0, subcategorias: {} };
-        contagemMacroCategorias[cat].total++;
-        contagemMacroCategorias[cat].subcategorias[subcat] = (contagemMacroCategorias[cat].subcategorias[subcat] || 0) + 1;
+        // Busca restrita na coluna solicitada (com fallback explícito para vazio)
+        const subcatRaw = chamado.categoria_2;
+        const subcat = subcatRaw ? escapeHtml(subcatRaw) : 'Não Classificada';
+
+        // Alimenta os rankings SOMENTE se não for uma categoria ignorada
+        if (!isIgnorada) {
+            contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
+
+            if (!contagemMacroCategorias[cat]) {
+                contagemMacroCategorias[cat] = { total: 0, subcategorias: {} };
+            }
+            contagemMacroCategorias[cat].total++;
+            contagemMacroCategorias[cat].subcategorias[subcat] = (contagemMacroCategorias[cat].subcategorias[subcat] || 0) + 1;
+
+            if (lojaNome !== 'Não Informado' && lojaNome !== 'NÃO INFORMADO') {
+                if (!matrizCruzamento[lojaNome]) matrizCruzamento[lojaNome] = { categorias: {} };
+                matrizCruzamento[lojaNome].categorias[cat] = (matrizCruzamento[lojaNome].categorias[cat] || 0) + 1;
+            }
+        }
     });
 
-    // Ordenações e Geração de "Tops" com limite fixo
+    // --- ORDENAÇÕES DE TOP FIXO ---
     const preencherTopFixo = (obj, limite) => {
         const sorted = Object.entries(obj).sort((a, b) => b[1] - a[1]);
         const resultado = [];
@@ -80,7 +97,7 @@ export function renderizarURA(
     };
 
     const topCategorias = preencherTopFixo(contagemCategorias, 5);
-    const topLojas = preencherTopFixo(contagemLojas, 5);
+    const topLojas = preencherTopFixo(contagemLojas, 5); // Lojas continuam com volume total
     
     const top10LojasPivot = Object.entries(contagemLojas).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
     const top8CategoriasPivot = Object.entries(contagemCategorias).sort((a, b) => b[1] - a[1]).slice(0, 8).map(x => x[0]);
@@ -95,7 +112,6 @@ export function renderizarURA(
     const renderSlideContent = (conteudo) => `<div style="${slideStyle}">${conteudo}</div>`;
     const headerTitleStyle = `display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px;`;
 
-    // Função de Tabelas Fixas
     const gerarLinhasTabelaFixo = (arr, totalBase) => arr.map((item, index) => {
         if (item.nome === '-') {
             return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:10px;">${index+1}</span>-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td></tr>`;
@@ -106,32 +122,15 @@ export function renderizarURA(
         return `<tr style="${bgStyle} border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #0f172a; display: flex; align-items: center;">${badge}${item.nome}</td><td style="text-align: center; font-weight: 800; padding: 6px 10px; font-size: 0.75rem; color: #0f172a;">${item.qtd}</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #0f172a; font-weight: 700;">${totalBase > 0 ? ((item.qtd / totalBase) * 100).toFixed(0) : 0}%</td></tr>`;
     }).join('');
 
-    // CORREÇÃO: Tratamento inteligente da exibição do período na capa
-    const badgePeriodo = (dataInicio === dataFim) 
-        ? `Data: ${dataInicio}` 
-        : `Período: ${dataInicio} até ${dataFim}`;
+    const badgePeriodo = (dataInicio === dataFim) ? `Data: ${dataInicio}` : `Período: ${dataInicio} até ${dataFim}`;
 
     let html = `
     <style>
-        /* CSS Injetado para gerenciar o Zoom de forma segura */
-        .ura-zoom-active {
-            transform: scale(0.70);
-            transform-origin: top center;
-            margin-bottom: -300px; /* Compensa o espaço reduzido */
-        }
-        #ura-slides-wrapper {
-            transition: transform 0.3s ease;
-        }
-        @media print {
-            .btn-zoom-ura { display: none !important; }
-            #ura-slides-wrapper { 
-                transform: scale(1) !important; 
-                margin-bottom: 0 !important;
-            }
-        }
+        .ura-zoom-active { transform: scale(0.70); transform-origin: top center; margin-bottom: -300px; }
+        #ura-slides-wrapper { transition: transform 0.3s ease; }
+        @media print { .btn-zoom-ura { display: none !important; } #ura-slides-wrapper { transform: scale(1) !important; margin-bottom: 0 !important; } }
     </style>
     
-    <!-- Botão de Zoom Flutuante (Fica fora dos slides) -->
     <div style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;" class="btn-zoom-ura">
         <button onclick="document.getElementById('ura-slides-wrapper').classList.toggle('ura-zoom-active')" 
                 style="background-color: #0f766e; color: white; border: 2px solid #ffffff; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;">
@@ -139,13 +138,10 @@ export function renderizarURA(
         </button>
     </div>
 
-    <!-- Wrapper que receberá a ação do Zoom -->
     <div id="ura-slides-wrapper">
     `;
 
-    // ==========================================
     // Slide 1: Capa
-    // ==========================================
     html += `
     <div style="${coverStyle}">
         <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
@@ -160,9 +156,7 @@ export function renderizarURA(
     </div>
     `;
 
-    // ==========================================
     // Slide 2: Resumo Executivo
-    // ==========================================
     html += renderSlideContent(`
         <div style="${headerTitleStyle}">
             <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Visão Geral URA</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">${badgePeriodo}</span></div>
@@ -192,7 +186,7 @@ export function renderizarURA(
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; flex: 1; overflow-y: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #10b981; color: white; font-size: 0.7rem;"><th style="padding: 6px; text-align: left;">Categoria</th><th style="text-align: center;">Qtd</th><th style="text-align: center;">%</th></tr></thead>
-                        <tbody>${gerarLinhasTabelaFixo(topCategorias, totalChamados)}</tbody>
+                        <tbody>${gerarLinhasTabelaFixo(topCategorias, Object.values(contagemCategorias).reduce((a,b)=>a+b,0))}</tbody>
                     </table>
                 </div>
             </div>
@@ -208,9 +202,7 @@ export function renderizarURA(
         </div>
     `);
 
-    // ==========================================
     // Slide 3: Gráfico (Evolução Diária)
-    // ==========================================
     html += renderSlideContent(`
         <div style="${headerTitleStyle}">
             <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Evolução de Atendimentos</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">Comparativo com dias anteriores</span></div>
@@ -225,9 +217,7 @@ export function renderizarURA(
         </div>
     `);
 
-    // ==========================================
     // Slide 4: Categorias & Lojas
-    // ==========================================
     const macroHtml = top4Macro.map(macro => {
         const nomeMacro = macro[0];
         const totalMacro = macro[1].total;
@@ -242,7 +232,6 @@ export function renderizarURA(
         return `<div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: white;"><div style="background: #115e59; color: white; padding: 6px; font-size: 0.75rem; font-weight: 800; text-align: center; text-transform: uppercase;">${nomeMacro}</div><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #d1fae5; color: #065f46; font-size: 0.65rem;"><th style="padding: 4px 8px; text-align: left;">Subcategoria</th><th style="padding: 4px; text-align: center; width: 40px;">Qtd</th><th style="padding: 4px; text-align: center; width: 40px;">%</th></tr></thead><tbody>${linhasSubcats}</tbody></table></div>`;
     }).join('');
 
-    // CORREÇÃO: Título alterado para "Categorias & Lojas"
     html += renderSlideContent(`
         <div style="${headerTitleStyle}">
             <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Categorias & Lojas</h2></div>
@@ -274,9 +263,7 @@ export function renderizarURA(
         </div>
     `);
 
-    // ==========================================
     // Slide 5: Cruzamento Lojas x Categorias
-    // ==========================================
     let matrizTrs = top10LojasPivot.map((loja, index) => {
         const dadosLoja = matrizCruzamento[loja];
         const trClass = index % 2 === 0 ? '#f8fafc' : '#ffffff';
@@ -284,7 +271,7 @@ export function renderizarURA(
         let somaLinha = 0;
 
         top8CategoriasPivot.forEach(cat => {
-            const val = dadosLoja.categorias[cat] || 0;
+            const val = dadosLoja ? (dadosLoja.categorias[cat] || 0) : 0;
             somaLinha += val;
             const valFormatado = val > 0 ? `<span style="font-weight: 800; color: #0f172a;">${val}</span>` : `<span style="color: #cbd5e1;">-</span>`;
             colsHTML += `<td style="padding: 8px 4px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center;">${valFormatado}</td>`;
@@ -325,9 +312,7 @@ export function renderizarURA(
         </div>
     `);
 
-    // ==========================================
     // Slide 6: Encerramento
-    // ==========================================
     html += `
     <div style="${coverStyle}">
         <div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div>
@@ -337,17 +322,14 @@ export function renderizarURA(
         </div>
         <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
     </div>
-    </div> <!-- Fim Wrapper Zoom -->
+    </div>
     `;
 
     return html;
 }
 
-/**
- * Função responsável por injetar o Gráfico (Chart.js)
- */
 export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
-    // Mantida idêntica à versão anterior
+    // IDÊNTICO À VERSÃO ANTERIOR - Foca 100% no volume diário global
     setTimeout(() => {
         const canvasEl = document.getElementById('chartEvolucaoURA');
         if (!canvasEl) return;
