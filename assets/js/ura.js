@@ -10,15 +10,23 @@ export function renderizarURA(
     dataInicio, dataFim, 
     tipoPeriodo, subtituloCapa
 ) {
-    
+    // Helper de segurança para filtrar apenas a equipe da URA
+    const isEquipeURA = (item) => {
+        if (!item || !item.equipe) return false;
+        const eq = String(item.equipe).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").trim();
+        return eq === 'central telefonica';
+    };
+
     // Função de segurança para evitar XSS
     const escapeHtml = (str) => {
         if (str === null || str === undefined) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     };
 
-    const dadosSafe = Array.isArray(chamadosPeriodoAbertura) ? chamadosPeriodoAbertura : [];
-    const totalChamados = dadosSafe.length; // O TOTAL GERAL PERMANECE INTACTO
+    // Aplica o filtro de equipe na origem das listas
+    const todosSafe = (Array.isArray(todosProcessados) ? todosProcessados : []).filter(isEquipeURA);
+    const dadosSafe = (Array.isArray(chamadosPeriodoAbertura) ? chamadosPeriodoAbertura : []).filter(isEquipeURA);
+    const totalChamados = dadosSafe.length;
 
     // --- FUNÇÕES AUXILIARES DE NEGÓCIO ---
     const getLojaInfo = (contatoStr) => {
@@ -97,7 +105,7 @@ export function renderizarURA(
     };
 
     const topCategorias = preencherTopFixo(contagemCategorias, 5);
-    const topLojas = preencherTopFixo(contagemLojas, 5); // Lojas continuam com volume total
+    const topLojas = preencherTopFixo(contagemLojas, 5);
     
     const top10LojasPivot = Object.entries(contagemLojas).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
     const top8CategoriasPivot = Object.entries(contagemCategorias).sort((a, b) => b[1] - a[1]).slice(0, 8).map(x => x[0]);
@@ -329,10 +337,17 @@ export function renderizarURA(
 }
 
 export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
-    // IDÊNTICO À VERSÃO ANTERIOR - Foca 100% no volume diário global
     setTimeout(() => {
         const canvasEl = document.getElementById('chartEvolucaoURA');
         if (!canvasEl) return;
+
+        const isEquipeURA = (item) => {
+            if (!item || !item.equipe) return false;
+            const eq = String(item.equipe).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").trim();
+            return eq === 'central telefonica';
+        };
+
+        const todosFiltrados = (Array.isArray(todosProcessados) ? todosProcessados : []).filter(isEquipeURA);
 
         const parseDataBr = (str) => {
             if (!str) return null;
@@ -357,7 +372,7 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
             const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0');
             labelsDias.push(diaStr);
 
-            const chamadosDoDia = todosProcessados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
+            const chamadosDoDia = todosFiltrados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
             dadosDia.push(chamadosDoDia);
 
             if (curr < dtIni) {

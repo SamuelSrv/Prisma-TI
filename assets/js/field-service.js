@@ -1,13 +1,18 @@
 export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, dadosAnteriorAbertura, dtIni, dtFim, antIni, antFim, pInicio, pFim, tipoPeriodo, subtituloCapa) {
     
+    // CORREÇÃO: padStart para evitar datas inválidas (ex: 5/3/2026 -> 2026-03-05)
     const parseDataBr = (str) => {
         if (!str) return null;
         const partes = str.split(' - ');
         if (partes.length < 1) return null;
-        const [d, m, a] = partes[0].split('/');
-        if (!d || !m || !a) return null;
+        const partesData = partes[0].split('/');
+        if (partesData.length < 3) return null;
+        const d = partesData[0].padStart(2, '0');
+        const m = partesData[1].padStart(2, '0');
+        const a = partesData[2];
         const hora = partes[1] || '00:00';
-        return new Date(`${a}-${m}-${d}T${hora}:00`);
+        const dateObj = new Date(`${a}-${m}-${d}T${hora}:00`);
+        return isNaN(dateObj.getTime()) ? null : dateObj;
     };
 
     const isSameDay = (d1, d2) => d1 && d2 && d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -24,20 +29,31 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const fechadosNoPrazoArr = fechadosPeriodo.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim');
     const fechadosNoPrazo = fechadosNoPrazoArr.length;
 
-    // CÁLCULO DAS PORCENTAGENS: MÉDIA DIÁRIA DOS DIAS ÚTEIS
+    // CÁLCULO DAS PORCENTAGENS E ESTRUTURAÇÃO DOS DADOS DO GRÁFICO
     let sumPctFechados = 0;
     let sumPctPrazo = 0;
     let countDiasUteis = 0;
     
+    const labelsGrafico = [];
+    const abertosGrafico = [];
+    const fechadosGrafico = [];
+    
     let curr = new Date(dtIni);
     while (curr <= dtFim) {
         const dow = curr.getDay(); // 0 = Dom, 6 = Sáb
+        const diaFormatado = curr.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        
+        const abertosDoDia = todosProcessados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
+        const fechadosDoDiaArr = todosProcessados.filter(d => d.fechado && isSameDay(d.dataEncerramentoObj, curr));
+        const fechadosDia = fechadosDoDiaArr.length;
+        
+        // Coleta de dados diários para o gráfico
+        labelsGrafico.push(diaFormatado);
+        abertosGrafico.push(abertosDoDia);
+        fechadosGrafico.push(fechadosDia);
+
         if (dow !== 0 && dow !== 6) {
             countDiasUteis++;
-            
-            const abertosDoDia = todosProcessados.filter(d => isSameDay(parseDataBr(d.abertura), curr)).length;
-            const fechadosDoDiaArr = todosProcessados.filter(d => d.fechado && isSameDay(d.dataEncerramentoObj, curr));
-            const fechadosDia = fechadosDoDiaArr.length;
             const prazoDia = fechadosDoDiaArr.filter(d => (d.atraso_no_servico || 'nao').toLowerCase() !== 'sim').length;
             
             const pFechados = abertosDoDia > 0 ? Math.round((fechadosDia / abertosDoDia) * 100) : 0;
@@ -52,7 +68,7 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const taxaFechamento = countDiasUteis > 0 ? Math.round(sumPctFechados / countDiasUteis) : 0;
     const pctPrazo = countDiasUteis > 0 ? Math.round(sumPctPrazo / countDiasUteis) : 0;
 
-    // 4. Backlog
+    // Backlog
     const backlog = todosProcessados.filter(d => {
         const dtAbe = parseDataBr(d.abertura);
         if (!dtAbe || dtAbe > dtFim) return false; 
@@ -60,7 +76,7 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
         return !d.fechado;
     }).length;
 
-    // PERÍODO ANTERIOR (Mesma Lógica de Média)
+    // PERÍODO ANTERIOR
     const antTotal = dadosAnteriorAbertura.length;
     
     const antFechadosArr = todosProcessados.filter(d => {
@@ -142,9 +158,33 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
     const topCategorias = obterTop10Fixo(dadosPeriodoAbertura, 'categoria');
     const topContatos = obterTop10Fixo(dadosPeriodoAbertura, 'contato');
 
+    // Rótulo dinâmico para a coluna de %
+    const labelPorcentagem = tipoPeriodo === 'semanal' ? '% Sem' : tipoPeriodo === 'diario' ? '% Dia' : '% Mês';
+
     const renderSlideContent = (conteudo) => `<div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">${conteudo}</div>`;
 
     const htmlCapa = `<div style="width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; box-sizing: border-box; margin-bottom: 30px; color: white;"><div style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">Grupo Lebes</div><div><h1 style="font-size: 3rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase;">${tipoPeriodo === 'semanal' ? 'Semanal Field Service' : tipoPeriodo === 'mensal' ? 'Mensal Field Service' : tipoPeriodo === 'diario' ? 'Diário Field Service' : 'Field Service'}</h1><p style="font-size: 1.4rem; font-weight: 600; opacity: 0.9; margin: 0;">${subtituloCapa}</p></div><div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div></div>`;
+
+    // SCRIPT PARA RENDERIZAR O CHART.JS AUTOMATICAMENTE
+    const scriptChart = `<script>
+        setTimeout(() => {
+            const ctx = document.getElementById('chartEvolucaoField');
+            if (ctx && typeof Chart !== 'undefined') {
+                if (window.myFieldChart) window.myFieldChart.destroy();
+                window.myFieldChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ${JSON.stringify(labelsGrafico)},
+                        datasets: [
+                            { label: 'Abertos', data: ${JSON.stringify(abertosGrafico)}, borderColor: '#7c3aed', backgroundColor: 'rgba(124, 58, 237, 0.1)', fill: true, tension: 0.3 },
+                            { label: 'Fechados', data: ${JSON.stringify(fechadosGrafico)}, borderColor: '#ea580c', backgroundColor: 'rgba(234, 88, 12, 0.1)', fill: true, tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                });
+            }
+        }, 100);
+    </script>`;
 
     const htmlSlide1 = renderSlideContent(`
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px;">
@@ -187,6 +227,7 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
             <h4 style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px; text-align: center;">Volumetria Diária de Atendimento</h4>
             <div style="flex: 1; position: relative;"><canvas id="chartEvolucaoField"></canvas></div>
         </div>
+        ${scriptChart}
     `);
 
     const gerarLinhasTabelaFixo = (arr) => arr.map((item, index) => {
@@ -205,8 +246,8 @@ export function renderizarFieldService(todosProcessados, dadosPeriodoAbertura, d
             <span style="font-size: 1.1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; height: 100%;">
-            <div style="display: flex; flex-direction: column;"><div style="background: #115e59; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">CATEGORIAS</div><div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;"><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Categoria</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead><tbody>${gerarLinhasTabelaFixo(topCategorias)}</tbody></table></div></div>
-            <div style="display: flex; flex-direction: column;"><div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">CONTATOS</div><div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;"><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Requerentes</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">% Mês</th></tr></thead><tbody>${gerarLinhasTabelaFixo(topContatos)}</tbody></table></div></div>
+            <div style="display: flex; flex-direction: column;"><div style="background: #115e59; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">CATEGORIAS</div><div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;"><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Categoria</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">${labelPorcentagem}</th></tr></thead><tbody>${gerarLinhasTabelaFixo(topCategorias)}</tbody></table></div></div>
+            <div style="display: flex; flex-direction: column;"><div style="background: #0f766e; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; text-align: center;">CONTATOS</div><div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; flex: 1; padding: 10px; overflow-y: auto;"><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #10b981; color: white; font-size: 0.75rem;"><th style="padding: 8px; text-align: left;">Requerentes</th><th style="text-align: center;">Quantidade</th><th style="text-align: center;">${labelPorcentagem}</th></tr></thead><tbody>${gerarLinhasTabelaFixo(topContatos)}</tbody></table></div></div>
         </div>
     `);
 
