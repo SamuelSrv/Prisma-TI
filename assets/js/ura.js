@@ -47,7 +47,10 @@ export function renderizarURA(
         else if (loja.tipo === 'EXPRESS') qtdExpress++;
 
         const cat = escapeHtml(chamado.categoria || 'Sem Categoria');
-        const subcat = escapeHtml(chamado.subcategoria || 'Geral');
+        
+        // CORREÇÃO: Puxando da coluna "Categoria 2" com fallback de segurança
+        const subcat = escapeHtml(chamado['Categoria 2'] || chamado.categoria2 || chamado.subcategoria || 'Geral');
+        
         const lojaNome = loja.nome;
 
         contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
@@ -65,7 +68,7 @@ export function renderizarURA(
         contagemMacroCategorias[cat].subcategorias[subcat] = (contagemMacroCategorias[cat].subcategorias[subcat] || 0) + 1;
     });
 
-    // Ordenações e Geração de "Tops" com limite fixo para manter a altura do layout
+    // Ordenações e Geração de "Tops" com limite fixo
     const preencherTopFixo = (obj, limite) => {
         const sorted = Object.entries(obj).sort((a, b) => b[1] - a[1]);
         const resultado = [];
@@ -86,13 +89,13 @@ export function renderizarURA(
     const pctTrad = totalChamados > 0 ? Math.round((qtdTradicional / totalChamados) * 100) : 0;
     const pctExp = totalChamados > 0 ? Math.round((qtdExpress / totalChamados) * 100) : 0;
 
-    // --- VARIÁVEIS DE ESTILO BASEADAS NO FIELD SERVICE ---
+    // --- VARIÁVEIS DE ESTILO ---
     const coverStyle = `width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); position: relative; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; box-sizing: border-box; margin-bottom: 30px; color: white;`;
     const slideStyle = `width: 1180px; min-width: 1180px; height: 664px; min-height: 664px; background-color: #ebf5ee; padding: 25px 40px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; flex-direction: column; position: relative; margin-bottom: 30px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);`;
     const renderSlideContent = (conteudo) => `<div style="${slideStyle}">${conteudo}</div>`;
     const headerTitleStyle = `display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px;`;
 
-    // --- FUNÇÃO PARA RENDERIZAR TABELAS FIXAS (COMO NO FIELD) ---
+    // Função de Tabelas Fixas
     const gerarLinhasTabelaFixo = (arr, totalBase) => arr.map((item, index) => {
         if (item.nome === '-') {
             return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:10px;">${index+1}</span>-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td></tr>`;
@@ -103,10 +106,45 @@ export function renderizarURA(
         return `<tr style="${bgStyle} border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #0f172a; display: flex; align-items: center;">${badge}${item.nome}</td><td style="text-align: center; font-weight: 800; padding: 6px 10px; font-size: 0.75rem; color: #0f172a;">${item.qtd}</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #0f172a; font-weight: 700;">${totalBase > 0 ? ((item.qtd / totalBase) * 100).toFixed(0) : 0}%</td></tr>`;
     }).join('');
 
-    let html = '';
+    // CORREÇÃO: Tratamento inteligente da exibição do período na capa
+    const badgePeriodo = (dataInicio === dataFim) 
+        ? `Data: ${dataInicio}` 
+        : `Período: ${dataInicio} até ${dataFim}`;
+
+    let html = `
+    <style>
+        /* CSS Injetado para gerenciar o Zoom de forma segura */
+        .ura-zoom-active {
+            transform: scale(0.70);
+            transform-origin: top center;
+            margin-bottom: -300px; /* Compensa o espaço reduzido */
+        }
+        #ura-slides-wrapper {
+            transition: transform 0.3s ease;
+        }
+        @media print {
+            .btn-zoom-ura { display: none !important; }
+            #ura-slides-wrapper { 
+                transform: scale(1) !important; 
+                margin-bottom: 0 !important;
+            }
+        }
+    </style>
+    
+    <!-- Botão de Zoom Flutuante (Fica fora dos slides) -->
+    <div style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;" class="btn-zoom-ura">
+        <button onclick="document.getElementById('ura-slides-wrapper').classList.toggle('ura-zoom-active')" 
+                style="background-color: #0f766e; color: white; border: 2px solid #ffffff; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">🔍</span> Zoom Tela
+        </button>
+    </div>
+
+    <!-- Wrapper que receberá a ação do Zoom -->
+    <div id="ura-slides-wrapper">
+    `;
 
     // ==========================================
-    // Slide 1: Capa (Clonada do Field Service)
+    // Slide 1: Capa
     // ==========================================
     html += `
     <div style="${coverStyle}">
@@ -115,7 +153,7 @@ export function renderizarURA(
             <h1 style="font-size: 3rem; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase;">URA LEBES</h1>
             <p style="font-size: 1.4rem; font-weight: 600; opacity: 0.9; margin: 0;">${subtituloCapa}</p>
             <div style="margin-top: 15px; background: rgba(0,0,0,0.15); display: inline-block; padding: 10px 20px; border-radius: 8px;">
-                <p style="font-size: 1.1rem; font-weight: 700; margin: 0;">Período: ${dataInicio} até ${dataFim}</p>
+                <p style="font-size: 1.1rem; font-weight: 700; margin: 0;">${badgePeriodo}</p>
             </div>
         </div>
         <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
@@ -127,7 +165,7 @@ export function renderizarURA(
     // ==========================================
     html += renderSlideContent(`
         <div style="${headerTitleStyle}">
-            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Visão Geral URA</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">Período: ${dataInicio} até ${dataFim}</span></div>
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Visão Geral URA</h2><span style="font-size: 0.7rem; color: #475569; font-weight: 600;">${badgePeriodo}</span></div>
             <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
         
@@ -188,7 +226,7 @@ export function renderizarURA(
     `);
 
     // ==========================================
-    // Slide 4: Categorias & Departamentos
+    // Slide 4: Categorias & Lojas
     // ==========================================
     const macroHtml = top4Macro.map(macro => {
         const nomeMacro = macro[0];
@@ -204,9 +242,10 @@ export function renderizarURA(
         return `<div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: white;"><div style="background: #115e59; color: white; padding: 6px; font-size: 0.75rem; font-weight: 800; text-align: center; text-transform: uppercase;">${nomeMacro}</div><table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #d1fae5; color: #065f46; font-size: 0.65rem;"><th style="padding: 4px 8px; text-align: left;">Subcategoria</th><th style="padding: 4px; text-align: center; width: 40px;">Qtd</th><th style="padding: 4px; text-align: center; width: 40px;">%</th></tr></thead><tbody>${linhasSubcats}</tbody></table></div>`;
     }).join('');
 
+    // CORREÇÃO: Título alterado para "Categorias & Lojas"
     html += renderSlideContent(`
         <div style="${headerTitleStyle}">
-            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Categorias & Departamentos</h2></div>
+            <div><h2 style="color: #115e59; font-size: 1.1rem; font-weight: 800; margin: 0;">Categorias & Lojas</h2></div>
             <span style="font-size: 1rem; font-weight: 800; color: #115e59;">Grupo Lebes</span>
         </div>
         <div style="display: flex; gap: 20px; flex: 1;">
@@ -287,7 +326,7 @@ export function renderizarURA(
     `);
 
     // ==========================================
-    // Slide 6: Encerramento (Clonada do Field)
+    // Slide 6: Encerramento
     // ==========================================
     html += `
     <div style="${coverStyle}">
@@ -298,6 +337,7 @@ export function renderizarURA(
         </div>
         <div style="font-size: 0.9rem; opacity: 0.8;">Gerência de Tecnologia da Informação - Suporte Técnico</div>
     </div>
+    </div> <!-- Fim Wrapper Zoom -->
     `;
 
     return html;
@@ -307,6 +347,7 @@ export function renderizarURA(
  * Função responsável por injetar o Gráfico (Chart.js)
  */
 export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo) {
+    // Mantida idêntica à versão anterior
     setTimeout(() => {
         const canvasEl = document.getElementById('chartEvolucaoURA');
         if (!canvasEl) return;
