@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO INTELIGENTE (SEM DUPLICAR)
+// 1. IMPORTAÇÃO HÍBRIDA (CSV e XLSX)
 // ==========================================
 function processarCSVAvaliacoes() {
     const fileInput = document.getElementById('arquivo-csv-aval');
@@ -42,81 +42,118 @@ function processarCSVAvaliacoes() {
 
     if (!fileInput.files.length) { alert("Selecione um arquivo."); return; }
 
+    const file = fileInput.files[0];
+    const extensao = file.name.split('.').pop().toLowerCase();
+
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo arquivo...';
     msgEl.classList.remove('hidden');
     msgEl.innerText = "Lendo arquivo...";
 
-    Papa.parse(fileInput.files[0], {
-        header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
-        complete: async function (results) {
-            const dadosBrutos = results.data;
-            const registrosLimpados = [];
+    if (extensao === 'csv') {
+        // Leitura via PapaParse (WhatsApp)
+        Papa.parse(file, {
+            header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
+            complete: function (results) {
+                enviarDadosParaBanco(results.data, msgEl, btn, fileInput);
+            }
+        });
+    } else if (extensao === 'xlsx' || extensao === 'xls') {
+        // Leitura via SheetJS (Telefonia)
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
 
-            dadosBrutos.forEach(row => {
-                const getVal = (keys) => {
-                    const key = Object.keys(row).find(k => keys.some(pk => k.includes(pk)));
-                    return key ? row[key]?.trim() : null;
-                };
+            // raw: false força o SheetJS a extrair a data formatada como texto "17/08/2026 09:24:44"
+            const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+            enviarDadosParaBanco(json, msgEl, btn, fileInput);
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        alert("Formato inválido. Por favor, use um arquivo .csv ou .xlsx");
+        btn.disabled = false;
+        btn.innerHTML = 'Processar Arquivo';
+    }
+}
 
-                const dataInic = getVal(['Data Inicial da Chamada']);
-                const dataAtend = getVal(['Data de Atendimento']);
-                const agente = getVal(['Agente']);
-                let nota = getVal(['Resposta 1', 'Resposta1']);
-                const dadosAssoc = getVal(['Dados Associados']);
+// ==========================================
+// TRATAMENTO E ENVIO PARA O SUPABASE
+// ==========================================
+async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
+    msgEl.innerText = "Tratando e enviando dados ao banco...";
+    const registrosLimpados = [];
 
-                if (nota && nota.includes('NÃ£o')) nota = 'Não respondeu';
+    dadosBrutos.forEach(row => {
+        const getVal = (keys) => {
+            const key = Object.keys(row).find(k => keys.some(pk => k.includes(pk)));
+            return key ? String(row[key]).trim() : null;
+        };
 
-                const formatarDataISO = (dStr) => {
-                    if (!dStr) return null;
-                    const [d, h] = dStr.split(' ');
-                    const [dia, mes, ano] = d.split('/');
-                    return `${ano}-${mes}-${dia}T${h || '00:00:00'}`;
-                };
+        const dataInic = getVal(['Data Inicial da Chamada']);
+        const dataAtend = getVal(['Data de Atendimento']);
+        const agente = getVal(['Agente', 'Interlocutor']);
+        let nota = getVal(['Resposta 1', 'Resposta1']);
+        const dadosAssoc = getVal(['Dados Associados']);
 
-                const extrairFilial = (str) => {
-                    if (!str) return null;
-                    const m = str.match(/Filial\s*=\s*(\d+)/i);
-                    return m ? parseInt(m[1], 10) : null;
-                };
+        if (nota && nota.includes('NÃ£o')) nota = 'Não respondeu';
 
-                if (dataInic && agente) {
-                    const tipo = dadosAssoc ? 'Ligação' : 'WhatsApp';
-                    // ID ÚNICO: Previne duplicação de dados importados duas vezes
-                    const hashId = `${tipo}_${agente}_${dataInic.replace(/[\/\s:]/g, '')}`;
+        const formatarDataISO = (dStr) => {
+            if (!dStr) return null;
+            const partes = dStr.split(' ');
+            const data = partes[0]; // 17/08/2026
+            const hora = partes[1] || '00:00:00';
+            const dataPartes = data.split('/');
+            if (dataPartes.length !== 3) return null;
+            return `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${hora}`;
+        };
 
-                    registrosLimpados.push({
-                        id: hashId,
-                        tipo_atendimento: tipo,
-                        data_inicial: formatarDataISO(dataInic),
-                        data_atendimento: formatarDataISO(dataAtend),
-                        agente: agente,
-                        nota: nota,
-                        filial: extrairFilial(dadosAssoc)
-                    });
-                }
-            });
+        const extrairFilial = (str) => {
+            if (!str) return null;
+            const m = str.match(/Filial\s*=\s*(\d+)/i);
+            return m ? parseInt(m[1], 10) : null;
+        };
 
-            try {
-                const batchSize = 300;
-                for (let i = 0; i < registrosLimpados.length; i += batchSize) {
-                    const lote = registrosLimpados.slice(i, i + batchSize);
-                    const { error } = await supabase.from('avaliacoes').upsert(lote, { onConflict: 'id' });
-                    if (error) throw error;
-                }
-                msgEl.className = "text-sm mt-3 text-emerald-400";
-                msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${registrosLimpados.length} avaliações sincronizadas.`;
-            } catch (error) {
-                console.error(error);
-                msgEl.className = "text-sm mt-3 text-red-500";
-                msgEl.innerText = "Erro ao salvar no banco.";
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Processar CSV';
-                fileInput.value = '';
+        if (dataInic && agente) {
+            const tipo = dadosAssoc ? 'Ligação' : 'WhatsApp';
+            const dataIso = formatarDataISO(dataInic);
+
+            if (dataIso) {
+                const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
+
+                registrosLimpados.push({
+                    id: hashId,
+                    tipo_atendimento: tipo,
+                    data_inicial: dataIso,
+                    data_atendimento: formatarDataISO(dataAtend) || dataIso,
+                    agente: agente,
+                    nota: nota,
+                    filial: extrairFilial(dadosAssoc)
+                });
             }
         }
     });
+
+    try {
+        const batchSize = 300;
+        for (let i = 0; i < registrosLimpados.length; i += batchSize) {
+            const lote = registrosLimpados.slice(i, i + batchSize);
+            const { error } = await supabase.from('avaliacoes').upsert(lote, { onConflict: 'id' });
+            if (error) throw error;
+        }
+        msgEl.className = "text-sm mt-3 text-emerald-400";
+        msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${registrosLimpados.length} avaliações sincronizadas.`;
+    } catch (error) {
+        console.error(error);
+        msgEl.className = "text-sm mt-3 text-red-500";
+        msgEl.innerText = `Erro ao salvar: ${error.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Processar Arquivo';
+        fileInput.value = '';
+    }
 }
 
 // ==========================================
@@ -192,7 +229,7 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
     const formatarBr = (isoStr) => {
         if (!isoStr) return '';
         const d = new Date(isoStr);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     };
 
     // Indicadores Matemáticos
@@ -256,9 +293,9 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
     `;
 
     dados.forEach(d => {
-        const corNota = ['1','2'].includes(d.nota) ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 
-                        d.nota === '3' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 
-                        ['4','5'].includes(d.nota) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 text-slate-300';
+        const corNota = ['1', '2'].includes(d.nota) ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+            d.nota === '3' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                ['4', '5'].includes(d.nota) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 text-slate-300';
 
         html += `
             <tr class="border-b border-slate-800 hover:bg-slate-800/50 transition">
