@@ -2,12 +2,12 @@
  * Renderiza o HTML da Apresentação da URA (Grupo Lebes) - Padrão Field Service
  */
 export function renderizarURA(
-    todosProcessados, 
-    chamadosPeriodoAbertura, 
-    chamadosAnteriorAbertura, 
-    dtIni, dtFim, 
-    antIni, antFim, 
-    dataInicio, dataFim, 
+    todosProcessados,
+    chamadosPeriodoAbertura,
+    chamadosAnteriorAbertura,
+    dtIni, dtFim,
+    antIni, antFim,
+    dataInicio, dataFim,
     tipoPeriodo, subtituloCapa
 ) {
     // Helper de segurança para filtrar apenas a equipe da URA
@@ -43,7 +43,7 @@ export function renderizarURA(
     // --- PROCESSAMENTO E AGREGAÇÃO DE DADOS ---
     let qtdTradicional = 0;
     let qtdExpress = 0;
-    
+
     const contagemCategorias = {};
     const contagemLojas = {};
     const matrizCruzamento = {};
@@ -58,7 +58,7 @@ export function renderizarURA(
     dadosSafe.forEach(chamado => {
         const loja = getLojaInfo(chamado.contato);
         const lojaNome = loja.nome;
-        
+
         // Contabiliza SEMPRE para as Lojas e Totais (Independente da categoria)
         if (loja.tipo === 'TRADICIONAL') qtdTradicional++;
         else if (loja.tipo === 'EXPRESS') qtdExpress++;
@@ -107,7 +107,7 @@ export function renderizarURA(
     // Ajustado para capturar o TOP 10 conforme solicitado
     const topCategorias = preencherTopFixo(contagemCategorias, 10);
     const topLojas = preencherTopFixo(contagemLojas, 10);
-    
+
     const top10LojasPivot = Object.entries(contagemLojas).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
     const top8CategoriasPivot = Object.entries(contagemCategorias).sort((a, b) => b[1] - a[1]).slice(0, 8).map(x => x[0]);
     const top4Macro = Object.entries(contagemMacroCategorias).sort((a, b) => b[1].total - a[1].total).slice(0, 4);
@@ -123,11 +123,11 @@ export function renderizarURA(
 
     const gerarLinhasTabelaFixo = (arr, totalBase) => arr.map((item, index) => {
         if (item.nome === '-') {
-            return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:10px;">${index+1}</span>-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td></tr>`;
+            return `<tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;"><span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#94a3b8; font-size:10px;">${index + 1}</span>-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #94a3b8;">-</td></tr>`;
         }
         const isTop3 = index < 3;
         const bgStyle = isTop3 ? 'background-color: #d1fae5; font-weight: 700;' : 'background-color: #ffffff;';
-        const badge = isTop3 ? `<span style="display:inline-block; width:18px; height:18px; background:#047857; color:white; border-radius:50%; text-align:center; font-size:9px; line-height:18px; margin-right:6px;">${index+1}</span>` : `<span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#64748b; font-size:10px;">${index+1}</span>`;
+        const badge = isTop3 ? `<span style="display:inline-block; width:18px; height:18px; background:#047857; color:white; border-radius:50%; text-align:center; font-size:9px; line-height:18px; margin-right:6px;">${index + 1}</span>` : `<span style="display:inline-block; width:18px; text-align:center; margin-right:6px; color:#64748b; font-size:10px;">${index + 1}</span>`;
         return `<tr style="${bgStyle} border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px 10px; font-size: 0.75rem; color: #0f172a; display: flex; align-items: center;">${badge}${item.nome}</td><td style="text-align: center; font-weight: 800; padding: 6px 10px; font-size: 0.75rem; color: #0f172a;">${item.qtd}</td><td style="text-align: center; padding: 6px 10px; font-size: 0.75rem; color: #0f172a; font-weight: 700;">${totalBase > 0 ? ((item.qtd / totalBase) * 100).toFixed(0) : 0}%</td></tr>`;
     }).join('');
 
@@ -195,7 +195,7 @@ export function renderizarURA(
                 <div style="background: white; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; flex: 1; overflow-y: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #10b981; color: white; font-size: 0.7rem;"><th style="padding: 6px; text-align: left;">Categoria</th><th style="text-align: center;">Qtd</th><th style="text-align: center;">%</th></tr></thead>
-                        <tbody>${gerarLinhasTabelaFixo(topCategorias, Object.values(contagemCategorias).reduce((a,b)=>a+b,0))}</tbody>
+                        <tbody>${gerarLinhasTabelaFixo(topCategorias, totalChamados)}</tbody>
                     </table>
                 </div>
             </div>
@@ -231,7 +231,7 @@ export function renderizarURA(
         const nomeMacro = macro[0];
         const totalMacro = macro[1].total;
         const subcats = Object.entries(macro[1].subcategorias).sort((a, b) => b[1] - a[1]).slice(0, 5);
-        
+
         const linhasSubcats = subcats.map((sub, idx) => {
             const p = Math.round((sub[1] / totalMacro) * 100);
             const bgClass = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
@@ -367,7 +367,7 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
         const coresDia = [];
 
         let curr = new Date(dtIni);
-        curr.setDate(curr.getDate() - 3); 
+        curr.setDate(curr.getDate() - 3);
 
         while (curr <= dtFim) {
             const diaStr = String(curr.getDate()).padStart(2, '0') + '/' + String(curr.getMonth() + 1).padStart(2, '0');
@@ -377,9 +377,9 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
             dadosDia.push(chamadosDoDia);
 
             if (curr < dtIni) {
-                coresDia.push('#94a3b8'); 
+                coresDia.push('#94a3b8');
             } else {
-                coresDia.push('#10b981'); 
+                coresDia.push('#10b981');
             }
 
             curr.setDate(curr.getDate() + 1);
@@ -395,7 +395,7 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
 
                     meta.data.forEach((element, index) => {
                         const value = dataset.data[index];
-                        if (value === 0) return; 
+                        if (value === 0) return;
 
                         ctx.save();
                         ctx.textAlign = 'center';
@@ -404,7 +404,7 @@ export function renderizarGraficoURA(todosProcessados, dtIni, dtFim, tipoPeriodo
                 });
             }
         };
-        
+
         // Aqui deve ir o código de inicialização do seu ChartJS (ex: new Chart(canvasEl, {...}))
     }, 100);
 }
