@@ -2,6 +2,11 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 
+// Variáveis globais para gerenciar o estado da tela sem precisar ir ao banco toda hora
+let dadosRelatorioCache = [];
+let analistasDesabilitados = new Set();
+let infosCabecalho = { tipo: '', dataInicio: '', dataFim: '' };
+
 document.addEventListener('DOMContentLoaded', async () => {
     const authData = await verificarAutenticacao();
     if (!authData || !authData.session) return;
@@ -19,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-relatorio-aval').classList.add('hidden');
     });
 
-    // Listener para Salvar Textos e Inputs (Focusout e Enter)
+    // Auto-save: Focusout e Enter
     document.getElementById('conteudo-relatorio-aval').addEventListener('focusout', (e) => {
         if (e.target.classList.contains('input-audit')) salvarAnotacao(e.target);
     });
@@ -30,16 +35,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Listener para Salvar o Select da Nota imediatamente ao trocar
+    // Auto-save: Select (Nota)
     document.getElementById('conteudo-relatorio-aval').addEventListener('change', (e) => {
         if (e.target.classList.contains('input-audit') && e.target.tagName === 'SELECT') {
             salvarAnotacao(e.target);
         }
     });
+
+    // Listener para Desabilitar/Habilitar Analistas dinamicamente
+    document.getElementById('conteudo-relatorio-aval').addEventListener('click', (e) => {
+        const cardAnalista = e.target.closest('.btn-toggle-analista');
+        if (cardAnalista) {
+            const agente = cardAnalista.dataset.agente;
+            if (analistasDesabilitados.has(agente)) {
+                analistasDesabilitados.delete(agente); // Reativa
+            } else {
+                analistasDesabilitados.add(agente); // Desabilita
+            }
+            renderizarDashboardDinamico(); // Recalcula a tela instantaneamente
+        }
+    });
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO HÍBRIDA (CSV e XLSX)
+// 1. IMPORTAÇÃO HÍBRIDA (Mantida intacta)
 // ==========================================
 function processarCSVAvaliacoes() {
     const fileInput = document.getElementById('arquivo-csv-aval');
@@ -59,18 +78,14 @@ function processarCSVAvaliacoes() {
     if (extensao === 'csv') {
         Papa.parse(file, {
             header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
-            complete: function (results) {
-                enviarDadosParaBanco(results.data, msgEl, btn, fileInput);
-            }
+            complete: function (results) { enviarDadosParaBanco(results.data, msgEl, btn, fileInput); }
         });
     } else if (extensao === 'xlsx' || extensao === 'xls') {
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
             enviarDadosParaBanco(json, msgEl, btn, fileInput);
         };
@@ -82,9 +97,6 @@ function processarCSVAvaliacoes() {
     }
 }
 
-// ==========================================
-// TRATAMENTO E ENVIO PARA O SUPABASE
-// ==========================================
 async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
     msgEl.innerText = "Tratando e enviando dados ao banco...";
     const registrosLimpados = [];
@@ -97,11 +109,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
 
         const dataInic = getVal(['Data Inicial da Chamada']);
         const dataAtend = getVal(['Data de Atendimento']);
-        
-        // Separação correta de Agente e Interlocutor (quem ligou)
         const agente = getVal(['Agente']); 
         const interlocutor = getVal(['Interlocutor', 'Origem']); 
-
         let nota = getVal(['Resposta 1', 'Resposta1']);
         const dadosAssoc = getVal(['Dados Associados']);
 
@@ -129,16 +138,10 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
             
             if (dataIso) {
                 const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
-
                 registrosLimpados.push({
-                    id: hashId,
-                    tipo_atendimento: tipo,
-                    data_inicial: dataIso,
+                    id: hashId, tipo_atendimento: tipo, data_inicial: dataIso,
                     data_atendimento: formatarDataISO(dataAtend) || dataIso,
-                    agente: agente,
-                    interlocutor: interlocutor, // Coluna nova salva aqui
-                    nota: nota,
-                    filial: extrairFilial(dadosAssoc)
+                    agente: agente, interlocutor: interlocutor, nota: nota, filial: extrairFilial(dadosAssoc)
                 });
             }
         }
@@ -165,7 +168,7 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
 }
 
 // ==========================================
-// 2. BUSCA E RENDERIZAÇÃO DO RELATÓRIO
+// 2. BUSCA DO RELATÓRIO
 // ==========================================
 async function gerarRelatorioAvaliacoes() {
     const tipo = document.getElementById('select-tipo-aval').value;
@@ -195,7 +198,13 @@ async function gerarRelatorioAvaliacoes() {
         if (error) throw error;
         if (!data || data.length === 0) { alert("Nenhum dado encontrado."); return; }
 
-        renderizarDashboard(data, tipo, dataInicio, dataFim);
+        // Salva no cache global para o filtro dinâmico funcionar sem ir ao banco de novo
+        dadosRelatorioCache = data;
+        analistasDesabilitados.clear(); 
+        infosCabecalho = { tipo, dataInicio, dataFim };
+
+        renderizarDashboardDinamico();
+        
         document.getElementById('modal-relatorio-aval').classList.remove('hidden');
         document.getElementById('modal-relatorio-aval').classList.add('flex');
 
@@ -209,12 +218,16 @@ async function gerarRelatorioAvaliacoes() {
 }
 
 // ==========================================
-// 3. AUTO-SAVE DAS ANOTAÇÕES E NOTA
+// 3. AUTO-SAVE NA MEMÓRIA E NO BANCO
 // ==========================================
 async function salvarAnotacao(inputEl) {
     const idRegistro = inputEl.dataset.id;
     const campo = inputEl.dataset.campo;
-    const valor = inputEl.value; // Aceita strings vazias normalmente
+    const valor = inputEl.value; 
+
+    // Atualiza o cache imediatamente para não perder o texto ao clicar em um card
+    const objCache = dadosRelatorioCache.find(d => d.id === idRegistro);
+    if (objCache) objCache[campo] = valor;
 
     const iconeSalvo = inputEl.parentElement.querySelector('i');
     if (iconeSalvo) {
@@ -229,14 +242,15 @@ async function salvarAnotacao(inputEl) {
             iconeSalvo.className = "fa-solid fa-check absolute right-2 top-3 text-emerald-500 transition-opacity";
             setTimeout(() => { iconeSalvo.style.opacity = '0'; }, 2000);
             
-            // Muda a cor do select se for uma troca de Nota
             if (campo === 'nota') {
                 const corAtualizada = ['1','2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
                                     valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
                                     ['4','5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
-                inputEl.className = `input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition ${corAtualizada}`;
+                inputEl.className = `input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition cursor-pointer ${corAtualizada}`;
+                
+                // Recalcula o dashboard silenciosamente se a nota mudar
+                renderizarDashboardDinamico();
             }
-
         } else {
             iconeSalvo.className = "fa-solid fa-xmark absolute right-2 top-3 text-red-500";
         }
@@ -244,34 +258,21 @@ async function salvarAnotacao(inputEl) {
 }
 
 // ==========================================
-// 4. LAYOUT DO DASHBOARD & TABELA
+// 4. RENDERIZAÇÃO DINÂMICA
 // ==========================================
-function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
-    const formatarBr = (isoStr) => {
-        if (!isoStr) return '';
-        const d = new Date(isoStr);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-    };
+function renderizarDashboardDinamico() {
+    const { tipo, dataInicio, dataFim } = infosCabecalho;
+    
+    // 1. Filtragem principal: Separa os dados de quem está ativo
+    const dadosAtivos = dadosRelatorioCache.filter(d => !analistasDesabilitados.has((d.agente || '').toUpperCase()));
 
-    let totalValidas = 0;
-    let boas = 0; 
-    let medias = 0; 
-    let ruins = 0; 
+    // Indicadores Gerais Matemáticos (Baseado APENAS nos dadosAtivos)
+    let totalValidas = 0, boas = 0, medias = 0, ruins = 0;
 
-    // Agrupamento por Agente
-    const analistas = {};
-
-    dados.forEach(d => {
-        const ag = (d.agente || 'Desconhecido').toUpperCase();
-        if (!analistas[ag]) analistas[ag] = { total: 0, soma: 0, qtdValidas: 0 };
-        analistas[ag].total++;
-
+    dadosAtivos.forEach(d => {
         const n = parseInt(d.nota, 10);
         if (!isNaN(n)) {
             totalValidas++;
-            analistas[ag].soma += n;
-            analistas[ag].qtdValidas++;
-
             if (n >= 4) boas++;
             else if (n === 3) medias++;
             else ruins++;
@@ -280,40 +281,62 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
 
     const pctSatisfacao = totalValidas > 0 ? Math.round((boas / totalValidas) * 100) : 0;
 
-    // Constrói os Cards de Analistas
-    const analistasHtml = Object.keys(analistas).sort().map(ag => {
+    // 2. Agrupamento por Agente (Processa TODOS para poder gerar a lista de desabilitados)
+    const analistas = {};
+    dadosRelatorioCache.forEach(d => {
+        const ag = (d.agente || 'Desconhecido').toUpperCase();
+        if (!analistas[ag]) analistas[ag] = { total: 0, soma: 0, qtdValidas: 0 };
+        analistas[ag].total++;
+
+        const n = parseInt(d.nota, 10);
+        if (!isNaN(n)) {
+            analistas[ag].soma += n;
+            analistas[ag].qtdValidas++;
+        }
+    });
+
+    let htmlCardsAtivos = '';
+    let htmlCardsInativos = '';
+
+    Object.keys(analistas).sort().forEach(ag => {
         const stats = analistas[ag];
         const mediaFinal = stats.qtdValidas > 0 ? (stats.soma / stats.qtdValidas).toFixed(2) : '-';
-        return `
-            <div class="bg-slate-800 border border-slate-700 p-3 rounded-lg flex flex-col min-w-[140px] shadow-sm">
-                <span class="text-xs font-bold text-slate-400 truncate w-full mb-2" title="${ag}">${ag}</span>
+        const isDesabilitado = analistasDesabilitados.has(ag);
+
+        const card = `
+            <div data-agente="${ag}" class="btn-toggle-analista cursor-pointer bg-slate-800 border ${isDesabilitado ? 'border-red-500/30 opacity-50 hover:opacity-100 grayscale' : 'border-slate-700 hover:border-emerald-500/50 hover:-translate-y-1'} transition-all p-3 rounded-lg flex flex-col min-w-[140px] shadow-sm select-none">
+                <span class="text-xs font-bold ${isDesabilitado ? 'text-slate-500 line-through' : 'text-slate-400'} truncate w-full mb-2" title="${ag}">${ag}</span>
                 <div class="flex justify-between items-end mt-auto">
                     <div class="flex flex-col">
                         <span class="text-[10px] uppercase text-slate-500">Média</span>
-                        <span class="text-lg font-black text-emerald-400">${mediaFinal}</span>
+                        <span class="text-lg font-black ${isDesabilitado ? 'text-slate-500' : 'text-emerald-400'}">${mediaFinal}</span>
                     </div>
                     <div class="flex flex-col text-right">
                         <span class="text-[10px] uppercase text-slate-500">Avaliações</span>
-                        <span class="text-sm font-bold text-white">${stats.qtdValidas}</span>
+                        <span class="text-sm font-bold ${isDesabilitado ? 'text-slate-500' : 'text-white'}">${stats.qtdValidas}</span>
                     </div>
                 </div>
             </div>
         `;
-    }).join('');
 
+        if (isDesabilitado) htmlCardsInativos += card;
+        else htmlCardsAtivos += card;
+    });
+
+    // Construção do HTML Final
     let html = `
-        <div class="mb-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center">
+        <div class="mb-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center transition-all">
             <div>
                 <h2 class="text-2xl font-bold text-white uppercase tracking-wide">Auditoria: ${tipo}</h2>
                 <p class="text-slate-400 text-sm mt-1">Período auditado: ${dataInicio} a ${dataFim}</p>
             </div>
             <div class="flex gap-4">
-                <div class="bg-slate-800 border border-slate-700 px-6 py-3 rounded-lg text-center">
+                <div class="bg-slate-800 border border-slate-700 px-6 py-3 rounded-lg text-center transition-all">
                     <p class="text-slate-400 text-xs font-bold uppercase mb-1">Satisfação</p>
                     <p class="text-3xl font-black text-emerald-400">${pctSatisfacao}%</p>
                 </div>
                 <div class="bg-slate-800 border border-emerald-900 px-4 py-3 rounded-lg text-center border-l-4 border-l-emerald-500">
-                    <p class="text-slate-400 text-xs font-bold uppercase mb-1">Notas Boas (4-5)</p>
+                    <p class="text-slate-400 text-xs font-bold uppercase mb-1">Boas (4-5)</p>
                     <p class="text-xl font-bold text-white">${boas}</p>
                 </div>
                 <div class="bg-slate-800 border border-yellow-900 px-4 py-3 rounded-lg text-center border-l-4 border-l-yellow-400">
@@ -327,14 +350,31 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
             </div>
         </div>
 
-        <!-- QUADRO DE ANALISTAS -->
-        <div class="mb-8 bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-users mr-2"></i>Desempenho por Analista</h3>
+        <!-- QUADRO DE ANALISTAS ATIVOS -->
+        <div class="mb-4 bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-users mr-2"></i>Desempenho por Analista <span class="lowercase font-normal text-slate-500">(Clique para desabilitar)</span></h3>
             <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700">
-                ${analistasHtml}
+                ${htmlCardsAtivos}
             </div>
         </div>
+    `;
 
+    // QUADRO DE ANALISTAS INATIVOS (Só aparece se houver alguém desabilitado)
+    if (analistasDesabilitados.size > 0) {
+        html += `
+            <div class="mb-8 bg-slate-950 border border-red-900/30 rounded-xl p-4 shadow-inner">
+                <h3 class="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-3"><i class="fa-solid fa-user-slash mr-2"></i>Analistas Ocultos <span class="lowercase font-normal text-slate-600">(Clique para reativar)</span></h3>
+                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-800">
+                    ${htmlCardsInativos}
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<div class="mb-8"></div>`; // Espaçador
+    }
+
+    // TABELA (Renderiza APENAS os ativos)
+    html += `
         <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-slate-300">
@@ -352,9 +392,15 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
                     <tbody>
     `;
 
+    const formatarBr = (isoStr) => {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+    };
+
     const selectOptions = ['1','2','3','4','5','Não respondeu'];
 
-    dados.forEach(d => {
+    dadosAtivos.forEach(d => {
         const corNota = ['1','2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
                         d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
                         ['4','5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
