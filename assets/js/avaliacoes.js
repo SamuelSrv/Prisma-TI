@@ -2,7 +2,6 @@ import { supabase } from './supabase.js';
 import { verificarAutenticacao } from './auth.js';
 import { carregarMenu } from './menu.js';
 
-// Variáveis globais para gerenciar o estado da tela sem precisar ir ao banco toda hora
 let dadosRelatorioCache = [];
 let analistasDesabilitados = new Set();
 let infosCabecalho = { tipo: '', dataInicio: '', dataFim: '' };
@@ -18,8 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         new window.Datepicker(document.getElementById('date-end-aval'), opts);
     }
 
+    // Listeners dos Botões Principais
     document.getElementById('btn-importar-aval').addEventListener('click', processarCSVAvaliacoes);
     document.getElementById('btn-gerar-aval').addEventListener('click', gerarRelatorioAvaliacoes);
+    document.getElementById('btn-gerar-consolidado').addEventListener('click', gerarRelatorioConsolidado);
+    
     document.getElementById('btn-fechar-modal-aval').addEventListener('click', () => {
         document.getElementById('modal-relatorio-aval').classList.add('hidden');
     });
@@ -31,28 +33,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('conteudo-relatorio-aval').addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.classList.contains('input-audit') && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
-            e.target.blur();
+            e.target.blur(); 
         }
     });
 
     // Auto-save: Select (Nota)
     document.getElementById('conteudo-relatorio-aval').addEventListener('change', (e) => {
-        if (e.target.classList.contains('input-audit') && e.target.tagName === 'SELECT') {
-            salvarAnotacao(e.target);
-        }
+        if (e.target.classList.contains('input-audit') && e.target.tagName === 'SELECT') salvarAnotacao(e.target);
     });
 
-    // Listener para Desabilitar/Habilitar Analistas dinamicamente
+    // Desabilitar/Habilitar Analistas
     document.getElementById('conteudo-relatorio-aval').addEventListener('click', (e) => {
         const cardAnalista = e.target.closest('.btn-toggle-analista');
         if (cardAnalista) {
             const agente = cardAnalista.dataset.agente;
-            if (analistasDesabilitados.has(agente)) {
-                analistasDesabilitados.delete(agente); // Reativa
-            } else {
-                analistasDesabilitados.add(agente); // Desabilita
-            }
-            renderizarDashboardDinamico(); // Recalcula a tela instantaneamente
+            if (analistasDesabilitados.has(agente)) analistasDesabilitados.delete(agente);
+            else analistasDesabilitados.add(agente);
+            renderizarDashboardDinamico();
         }
     });
 });
@@ -71,7 +68,7 @@ function processarCSVAvaliacoes() {
     const extensao = file.name.split('.').pop().toLowerCase();
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo arquivo...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo...';
     msgEl.classList.remove('hidden');
     msgEl.innerText = "Lendo arquivo...";
 
@@ -82,23 +79,21 @@ function processarCSVAvaliacoes() {
         });
     } else if (extensao === 'xlsx' || extensao === 'xls') {
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, {type: 'array'});
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+            const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
             enviarDadosParaBanco(json, msgEl, btn, fileInput);
         };
         reader.readAsArrayBuffer(file);
     } else {
-        alert("Formato inválido. Use .csv ou .xlsx");
-        btn.disabled = false;
-        btn.innerHTML = 'Processar Arquivo';
+        alert("Formato inválido."); btn.disabled = false; btn.innerHTML = 'Processar Arquivo';
     }
 }
 
 async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
-    msgEl.innerText = "Tratando e enviando dados ao banco...";
+    msgEl.innerText = "Tratando dados...";
     const registrosLimpados = [];
 
     dadosBrutos.forEach(row => {
@@ -109,8 +104,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
 
         const dataInic = getVal(['Data Inicial da Chamada']);
         const dataAtend = getVal(['Data de Atendimento']);
-        const agente = getVal(['Agente']);
-        const interlocutor = getVal(['Interlocutor', 'Origem']);
+        const agente = getVal(['Agente']); 
+        const interlocutor = getVal(['Interlocutor', 'Origem']); 
         let nota = getVal(['Resposta 1', 'Resposta1']);
         const dadosAssoc = getVal(['Dados Associados']);
 
@@ -119,8 +114,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         const formatarDataISO = (dStr) => {
             if (!dStr) return null;
             const partes = dStr.split(' ');
-            const data = partes[0];
-            const hora = partes[1] || '00:00:00';
+            const data = partes[0]; 
+            const hora = partes[1] || '00:00:00'; 
             const dataPartes = data.split('/');
             if (dataPartes.length !== 3) return null;
             return `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${hora}`;
@@ -135,7 +130,7 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         if (dataInic && agente) {
             const tipo = dadosAssoc ? 'Ligação' : 'WhatsApp';
             const dataIso = formatarDataISO(dataInic);
-
+            
             if (dataIso) {
                 const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
                 registrosLimpados.push({
@@ -157,18 +152,14 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         msgEl.className = "text-sm mt-3 text-emerald-400";
         msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${registrosLimpados.length} avaliações sincronizadas.`;
     } catch (error) {
-        console.error(error);
-        msgEl.className = "text-sm mt-3 text-red-500";
-        msgEl.innerText = `Erro ao salvar: ${error.message}`;
+        msgEl.className = "text-sm mt-3 text-red-500"; msgEl.innerText = `Erro: ${error.message}`;
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Processar Arquivo';
-        fileInput.value = '';
+        btn.disabled = false; btn.innerHTML = 'Processar Arquivo'; fileInput.value = '';
     }
 }
 
 // ==========================================
-// 2. BUSCA DO RELATÓRIO
+// 2. BUSCA DO RELATÓRIO DE AUDITORIA
 // ==========================================
 async function gerarRelatorioAvaliacoes() {
     const tipo = document.getElementById('select-tipo-aval').value;
@@ -178,8 +169,7 @@ async function gerarRelatorioAvaliacoes() {
 
     if (!dataInicio || !dataFim) { alert('Selecione o período.'); return; }
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     const [dI, mI, aI] = dataInicio.split('/');
     const [dF, mF, aF] = dataFim.split('/');
@@ -198,34 +188,24 @@ async function gerarRelatorioAvaliacoes() {
         if (error) throw error;
         if (!data || data.length === 0) { alert("Nenhum dado encontrado."); return; }
 
-        // Salva no cache global para o filtro dinâmico funcionar sem ir ao banco de novo
         dadosRelatorioCache = data;
-        analistasDesabilitados.clear();
+        analistasDesabilitados.clear(); 
         infosCabecalho = { tipo, dataInicio, dataFim };
 
         renderizarDashboardDinamico();
-
+        
         document.getElementById('modal-relatorio-aval').classList.remove('hidden');
         document.getElementById('modal-relatorio-aval').classList.add('flex');
 
-    } catch (err) {
-        console.error(err);
-        alert('Erro ao buscar relatórios.');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-chart-pie"></i> Gerar Relatório';
-    }
+    } catch (err) { alert('Erro ao buscar.'); } 
+    finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-list-check"></i> Auditoria'; }
 }
 
-// ==========================================
-// 3. AUTO-SAVE NA MEMÓRIA E NO BANCO
-// ==========================================
 async function salvarAnotacao(inputEl) {
     const idRegistro = inputEl.dataset.id;
     const campo = inputEl.dataset.campo;
-    const valor = inputEl.value;
+    const valor = inputEl.value; 
 
-    // Atualiza o cache imediatamente para não perder o texto ao clicar em um card
     const objCache = dadosRelatorioCache.find(d => d.id === idRegistro);
     if (objCache) objCache[campo] = valor;
 
@@ -241,14 +221,11 @@ async function salvarAnotacao(inputEl) {
         if (!error) {
             iconeSalvo.className = "fa-solid fa-check absolute right-2 top-3 text-emerald-500 transition-opacity";
             setTimeout(() => { iconeSalvo.style.opacity = '0'; }, 2000);
-
             if (campo === 'nota') {
-                const corAtualizada = ['1', '2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' :
-                    valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' :
-                        ['4', '5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+                const corAtualizada = ['1','2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
+                                    valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
+                                    ['4','5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
                 inputEl.className = `input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition cursor-pointer ${corAtualizada}`;
-
-                // Recalcula o dashboard silenciosamente se a nota mudar
                 renderizarDashboardDinamico();
             }
         } else {
@@ -257,34 +234,190 @@ async function salvarAnotacao(inputEl) {
     }
 }
 
-/// ==========================================
-// 4. RENDERIZAÇÃO DINÂMICA
+// ==========================================
+// 3. NOVO: GERAR MATRIZ CONSOLIDADA ANUAL
+// ==========================================
+async function gerarRelatorioConsolidado() {
+    const ano = document.getElementById('ano-consolidado').value;
+    const btn = document.getElementById('btn-gerar-consolidado');
+
+    if (!ano || ano.length !== 4) { alert("Digite um ano válido."); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    const isoInicio = `${ano}-01-01T00:00:00`;
+    const isoFim = `${ano}-12-31T23:59:59`;
+
+    try {
+        const { data, error } = await supabase
+            .from('avaliacoes')
+            .select('tipo_atendimento, nota, data_inicial')
+            .gte('data_inicial', isoInicio)
+            .lte('data_inicial', isoFim);
+
+        if (error) throw error;
+        if (!data || data.length === 0) { alert(`Nenhuma avaliação encontrada em ${ano}.`); return; }
+
+        renderizarMatrizConsolidada(data, ano);
+
+        document.getElementById('modal-relatorio-aval').classList.remove('hidden');
+        document.getElementById('modal-relatorio-aval').classList.add('flex');
+
+    } catch (err) {
+        console.error(err);
+        alert('Erro ao buscar dados anuais.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-calendar-days"></i> Matriz Consolidada';
+    }
+}
+
+function renderizarMatrizConsolidada(dadosGlobais, ano) {
+    const tipos = ['Ligação', 'WhatsApp'];
+    const mesesAbrev = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const notasValidas = [5, 4, 3, 2, 1];
+
+    let html = `
+        <div class="mb-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-white uppercase tracking-wide">Consolidado Anual de Satisfação</h2>
+                <p class="text-slate-400 text-sm mt-1">Ano Base: <span class="font-bold text-emerald-400">${ano}</span> (Todos os analistas)</p>
+            </div>
+            <div class="text-slate-500 text-sm flex gap-4">
+                <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-emerald-400 text-[10px]"></i> Boas (4-5)</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-yellow-400 text-[10px]"></i> Médias (3)</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-red-500 text-[10px]"></i> Ruins (1-2)</span>
+            </div>
+        </div>
+    `;
+
+    tipos.forEach(tipo => {
+        // Inicializa a matriz zerada
+        const matriz = { totalAno: { 5:0, 4:0, 3:0, 2:0, 1:0, total:0 }, meses: {} };
+        for (let i = 0; i < 12; i++) matriz.meses[i] = { 5:0, 4:0, 3:0, 2:0, 1:0, total:0 };
+
+        // Preenche a matriz filtrando pelo tipo (Ligação/Whats)
+        dadosGlobais.filter(d => d.tipo_atendimento === tipo).forEach(d => {
+            const n = parseInt(d.nota, 10);
+            if (notasValidas.includes(n) && d.data_inicial) {
+                // Puxa o mês direto da string (ex: "2026-08-17" -> 08 -> index 7)
+                const mesIndex = parseInt(d.data_inicial.substring(5, 7), 10) - 1;
+                
+                matriz.meses[mesIndex][n]++;
+                matriz.meses[mesIndex].total++;
+                matriz.totalAno[n]++;
+                matriz.totalAno.total++;
+            }
+        });
+
+        // Montagem da Tabela para o Tipo atual
+        const icone = tipo === 'Ligação' ? '<i class="fa-solid fa-headset text-emerald-400 text-xl mr-2"></i>' : '<i class="fa-brands fa-whatsapp text-emerald-400 text-xl mr-2"></i>';
+        
+        let tabelaHTML = `
+        <div class="mb-8 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+            <div class="bg-slate-950 p-4 border-b border-slate-700 text-white font-bold tracking-widest uppercase flex items-center">
+                ${icone} CENTRAL DE ATENDIMENTO - ${tipo}
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-center text-slate-300">
+                    <thead class="bg-slate-800 text-[11px] uppercase text-slate-400 border-b border-slate-700">
+                        <tr>
+                            <th class="py-3 px-2 border-r border-slate-700 w-16">Nota</th>
+                            ${mesesAbrev.map((m, idx) => {
+                                const mTot = matriz.meses[idx].total;
+                                const mBoas = matriz.meses[idx][5] + matriz.meses[idx][4];
+                                const mPct = mTot > 0 ? Math.round((mBoas/mTot)*100) : 0;
+                                const corTop = mPct >= 90 ? 'text-emerald-400' : mPct >= 70 ? 'text-yellow-400' : 'text-red-400';
+                                return `<th class="py-2 px-1 border-r border-slate-700 min-w-[70px]">
+                                    <div class="font-black text-sm ${corTop}">${mTot > 0 ? mPct + '%' : '-'}</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">${m}</div>
+                                </th>`;
+                            }).join('')}
+                            <th class="py-2 px-2 bg-slate-950 text-emerald-400 min-w-[80px]">
+                                <div class="font-black text-sm">${matriz.totalAno.total > 0 ? Math.round(((matriz.totalAno[5]+matriz.totalAno[4])/matriz.totalAno.total)*100) + '%' : '-'}</div>
+                                <div class="text-[10px] text-slate-500 mt-1">TOTAL ANO</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        // Linhas das Notas (5 até 1)
+        notasValidas.forEach(nota => {
+            const coresNota = {
+                5: 'text-emerald-400 font-bold',
+                4: 'text-emerald-300 font-semibold',
+                3: 'text-yellow-400 font-semibold',
+                2: 'text-orange-400 font-semibold',
+                1: 'text-red-500 font-bold'
+            };
+
+            tabelaHTML += `<tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+                <td class="py-2 px-2 border-r border-slate-700 bg-slate-950 font-black ${coresNota[nota]}">${nota}</td>`;
+            
+            // Colunas dos Meses
+            for (let i = 0; i < 12; i++) {
+                const val = matriz.meses[i][nota];
+                const totMes = matriz.meses[i].total;
+                const pct = totMes > 0 ? Math.round((val/totMes)*100) : 0;
+                
+                tabelaHTML += `<td class="py-2 px-1 border-r border-slate-700">
+                    <div class="flex justify-between px-2">
+                        <span class="${val > 0 ? 'text-white' : 'text-slate-600'}">${val}</span>
+                        <span class="text-[10px] ${val > 0 ? coresNota[nota] : 'text-slate-700'}">${totMes > 0 ? pct + '%' : ''}</span>
+                    </div>
+                </td>`;
+            }
+
+            // Coluna Total Ano da Nota
+            const valAno = matriz.totalAno[nota];
+            const pctAno = matriz.totalAno.total > 0 ? Math.round((valAno/matriz.totalAno.total)*100) : 0;
+            tabelaHTML += `<td class="py-2 px-2 bg-slate-950 border-l border-slate-700">
+                <div class="flex justify-between px-2">
+                    <span class="font-bold text-white">${valAno}</span>
+                    <span class="text-[10px] ${coresNota[nota]}">${matriz.totalAno.total > 0 ? pctAno + '%' : ''}</span>
+                </div>
+            </td></tr>`;
+        });
+
+        // Linha de Rodapé (Total de Avaliações)
+        tabelaHTML += `<tr class="bg-slate-950/80 font-bold text-slate-400">
+            <td class="py-2 px-2 border-r border-slate-700 text-[10px] uppercase">Qtd. Notas</td>`;
+        for (let i = 0; i < 12; i++) {
+            tabelaHTML += `<td class="py-2 px-1 border-r border-slate-700">${matriz.meses[i].total > 0 ? matriz.meses[i].total : '-'}</td>`;
+        }
+        tabelaHTML += `<td class="py-2 px-2 text-white">${matriz.totalAno.total}</td></tr></tbody></table></div></div>`;
+
+        html += tabelaHTML;
+    });
+
+    document.getElementById('conteudo-relatorio-aval').innerHTML = html;
+}
+
+// ==========================================
+// 4. RENDERIZAÇÃO DINÂMICA (AUDITORIA)
 // ==========================================
 function renderizarDashboardDinamico() {
     const { tipo, dataInicio, dataFim } = infosCabecalho;
-
-    // 1. Filtragem principal: Limpa espaços em branco para garantir correspondência exata
+    
     const dadosAtivos = dadosRelatorioCache.filter(d => {
         const agenteNome = (d.agente || '').toUpperCase().trim();
         return !analistasDesabilitados.has(agenteNome);
     });
 
-    // Indicadores Gerais Matemáticos (Baseado APENAS nos dadosAtivos)
     let totalValidas = 0, boas = 0, medias = 0, ruins = 0;
 
     dadosAtivos.forEach(d => {
         const n = parseInt(d.nota, 10);
         if (!isNaN(n)) {
             totalValidas++;
-            if (n >= 4) boas++;
-            else if (n === 3) medias++;
-            else ruins++;
+            if (n >= 4) boas++; else if (n === 3) medias++; else ruins++;
         }
     });
 
     const pctSatisfacao = totalValidas > 0 ? Math.round((boas / totalValidas) * 100) : 0;
 
-    // 2. Agrupamento por Agente (Processa TODOS para poder gerar a lista de desabilitados)
     const analistas = {};
     dadosRelatorioCache.forEach(d => {
         const ag = (d.agente || 'Desconhecido').toUpperCase().trim();
@@ -292,10 +425,7 @@ function renderizarDashboardDinamico() {
         analistas[ag].total++;
 
         const n = parseInt(d.nota, 10);
-        if (!isNaN(n)) {
-            analistas[ag].soma += n;
-            analistas[ag].qtdValidas++;
-        }
+        if (!isNaN(n)) { analistas[ag].soma += n; analistas[ag].qtdValidas++; }
     });
 
     let htmlCardsAtivos = '';
@@ -394,16 +524,15 @@ function renderizarDashboardDinamico() {
     const formatarBr = (isoStr) => {
         if (!isoStr) return '';
         const d = new Date(isoStr);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     };
 
-    const selectOptions = ['1', '2', '3', '4', '5', 'Não respondeu'];
+    const selectOptions = ['1','2','3','4','5','Não respondeu'];
 
-    // O .forEach agora roda em cima de dadosAtivos (sem os analistas ocultos)
     dadosAtivos.forEach(d => {
-        const corNota = ['1', '2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' :
-            d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' :
-                ['4', '5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+        const corNota = ['1','2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
+                        d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
+                        ['4','5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
 
         const optHtml = selectOptions.map(opt => `<option value="${opt}" class="bg-slate-900 text-white font-semibold" ${d.nota === opt ? 'selected' : ''}>${opt}</option>`).join('');
 
