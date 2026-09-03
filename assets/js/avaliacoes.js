@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!authData || !authData.session) return;
     carregarMenu('avaliacoes');
 
-    // Calendários
     const opts = { autohide: true, format: 'dd/mm/yyyy', language: 'pt-BR' };
     if (window.Datepicker) {
         new window.Datepicker(document.getElementById('date-start-aval'), opts);
@@ -20,14 +19,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-relatorio-aval').classList.add('hidden');
     });
 
-    // Listener Global para Salvar Edições Automaticamente
+    // Listener para Salvar Textos e Inputs (Focusout e Enter)
     document.getElementById('conteudo-relatorio-aval').addEventListener('focusout', (e) => {
         if (e.target.classList.contains('input-audit')) salvarAnotacao(e.target);
     });
     document.getElementById('conteudo-relatorio-aval').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.classList.contains('input-audit')) {
+        if (e.key === 'Enter' && e.target.classList.contains('input-audit') && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
-            e.target.blur(); // Dispara o focusout
+            e.target.blur(); 
+        }
+    });
+
+    // Listener para Salvar o Select da Nota imediatamente ao trocar
+    document.getElementById('conteudo-relatorio-aval').addEventListener('change', (e) => {
+        if (e.target.classList.contains('input-audit') && e.target.tagName === 'SELECT') {
+            salvarAnotacao(e.target);
         }
     });
 });
@@ -51,7 +57,6 @@ function processarCSVAvaliacoes() {
     msgEl.innerText = "Lendo arquivo...";
 
     if (extensao === 'csv') {
-        // Leitura via PapaParse (WhatsApp)
         Papa.parse(file, {
             header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
             complete: function (results) {
@@ -59,21 +64,19 @@ function processarCSVAvaliacoes() {
             }
         });
     } else if (extensao === 'xlsx' || extensao === 'xls') {
-        // Leitura via SheetJS (Telefonia)
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, {type: 'array'});
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-
-            // raw: false força o SheetJS a extrair a data formatada como texto "17/08/2026 09:24:44"
-            const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+            
+            const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
             enviarDadosParaBanco(json, msgEl, btn, fileInput);
         };
         reader.readAsArrayBuffer(file);
     } else {
-        alert("Formato inválido. Por favor, use um arquivo .csv ou .xlsx");
+        alert("Formato inválido. Use .csv ou .xlsx");
         btn.disabled = false;
         btn.innerHTML = 'Processar Arquivo';
     }
@@ -94,7 +97,11 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
 
         const dataInic = getVal(['Data Inicial da Chamada']);
         const dataAtend = getVal(['Data de Atendimento']);
-        const agente = getVal(['Agente', 'Interlocutor']);
+        
+        // Separação correta de Agente e Interlocutor (quem ligou)
+        const agente = getVal(['Agente']); 
+        const interlocutor = getVal(['Interlocutor', 'Origem']); 
+
         let nota = getVal(['Resposta 1', 'Resposta1']);
         const dadosAssoc = getVal(['Dados Associados']);
 
@@ -103,8 +110,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         const formatarDataISO = (dStr) => {
             if (!dStr) return null;
             const partes = dStr.split(' ');
-            const data = partes[0]; // 17/08/2026
-            const hora = partes[1] || '00:00:00';
+            const data = partes[0]; 
+            const hora = partes[1] || '00:00:00'; 
             const dataPartes = data.split('/');
             if (dataPartes.length !== 3) return null;
             return `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${hora}`;
@@ -119,7 +126,7 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         if (dataInic && agente) {
             const tipo = dadosAssoc ? 'Ligação' : 'WhatsApp';
             const dataIso = formatarDataISO(dataInic);
-
+            
             if (dataIso) {
                 const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
 
@@ -129,6 +136,7 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
                     data_inicial: dataIso,
                     data_atendimento: formatarDataISO(dataAtend) || dataIso,
                     agente: agente,
+                    interlocutor: interlocutor, // Coluna nova salva aqui
                     nota: nota,
                     filial: extrairFilial(dadosAssoc)
                 });
@@ -201,24 +209,37 @@ async function gerarRelatorioAvaliacoes() {
 }
 
 // ==========================================
-// 3. AUTO-SAVE DAS ANOTAÇÕES
+// 3. AUTO-SAVE DAS ANOTAÇÕES E NOTA
 // ==========================================
 async function salvarAnotacao(inputEl) {
     const idRegistro = inputEl.dataset.id;
     const campo = inputEl.dataset.campo;
-    const valor = inputEl.value;
+    const valor = inputEl.value; // Aceita strings vazias normalmente
 
-    const iconeSalvo = inputEl.nextElementSibling;
-    iconeSalvo.style.opacity = '0.5';
-    iconeSalvo.className = "fa-solid fa-spinner fa-spin absolute right-2 top-3 text-slate-400 transition-opacity";
+    const iconeSalvo = inputEl.parentElement.querySelector('i');
+    if (iconeSalvo) {
+        iconeSalvo.style.opacity = '0.5';
+        iconeSalvo.className = "fa-solid fa-spinner fa-spin absolute right-2 top-3 text-slate-400 transition-opacity";
+    }
 
     const { error } = await supabase.from('avaliacoes').update({ [campo]: valor }).eq('id', idRegistro);
 
-    if (!error) {
-        iconeSalvo.className = "fa-solid fa-check absolute right-2 top-3 text-emerald-500 transition-opacity";
-        setTimeout(() => { iconeSalvo.style.opacity = '0'; }, 2000);
-    } else {
-        iconeSalvo.className = "fa-solid fa-xmark absolute right-2 top-3 text-red-500";
+    if (iconeSalvo) {
+        if (!error) {
+            iconeSalvo.className = "fa-solid fa-check absolute right-2 top-3 text-emerald-500 transition-opacity";
+            setTimeout(() => { iconeSalvo.style.opacity = '0'; }, 2000);
+            
+            // Muda a cor do select se for uma troca de Nota
+            if (campo === 'nota') {
+                const corAtualizada = ['1','2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
+                                    valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
+                                    ['4','5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+                inputEl.className = `input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition ${corAtualizada}`;
+            }
+
+        } else {
+            iconeSalvo.className = "fa-solid fa-xmark absolute right-2 top-3 text-red-500";
+        }
     }
 }
 
@@ -229,19 +250,28 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
     const formatarBr = (isoStr) => {
         if (!isoStr) return '';
         const d = new Date(isoStr);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     };
 
-    // Indicadores Matemáticos
     let totalValidas = 0;
-    let boas = 0; // 5 e 4
-    let medias = 0; // 3
-    let ruins = 0; // 2 e 1
+    let boas = 0; 
+    let medias = 0; 
+    let ruins = 0; 
+
+    // Agrupamento por Agente
+    const analistas = {};
 
     dados.forEach(d => {
+        const ag = (d.agente || 'Desconhecido').toUpperCase();
+        if (!analistas[ag]) analistas[ag] = { total: 0, soma: 0, qtdValidas: 0 };
+        analistas[ag].total++;
+
         const n = parseInt(d.nota, 10);
         if (!isNaN(n)) {
             totalValidas++;
+            analistas[ag].soma += n;
+            analistas[ag].qtdValidas++;
+
             if (n >= 4) boas++;
             else if (n === 3) medias++;
             else ruins++;
@@ -250,8 +280,29 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
 
     const pctSatisfacao = totalValidas > 0 ? Math.round((boas / totalValidas) * 100) : 0;
 
+    // Constrói os Cards de Analistas
+    const analistasHtml = Object.keys(analistas).sort().map(ag => {
+        const stats = analistas[ag];
+        const mediaFinal = stats.qtdValidas > 0 ? (stats.soma / stats.qtdValidas).toFixed(2) : '-';
+        return `
+            <div class="bg-slate-800 border border-slate-700 p-3 rounded-lg flex flex-col min-w-[140px] shadow-sm">
+                <span class="text-xs font-bold text-slate-400 truncate w-full mb-2" title="${ag}">${ag}</span>
+                <div class="flex justify-between items-end mt-auto">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase text-slate-500">Média</span>
+                        <span class="text-lg font-black text-emerald-400">${mediaFinal}</span>
+                    </div>
+                    <div class="flex flex-col text-right">
+                        <span class="text-[10px] uppercase text-slate-500">Avaliações</span>
+                        <span class="text-sm font-bold text-white">${stats.qtdValidas}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
     let html = `
-        <div class="mb-8 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center">
+        <div class="mb-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center">
             <div>
                 <h2 class="text-2xl font-bold text-white uppercase tracking-wide">Auditoria: ${tipo}</h2>
                 <p class="text-slate-400 text-sm mt-1">Período auditado: ${dataInicio} a ${dataFim}</p>
@@ -276,41 +327,58 @@ function renderizarDashboard(dados, tipo, dataInicio, dataFim) {
             </div>
         </div>
 
+        <!-- QUADRO DE ANALISTAS -->
+        <div class="mb-8 bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-users mr-2"></i>Desempenho por Analista</h3>
+            <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700">
+                ${analistasHtml}
+            </div>
+        </div>
+
         <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-slate-300">
-                    <thead class="text-xs text-slate-400 uppercase bg-slate-950 border-b border-slate-700">
+                    <thead class="text-[11px] text-slate-400 uppercase tracking-wider bg-slate-950 border-b border-slate-700">
                         <tr>
-                            <th class="px-4 py-4">Data Inicial</th>
-                            <th class="px-4 py-4">Agente</th>
-                            ${tipo === 'Ligação' ? '<th class="px-4 py-4">Filial</th>' : ''}
-                            <th class="px-4 py-4 text-center">Nota</th>
-                            <th class="px-4 py-4 w-1/4">Descrição do Atendimento</th>
-                            <th class="px-4 py-4 w-1/4">Ação do Analista</th>
+                            <th class="px-3 py-3 w-[140px]">Data Inicial</th>
+                            <th class="px-3 py-3">Agente</th>
+                            <th class="px-3 py-3 w-[130px]">Interlocutor</th>
+                            ${tipo === 'Ligação' ? '<th class="px-3 py-3 w-[80px]">Filial</th>' : ''}
+                            <th class="px-3 py-3 text-center w-[120px]">Nota</th>
+                            <th class="px-3 py-3 w-[30%]">Descrição do Atendimento</th>
+                            <th class="px-3 py-3 w-[30%]">Ação do Analista</th>
                         </tr>
                     </thead>
                     <tbody>
     `;
 
+    const selectOptions = ['1','2','3','4','5','Não respondeu'];
+
     dados.forEach(d => {
-        const corNota = ['1', '2'].includes(d.nota) ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-            d.nota === '3' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                ['4', '5'].includes(d.nota) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 text-slate-300';
+        const corNota = ['1','2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
+                        d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
+                        ['4','5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+
+        const optHtml = selectOptions.map(opt => `<option value="${opt}" ${d.nota === opt ? 'selected' : ''}>${opt}</option>`).join('');
 
         html += `
-            <tr class="border-b border-slate-800 hover:bg-slate-800/50 transition">
-                <td class="px-4 py-3 whitespace-nowrap">${formatarBr(d.data_inicial)}</td>
-                <td class="px-4 py-3 font-semibold text-white uppercase">${d.agente}</td>
-                ${tipo === 'Ligação' ? `<td class="px-4 py-3 font-mono text-emerald-400">${d.filial || '-'}</td>` : ''}
-                <td class="px-4 py-3 text-center">
-                    <span class="px-3 py-1 rounded-full text-xs font-bold ${corNota}">${d.nota}</span>
-                </td>
-                <td class="px-4 py-2 relative">
-                    <textarea data-id="${d.id}" data-campo="descricao_atendimento" rows="2" class="input-audit w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none resize-none transition" placeholder="Anotações do atendimento...">${d.descricao_atendimento || ''}</textarea>
+            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                <td class="px-3 py-2 text-xs">${formatarBr(d.data_inicial)}</td>
+                <td class="px-3 py-2 font-semibold text-white uppercase text-xs">${d.agente}</td>
+                <td class="px-3 py-2 font-mono text-slate-400 text-xs">${d.interlocutor || '-'}</td>
+                ${tipo === 'Ligação' ? `<td class="px-3 py-2 font-mono text-emerald-400 font-bold">${d.filial || '-'}</td>` : ''}
+                <td class="px-3 py-2 text-center relative">
+                    <select data-id="${d.id}" data-campo="nota" class="input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition cursor-pointer ${corNota}">
+                        ${optHtml}
+                    </select>
                     <i class="opacity-0"></i>
                 </td>
-                <td class="px-4 py-2 relative">
-                    <textarea data-id="${d.id}" data-campo="acao_analista" rows="2" class="input-audit w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none resize-none transition" placeholder="Feedback/Ação...">${d.acao_analista || ''}</textarea>
+                <td class="px-3 py-2 relative">
+                    <textarea data-id="${d.id}" data-campo="descricao_atendimento" rows="2" class="input-audit w-full bg-slate-950/50 border border-slate-700/50 rounded p-2 text-xs text-slate-300 focus:bg-slate-900 focus:ring-1 focus:ring-emerald-500 outline-none resize-none transition" placeholder="Anotações do atendimento...">${d.descricao_atendimento || ''}</textarea>
+                    <i class="opacity-0"></i>
+                </td>
+                <td class="px-3 py-2 relative">
+                    <textarea data-id="${d.id}" data-campo="acao_analista" rows="2" class="input-audit w-full bg-slate-950/50 border border-slate-700/50 rounded p-2 text-xs text-slate-300 focus:bg-slate-900 focus:ring-1 focus:ring-emerald-500 outline-none resize-none transition" placeholder="Feedback/Ação...">${d.acao_analista || ''}</textarea>
                     <i class="opacity-0"></i>
                 </td>
             </tr>
