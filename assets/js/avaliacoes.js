@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('conteudo-relatorio-aval').addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.classList.contains('input-audit') && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
-            e.target.blur(); 
+            e.target.blur();
         }
     });
 
@@ -82,11 +82,11 @@ function processarCSVAvaliacoes() {
         });
     } else if (extensao === 'xlsx' || extensao === 'xls') {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
+            const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
             enviarDadosParaBanco(json, msgEl, btn, fileInput);
         };
         reader.readAsArrayBuffer(file);
@@ -109,8 +109,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
 
         const dataInic = getVal(['Data Inicial da Chamada']);
         const dataAtend = getVal(['Data de Atendimento']);
-        const agente = getVal(['Agente']); 
-        const interlocutor = getVal(['Interlocutor', 'Origem']); 
+        const agente = getVal(['Agente']);
+        const interlocutor = getVal(['Interlocutor', 'Origem']);
         let nota = getVal(['Resposta 1', 'Resposta1']);
         const dadosAssoc = getVal(['Dados Associados']);
 
@@ -119,8 +119,8 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         const formatarDataISO = (dStr) => {
             if (!dStr) return null;
             const partes = dStr.split(' ');
-            const data = partes[0]; 
-            const hora = partes[1] || '00:00:00'; 
+            const data = partes[0];
+            const hora = partes[1] || '00:00:00';
             const dataPartes = data.split('/');
             if (dataPartes.length !== 3) return null;
             return `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${hora}`;
@@ -135,7 +135,7 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         if (dataInic && agente) {
             const tipo = dadosAssoc ? 'Ligação' : 'WhatsApp';
             const dataIso = formatarDataISO(dataInic);
-            
+
             if (dataIso) {
                 const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
                 registrosLimpados.push({
@@ -200,11 +200,11 @@ async function gerarRelatorioAvaliacoes() {
 
         // Salva no cache global para o filtro dinâmico funcionar sem ir ao banco de novo
         dadosRelatorioCache = data;
-        analistasDesabilitados.clear(); 
+        analistasDesabilitados.clear();
         infosCabecalho = { tipo, dataInicio, dataFim };
 
         renderizarDashboardDinamico();
-        
+
         document.getElementById('modal-relatorio-aval').classList.remove('hidden');
         document.getElementById('modal-relatorio-aval').classList.add('flex');
 
@@ -223,7 +223,7 @@ async function gerarRelatorioAvaliacoes() {
 async function salvarAnotacao(inputEl) {
     const idRegistro = inputEl.dataset.id;
     const campo = inputEl.dataset.campo;
-    const valor = inputEl.value; 
+    const valor = inputEl.value;
 
     // Atualiza o cache imediatamente para não perder o texto ao clicar em um card
     const objCache = dadosRelatorioCache.find(d => d.id === idRegistro);
@@ -241,13 +241,13 @@ async function salvarAnotacao(inputEl) {
         if (!error) {
             iconeSalvo.className = "fa-solid fa-check absolute right-2 top-3 text-emerald-500 transition-opacity";
             setTimeout(() => { iconeSalvo.style.opacity = '0'; }, 2000);
-            
+
             if (campo === 'nota') {
-                const corAtualizada = ['1','2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
-                                    valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
-                                    ['4','5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+                const corAtualizada = ['1', '2'].includes(valor) ? 'text-red-400 bg-red-500/10 border-red-500/30' :
+                    valor === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' :
+                        ['4', '5'].includes(valor) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
                 inputEl.className = `input-audit w-full rounded p-1 text-center font-bold text-sm outline-none focus:border-emerald-500 border transition cursor-pointer ${corAtualizada}`;
-                
+
                 // Recalcula o dashboard silenciosamente se a nota mudar
                 renderizarDashboardDinamico();
             }
@@ -262,7 +262,7 @@ async function salvarAnotacao(inputEl) {
 // ==========================================
 function renderizarDashboardDinamico() {
     const { tipo, dataInicio, dataFim } = infosCabecalho;
-    
+
     // 1. Filtragem principal: Separa os dados de quem está ativo
     const dadosAtivos = dadosRelatorioCache.filter(d => !analistasDesabilitados.has((d.agente || '').toUpperCase()));
 
@@ -350,30 +350,30 @@ function renderizarDashboardDinamico() {
             </div>
         </div>
 
-        <!-- QUADRO DE ANALISTAS ATIVOS -->
+        <!-- QUADRO DE ANALISTAS ATIVOS (Ajustado pt-2 para não cortar a animação) -->
         <div class="mb-4 bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-users mr-2"></i>Desempenho por Analista <span class="lowercase font-normal text-slate-500">(Clique para desabilitar)</span></h3>
-            <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700">
+            <div class="flex gap-3 overflow-x-auto pt-2 pb-2 px-1 scrollbar-thin scrollbar-thumb-slate-700">
                 ${htmlCardsAtivos}
             </div>
         </div>
     `;
 
-    // QUADRO DE ANALISTAS INATIVOS (Só aparece se houver alguém desabilitado)
+    // QUADRO DE ANALISTAS INATIVOS
     if (analistasDesabilitados.size > 0) {
         html += `
             <div class="mb-8 bg-slate-950 border border-red-900/30 rounded-xl p-4 shadow-inner">
                 <h3 class="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-3"><i class="fa-solid fa-user-slash mr-2"></i>Analistas Ocultos <span class="lowercase font-normal text-slate-600">(Clique para reativar)</span></h3>
-                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-800">
+                <div class="flex gap-3 overflow-x-auto pt-2 pb-2 px-1 scrollbar-thin scrollbar-thumb-slate-800">
                     ${htmlCardsInativos}
                 </div>
             </div>
         `;
     } else {
-        html += `<div class="mb-8"></div>`; // Espaçador
+        html += `<div class="mb-8"></div>`;
     }
 
-    // TABELA (Renderiza APENAS os ativos)
+    // TABELA 
     html += `
         <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
             <div class="overflow-x-auto">
@@ -395,17 +395,18 @@ function renderizarDashboardDinamico() {
     const formatarBr = (isoStr) => {
         if (!isoStr) return '';
         const d = new Date(isoStr);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     };
 
-    const selectOptions = ['1','2','3','4','5','Não respondeu'];
+    const selectOptions = ['1', '2', '3', '4', '5', 'Não respondeu'];
 
     dadosAtivos.forEach(d => {
-        const corNota = ['1','2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' : 
-                        d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' : 
-                        ['4','5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
+        const corNota = ['1', '2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' :
+            d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' :
+                ['4', '5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
 
-        const optHtml = selectOptions.map(opt => `<option value="${opt}" ${d.nota === opt ? 'selected' : ''}>${opt}</option>`).join('');
+        // Ajuste no Fundo das Opções (bg-slate-900 text-white)
+        const optHtml = selectOptions.map(opt => `<option value="${opt}" class="bg-slate-900 text-white font-semibold" ${d.nota === opt ? 'selected' : ''}>${opt}</option>`).join('');
 
         html += `
             <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
