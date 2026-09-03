@@ -257,14 +257,17 @@ async function salvarAnotacao(inputEl) {
     }
 }
 
-// ==========================================
+/// ==========================================
 // 4. RENDERIZAÇÃO DINÂMICA
 // ==========================================
 function renderizarDashboardDinamico() {
     const { tipo, dataInicio, dataFim } = infosCabecalho;
 
-    // 1. Filtragem principal: Separa os dados de quem está ativo
-    const dadosAtivos = dadosRelatorioCache.filter(d => !analistasDesabilitados.has((d.agente || '').toUpperCase()));
+    // 1. Filtragem principal: Limpa espaços em branco para garantir correspondência exata
+    const dadosAtivos = dadosRelatorioCache.filter(d => {
+        const agenteNome = (d.agente || '').toUpperCase().trim();
+        return !analistasDesabilitados.has(agenteNome);
+    });
 
     // Indicadores Gerais Matemáticos (Baseado APENAS nos dadosAtivos)
     let totalValidas = 0, boas = 0, medias = 0, ruins = 0;
@@ -284,7 +287,7 @@ function renderizarDashboardDinamico() {
     // 2. Agrupamento por Agente (Processa TODOS para poder gerar a lista de desabilitados)
     const analistas = {};
     dadosRelatorioCache.forEach(d => {
-        const ag = (d.agente || 'Desconhecido').toUpperCase();
+        const ag = (d.agente || 'Desconhecido').toUpperCase().trim();
         if (!analistas[ag]) analistas[ag] = { total: 0, soma: 0, qtdValidas: 0 };
         analistas[ag].total++;
 
@@ -323,7 +326,6 @@ function renderizarDashboardDinamico() {
         else htmlCardsAtivos += card;
     });
 
-    // Construção do HTML Final
     let html = `
         <div class="mb-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg flex justify-between items-center transition-all">
             <div>
@@ -350,7 +352,6 @@ function renderizarDashboardDinamico() {
             </div>
         </div>
 
-        <!-- QUADRO DE ANALISTAS ATIVOS (Ajustado pt-2 para não cortar a animação) -->
         <div class="mb-4 bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-users mr-2"></i>Desempenho por Analista <span class="lowercase font-normal text-slate-500">(Clique para desabilitar)</span></h3>
             <div class="flex gap-3 overflow-x-auto pt-2 pb-2 px-1 scrollbar-thin scrollbar-thumb-slate-700">
@@ -359,7 +360,6 @@ function renderizarDashboardDinamico() {
         </div>
     `;
 
-    // QUADRO DE ANALISTAS INATIVOS
     if (analistasDesabilitados.size > 0) {
         html += `
             <div class="mb-8 bg-slate-950 border border-red-900/30 rounded-xl p-4 shadow-inner">
@@ -373,7 +373,6 @@ function renderizarDashboardDinamico() {
         html += `<div class="mb-8"></div>`;
     }
 
-    // TABELA 
     html += `
         <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
             <div class="overflow-x-auto">
@@ -400,12 +399,12 @@ function renderizarDashboardDinamico() {
 
     const selectOptions = ['1', '2', '3', '4', '5', 'Não respondeu'];
 
+    // O .forEach agora roda em cima de dadosAtivos (sem os analistas ocultos)
     dadosAtivos.forEach(d => {
         const corNota = ['1', '2'].includes(d.nota) ? 'text-red-400 bg-red-500/10 border-red-500/30' :
             d.nota === '3' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' :
                 ['4', '5'].includes(d.nota) ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-300 bg-slate-800 border-slate-700';
 
-        // Ajuste no Fundo das Opções (bg-slate-900 text-white)
         const optHtml = selectOptions.map(opt => `<option value="${opt}" class="bg-slate-900 text-white font-semibold" ${d.nota === opt ? 'selected' : ''}>${opt}</option>`).join('');
 
         html += `
