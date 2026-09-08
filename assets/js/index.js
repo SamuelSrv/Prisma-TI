@@ -1,217 +1,175 @@
 import { supabase } from './supabase.js';
 
-// Injeta o Favicon dinamicamente
-const favicon = document.createElement('link');
-favicon.rel = 'icon';
-favicon.type = 'image/svg+xml';
-favicon.href = 'assets/img/logo.svg';
-document.head.appendChild(favicon);
-
 document.addEventListener('DOMContentLoaded', () => {
+    // Referências DOM
     const formLogin = document.getElementById('form-login');
     const formCadastro = document.getElementById('form-cadastro');
-    const linkToCadastro = document.getElementById('link-to-cadastro');
-    const linkToLogin = document.getElementById('link-to-login');
-    const globalError = document.getElementById('global-error');
-    const cadSuccess = document.getElementById('cad-success');
-
-    // Alternar entre Telas de Login e Cadastro
-    linkToCadastro.addEventListener('click', (e) => {
+    const msgLogin = document.getElementById('msg-login');
+    const msgCadastro = document.getElementById('msg-cadastro');
+    
+    // Alternar formulários
+    document.getElementById('go-to-cadastro').addEventListener('click', (e) => {
         e.preventDefault();
         formLogin.style.display = 'none';
         formCadastro.style.display = 'block';
         limparErros();
     });
 
-    linkToLogin.addEventListener('click', (e) => {
+    document.getElementById('go-to-login').addEventListener('click', (e) => {
         e.preventDefault();
         formCadastro.style.display = 'none';
         formLogin.style.display = 'block';
         limparErros();
     });
 
+    // Função global de limpeza visual
     function limparErros() {
-        globalError.style.display = 'none';
-        globalError.textContent = '';
-        cadSuccess.style.display = 'none';
-        cadSuccess.textContent = '';
-        document.querySelectorAll('.field-error').forEach(el => {
-            el.style.display = 'none';
-            el.textContent = '';
-        });
+        msgLogin.style.display = 'none';
+        msgCadastro.style.display = 'none';
+        document.querySelectorAll('.field-error').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
     }
 
-    // Funcionalidade de Mostrar/Ocultar Senha (Olhinho)
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            const input = document.getElementById(targetId);
-
-            if (input) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    button.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-                } else {
-                    input.type = 'password';
-                    button.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-                }
+    // Olhinho da Senha
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.getAttribute('data-target'));
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+            } else {
+                input.type = 'password';
+                btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
             }
         });
     });
 
-    // Máscara automática de CPF: 000.000.000-00
+    // Máscara e Validação de CPF
     const inputCpf = document.getElementById('cad-cpf');
     if (inputCpf) {
         inputCpf.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 11) value = value.substring(0, 11);
-
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-
-            e.target.value = value;
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.substring(0, 11);
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = v;
         });
     }
 
-    // Função para validar matematicamente o CPF
-    function validarCPF(strCPF) {
-        strCPF = strCPF.replace(/[^\d]+/g, '');
-        if (strCPF.length !== 11 || /^(\d)\1{10}$/.test(strCPF)) return false;
-
-        let soma = 0;
-        let resto;
-
-        for (let i = 1; i <= 9; i++) {
-            soma = soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
-        }
+    function validarCPF(cpfStr) {
+        const cpf = cpfStr.replace(/[^\d]+/g, '');
+        if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+        let soma = 0, resto;
+        for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
         resto = (soma * 10) % 11;
-        if ((resto === 10) || (resto === 11)) resto = 0;
-        if (resto !== parseInt(strCPF.substring(9, 10))) return false;
-
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.substring(9, 10))) return false;
         soma = 0;
-        for (let i = 1; i <= 10; i++) {
-            soma = soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i);
-        }
+        for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
         resto = (soma * 10) % 11;
-        if ((resto === 10) || (resto === 11)) resto = 0;
-        if (resto !== parseInt(strCPF.substring(10, 11))) return false;
-
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.substring(10, 11))) return false;
         return true;
     }
 
-    // Processamento do Login
+    // ==========================================
+    // FLUXO DE LOGIN
+    // ==========================================
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
+        limparErros();
+        const btn = document.getElementById('btn-login');
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
-        const btn = document.getElementById('btn-login-submit');
 
-        globalError.style.display = 'none';
-        btn.disabled = true;
-        btn.textContent = 'Entrando...';
+        btn.disabled = true; btn.textContent = 'Autenticando...';
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
             if (data.session) window.location.replace('dashboard.html');
         } catch (err) {
-            globalError.style.display = 'block';
-            globalError.textContent = 'E-mail ou senha incorretos.';
+            msgLogin.className = 'global-msg msg-error';
+            msgLogin.textContent = 'E-mail ou senha incorretos.';
+            msgLogin.style.display = 'block';
         } finally {
-            btn.disabled = false;
-            btn.textContent = 'Entrar no Sistema';
+            btn.disabled = false; btn.textContent = 'Entrar no Sistema';
         }
     });
 
-    // Processamento do Cadastro
+    // ==========================================
+    // FLUXO DE CADASTRO
+    // ==========================================
     formCadastro.addEventListener('submit', async (e) => {
         e.preventDefault();
         limparErros();
 
+        const btn = document.getElementById('btn-cadastro');
         const nome = document.getElementById('cad-nome').value.trim();
         const email = document.getElementById('cad-email').value.trim();
         const cpf = document.getElementById('cad-cpf').value.trim();
         const password = document.getElementById('cad-password').value;
-        const btn = document.getElementById('btn-cad-submit');
 
-        let temErro = false;
+        let hasError = false;
 
-        // 1. Validação de CPF (Estrutura e Matemática)
         if (!validarCPF(cpf)) {
-            const errEl = document.getElementById('error-cpf');
-            errEl.textContent = 'CPF inválido. Verifique os números digitados.';
-            errEl.style.display = 'block';
-            temErro = true;
+            document.getElementById('err-cpf').textContent = 'CPF inválido.';
+            document.getElementById('err-cpf').style.display = 'block';
+            hasError = true;
         }
 
-        // 2. Validação de Senha (Mínimo 8 caracteres, letras e números)
-        const regexSenha = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-        if (!regexSenha.test(password)) {
-            const errEl = document.getElementById('error-password');
-            errEl.textContent = 'A senha deve ter no mínimo 8 caracteres, contendo letras e números.';
-            errEl.style.display = 'block';
-            temErro = true;
+        if (password.length < 6) {
+            document.getElementById('err-password').textContent = 'A senha precisa ter no mínimo 6 caracteres.';
+            document.getElementById('err-password').style.display = 'block';
+            hasError = true;
         }
 
-        if (temErro) return;
+        if (hasError) return;
 
-        btn.disabled = true;
-        btn.textContent = 'Verificando dados...';
+        btn.disabled = true; btn.textContent = 'Verificando...';
+        const cpfLimpo = cpf.replace(/[^\d]+/g, '');
 
         try {
-            // 3. Validação de CPF já existente no banco de dados
+            // Verifica duplicidade direto na tabela principal
             const { data: cpfExistente } = await supabase
                 .from('perfis')
                 .select('cpf')
-                .eq('cpf', cpf)
+                .eq('cpf', cpfLimpo)
                 .maybeSingle();
 
             if (cpfExistente) {
-                const errEl = document.getElementById('error-cpf');
-                errEl.textContent = 'Este CPF já está cadastrado no sistema.';
-                errEl.style.display = 'block';
-                btn.disabled = false;
-                btn.textContent = 'Criar Minha Conta';
+                document.getElementById('err-cpf').textContent = 'Este CPF já está cadastrado.';
+                document.getElementById('err-cpf').style.display = 'block';
+                btn.disabled = false; btn.textContent = 'Criar Conta';
                 return;
             }
 
-            btn.textContent = 'Criando conta...';
+            btn.textContent = 'Registrando...';
 
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
-                options: {
-                    data: {
-                        nome: nome,
-                        cpf: cpf
-                    }
-                }
+                options: { data: { nome: nome, cpf: cpfLimpo } }
             });
 
             if (error) throw error;
 
-            // Feedback visual limpo no sistema (sem popups nativos)
-            cadSuccess.textContent = 'Conta criada com sucesso! Redirecionando...';
-            cadSuccess.style.display = 'block';
+            msgCadastro.className = 'global-msg msg-success';
+            msgCadastro.textContent = 'Conta criada! Redirecionando...';
+            msgCadastro.style.display = 'block';
 
-            setTimeout(() => {
-                formCadastro.reset();
-                linkToLogin.click();
-            }, 2000);
+            setTimeout(() => { window.location.replace('dashboard.html'); }, 1500);
 
         } catch (err) {
-            console.error('Erro no cadastro:', err.message);
-            if (err.message.includes('already registered') || err.message.includes('User already registered')) {
-                const errEl = document.getElementById('error-email');
-                errEl.textContent = 'Este e-mail já possui uma conta cadastrada.';
-                errEl.style.display = 'block';
+            if (err.message.includes('already registered')) {
+                document.getElementById('err-email').textContent = 'E-mail já está em uso.';
+                document.getElementById('err-email').style.display = 'block';
             } else {
-                globalError.style.display = 'block';
-                globalError.textContent = 'Erro ao cadastrar: ' + err.message;
+                msgCadastro.className = 'global-msg msg-error';
+                msgCadastro.textContent = 'Erro no servidor: Verifique a conexão.';
+                msgCadastro.style.display = 'block';
             }
-            btn.disabled = false;
-            btn.textContent = 'Criar Minha Conta';
+            btn.disabled = false; btn.textContent = 'Criar Conta';
         }
     });
 });
