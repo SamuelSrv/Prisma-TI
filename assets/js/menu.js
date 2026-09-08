@@ -5,12 +5,10 @@ export async function carregarMenu(paginaAtiva) {
     if (!sidebarElement) return;
 
     try {
-        // 1. Verifica quem está logado
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         const userId = session.user.id;
 
-        // 2. Busca o nível de acesso
         let nivelAcesso = 'padrao';
         const { data: perfil, error } = await supabase
             .from('perfis')
@@ -22,32 +20,30 @@ export async function carregarMenu(paginaAtiva) {
             nivelAcesso = perfil.nivel_acesso;
         }
 
-        // 3. Constrói a ESTRUTURA BLINDADA (3 Blocos: Fixo -> Rolável -> Fixo)
         let menuHTML = `
             <style>
-                /* Barra de rolagem minimalista apenas para o menu interno */
-                .nav-scroll::-webkit-scrollbar { width: 4px; }
-                .nav-scroll::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 4px; }
-                .nav-scroll { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+                .menu-scroll::-webkit-scrollbar { width: 4px; }
+                .menu-scroll::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 10px; }
+                .menu-scroll::-webkit-scrollbar-track { background: transparent; }
             </style>
 
-            <div style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+            <!-- Container principal do menu (ocupa 100% do espaço da barra lateral) -->
+            <div style="display: flex; flex-direction: column; height: 100%;">
                 
-                <!-- BLOCO 1: CABEÇALHO FIXO -->
-                <div class="logo" style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 20px 10px 0 10px;">
+                <!-- 1. LOGO -->
+                <div class="logo" style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin-bottom: 25px; padding: 0 10px;">
                     <img src="assets/img/logo.svg" alt="Logo" style="width: 35px; height: auto;">
                     <span style="font-size: 1.4rem; font-weight: bold; color: #f8fafc;">Prisma TI</span>
                 </div>
                 
-                <!-- BLOCO 2: CORPO ROLÁVEL (Menus) -->
-                <nav class="nav-menu nav-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 10px; padding-right: 5px;">
+                <!-- 2. LINKS (Área flexível com rolagem invisível) -->
+                <nav class="nav-menu menu-scroll" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 5px;">
                     
                     <a href="dashboard.html" class="nav-item ${paginaAtiva === 'dashboard' ? 'active' : ''}">
                         <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v15a1 1 0 0 0 1 1h15M8 16l2.5-5.5 3 3L17.273 7 20 9.667"/></svg>
                         Dashboard Inicial
                     </a>
 
-                    <!-- CATEGORIA: RELATÓRIOS -->
                     <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                         Relatórios
                     </div>
@@ -62,7 +58,6 @@ export async function carregarMenu(paginaAtiva) {
                         Relatório de Avaliações
                     </a>
 
-                    <!-- CATEGORIA: QUALITOR -->
                     <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                         Qualitor
                     </div>
@@ -73,10 +68,8 @@ export async function carregarMenu(paginaAtiva) {
                     </a>
         `;
 
-        // 4. MÁGICA DE AUTORIZAÇÃO: Adiciona menu de ADMIN/TI se o usuário tiver acesso
         if (nivelAcesso === 'administrador' || nivelAcesso === 'ti') {
             menuHTML += `
-                    <!-- CATEGORIA: ADMINISTRAÇÃO -->
                     <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                         Administração
                     </div>
@@ -93,9 +86,7 @@ export async function carregarMenu(paginaAtiva) {
             `;
         }
 
-        // 5. BLOCO 3: RODAPÉ FIXO (Conta e Sair)
         menuHTML += `
-                    <!-- CATEGORIA: CONTA -->
                     <div style="margin-top: 25px; margin-bottom: 8px; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                         Conta
                     </div>
@@ -106,12 +97,13 @@ export async function carregarMenu(paginaAtiva) {
                     </a>
                 </nav>
 
-                <!-- RODAPÉ DE SAÍDA ANCORADO NO FUNDO -->
-                <div style="flex-shrink: 0; padding: 15px 0 20px 0; border-top: 1px solid #1e293b; background: var(--bg-sidebar);">
-                    <div class="nav-item" id="btn-logout" style="cursor: pointer; color: #ef4444; margin: 0;">
+                <!-- 3. RODAPÉ FIXO -->
+                <div style="flex-shrink: 0; padding-top: 15px; margin-top: 10px; border-top: 1px solid #1e293b;">
+                    <!-- Voltei para a tag <a> para respeitar 100% do seu CSS (.nav-item) -->
+                    <a id="btn-logout" class="nav-item" style="cursor: pointer; color: #ef4444;">
                         <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12H4m12 0-4 4m4-4-4-4m3-4h2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-2"/></svg>
                         Sair
-                    </div>
+                    </a>
                 </div>
 
             </div>
@@ -119,7 +111,6 @@ export async function carregarMenu(paginaAtiva) {
 
         sidebarElement.innerHTML = menuHTML;
 
-        // Lógica de Logout
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await supabase.auth.signOut();
             window.location.href = 'index.html';
