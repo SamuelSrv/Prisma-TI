@@ -24,12 +24,12 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     min-height: 100vh;
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0; 
+    pointer-events: none; 
     transition: opacity 0.3s ease;
 }
 
-body.login-body,
+body.login-body, 
 body.auth-ok {
     opacity: 1;
     pointer-events: all;
@@ -70,7 +70,7 @@ body.auth-ok {
     cursor: pointer;
     z-index: 1000;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .toggle-float-btn:hover {
@@ -120,20 +120,16 @@ body.auth-ok {
 body.sidebar-collapsed .sidebar {
     width: 80px;
 }
-
 body.sidebar-collapsed .main-content {
     margin-left: 80px;
     max-width: calc(100vw - 80px);
 }
-
 body.sidebar-collapsed .menu-text {
     display: none !important;
 }
-
 body.sidebar-collapsed .submenu {
     display: none !important;
 }
-
 body.sidebar-collapsed .chevron-icon {
     transform: rotate(180deg);
 }
@@ -158,17 +154,8 @@ body.sidebar-collapsed .chevron-icon {
     border: 1px solid var(--border-color);
 }
 
-.header-title {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.subtitle {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    margin-top: 4px;
-}
+.header-title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); }
+.subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px; }
 
 .kpi-grid {
     display: grid;
@@ -185,74 +172,19 @@ body.sidebar-collapsed .chevron-icon {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
 }
 
-.kpi-card span {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    font-weight: 600;
-}
+.kpi-card span { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+.kpi-card h2 { font-size: 2.2rem; font-weight: 700; margin-top: 10px; color: var(--text-primary); }
+.kpi-card.alert h2 { color: var(--danger); }
 
-.kpi-card h2 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    margin-top: 10px;
-    color: var(--text-primary);
-}
+.charts-container { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.chart-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; }
+.chart-card h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 20px; }
 
-.kpi-card.alert h2 {
-    color: var(--danger);
-}
+.btn-primary-modern { background-color: var(--accent-primary); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+.btn-primary-modern:hover { background-color: var(--accent-hover); }
 
-.charts-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 24px;
-}
-
-.chart-card {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 24px;
-}
-
-.chart-card h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 20px;
-}
-
-.btn-primary-modern {
-    background-color: var(--accent-primary);
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.btn-primary-modern:hover {
-    background-color: var(--accent-hover);
-}
-
-.input-modern {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--bg-main);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    margin-top: 6px;
-    outline: none;
-}
-
-.input-modern:focus {
-    border-color: var(--accent-primary);
-}
+.input-modern { width: 100%; padding: 12px; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; margin-top: 6px; outline: none; }
+.input-modern:focus { border-color: var(--accent-primary); }
 
 @import "tailwindcss";
 
@@ -264,22 +196,19 @@ body.sidebar-collapsed .chevron-icon {
     /* Força o tamanho Full HD */
     width: 1920px;
     height: 1080px;
-
+    
     /* Cores institucionais Lebes baseadas nas imagens */
-    background-color: #ebf5ee;
-    /* Fundo verde super claro */
+    background-color: #ebf5ee; /* Fundo verde super claro */
     font-family: 'Inter', -apple-system, sans-serif;
     position: relative;
     padding: 60px;
     box-sizing: border-box;
-
+    
     /* Transformação para caber na tela do navegador sem quebrar o tamanho real */
     transform-origin: top left;
-    transform: scale(0.5);
-    /* Ajuste via JS dependendo do monitor */
-    margin-bottom: -540px;
-    /* Compensa o espaço do scale */
-
+    transform: scale(0.5); /* Ajuste via JS dependendo do monitor */
+    margin-bottom: -540px; /* Compensa o espaço do scale */
+    
     border: 1px solid #cbd5e1;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
@@ -319,7 +248,6 @@ body.sidebar-collapsed .chevron-icon {
     text-transform: uppercase;
     margin-bottom: 50px;
 }
-
 .slide-title span {
     color: #475569;
 }
@@ -332,7 +260,6 @@ body.sidebar-collapsed .chevron-icon {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
 }
-
 .lebes-table th {
     background-color: #16a34a;
     color: white;
@@ -341,25 +268,21 @@ body.sidebar-collapsed .chevron-icon {
     padding: 12px 20px;
     text-transform: uppercase;
 }
-
 .lebes-table td {
     padding: 12px 20px;
     font-size: 1.1rem;
     color: #334155;
     border-bottom: 1px solid #e2e8f0;
 }
-
 .lebes-table tr:nth-child(even) {
     background-color: #f8fafc;
 }
 
 /* Célula de destaque (Ex: % Mês com fundo mais escuro) */
 .lebes-table td.highlight {
-    background-color: #bbf7d0;
-    /* Verde clarinho */
+    background-color: #bbf7d0; /* Verde clarinho */
     font-weight: 600;
 }
-
 /* Transforma a barra lateral em um container flexível com rolagem */
 aside {
     height: 100vh !important;
@@ -368,7 +291,7 @@ aside {
 }
 
 /* Faz a área dos links crescer e rolar se a tela for pequena */
-aside>div:nth-child(2),
+aside > div:nth-child(2), 
 aside nav {
     flex: 1 !important;
     overflow-y: auto !important;
@@ -377,12 +300,11 @@ aside nav {
 
 /* (Opcional) Deixa a barra de rolagem fina e com as cores do sistema */
 aside nav::-webkit-scrollbar,
-aside>div:nth-child(2)::-webkit-scrollbar {
+aside > div:nth-child(2)::-webkit-scrollbar {
     width: 4px;
 }
-
 aside nav::-webkit-scrollbar-thumb,
-aside>div:nth-child(2)::-webkit-scrollbar-thumb {
-    background-color: #334155;
+aside > div:nth-child(2)::-webkit-scrollbar-thumb {
+    background-color: #334155; 
     border-radius: 4px;
 }
