@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => {
             const targetId = button.getAttribute('data-target');
             const input = document.getElementById(targetId);
-            
+
             if (input) {
                 if (input.type === 'password') {
                     input.type = 'text';
@@ -65,11 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         inputCpf.addEventListener('input', (e) => {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 11) value = value.substring(0, 11);
-            
+
             value = value.replace(/(\d{3})(\d)/, '$1.$2');
             value = value.replace(/(\d{3})(\d)/, '$1.$2');
             value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-            
+
             e.target.value = value;
         });
     }
@@ -78,17 +78,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function validarCPF(strCPF) {
         strCPF = strCPF.replace(/[^\d]+/g, '');
         if (strCPF.length !== 11 || /^(\d)\1{10}$/.test(strCPF)) return false;
-        
+
         let soma = 0;
         let resto;
-        
+
         for (let i = 1; i <= 9; i++) {
             soma = soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
         }
         resto = (soma * 10) % 11;
         if ((resto === 10) || (resto === 11)) resto = 0;
         if (resto !== parseInt(strCPF.substring(9, 10))) return false;
-        
+
         soma = 0;
         for (let i = 1; i <= 10; i++) {
             soma = soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i);
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resto = (soma * 10) % 11;
         if ((resto === 10) || (resto === 11)) resto = 0;
         if (resto !== parseInt(strCPF.substring(10, 11))) return false;
-        
+
         return true;
     }
 
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 3. Validação de CPF já existente no banco de dados
             const { data: cpfExistente } = await supabase
-                .from('perfis_usuarios')
+                .from('perfis')
                 .select('cpf')
                 .eq('cpf', cpf)
                 .maybeSingle();
