@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma TI - Autenticação</title>
+    
+    <!-- Favicon Oficial -->
     <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+    
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         body.login-body {
@@ -54,12 +57,14 @@
         <form id="form-login">
             <div class="input-group">
                 <label for="login-email">E-mail Corporativo</label>
-                <input type="email" id="login-email" class="input-modern" placeholder="seu.email@empresa.com" required>
+                <!-- Autocomplete username ajuda gerenciadores de senha -->
+                <input type="email" id="login-email" class="input-modern" placeholder="seu.email@empresa.com" autocomplete="username" required>
             </div>
             <div class="input-group">
                 <label for="login-password">Senha</label>
                 <div class="password-container">
-                    <input type="password" id="login-password" class="input-modern" placeholder="••••••••" required>
+                    <!-- Autocomplete current-password diz ao navegador que é um login existente -->
+                    <input type="password" id="login-password" class="input-modern" placeholder="••••••••" autocomplete="current-password" required>
                     <button type="button" class="toggle-password" data-target="login-password">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
@@ -76,22 +81,26 @@
         <form id="form-cadastro" style="display: none;">
             <div class="input-group">
                 <label for="cad-nome">Nome Completo</label>
-                <input type="text" id="cad-nome" class="input-modern" placeholder="Nome Sobrenome" required>
+                <!-- Autocomplete name -->
+                <input type="text" id="cad-nome" class="input-modern" placeholder="Nome Sobrenome" autocomplete="name" required>
             </div>
             <div class="input-group">
                 <label for="cad-email">E-mail Corporativo</label>
-                <input type="email" id="cad-email" class="input-modern" placeholder="seu.email@empresa.com" required>
+                <!-- Autocomplete email -->
+                <input type="email" id="cad-email" class="input-modern" placeholder="seu.email@empresa.com" autocomplete="email" required>
                 <span id="err-email" class="field-error"></span>
             </div>
             <div class="input-group">
                 <label for="cad-cpf">CPF</label>
-                <input type="text" id="cad-cpf" class="input-modern" placeholder="000.000.000-00" required>
+                <!-- Autocomplete off evita que o navegador tente preencher lixo no CPF -->
+                <input type="text" id="cad-cpf" class="input-modern" placeholder="000.000.000-00" autocomplete="off" required>
                 <span id="err-cpf" class="field-error"></span>
             </div>
             <div class="input-group">
                 <label for="cad-password">Senha</label>
                 <div class="password-container">
-                    <input type="password" id="cad-password" class="input-modern" placeholder="Mínimo 6 caracteres" required>
+                    <!-- Autocomplete new-password diz ao navegador que é uma criação de conta -->
+                    <input type="password" id="cad-password" class="input-modern" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
                     <button type="button" class="toggle-password" data-target="cad-password">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
