@@ -106,7 +106,8 @@ function atualizarDashboard(dados) {
             }]
         },
         options: { 
-            responsive: true, 
+            responsive: true,
+            maintainAspectRatio: false, // <-- TRAVA O CRESCIMENTO INFINITO
             plugins: { 
                 legend: { position: 'bottom', labels: { color: '#cbd5e1' } } 
             } 
@@ -129,7 +130,8 @@ function atualizarDashboard(dados) {
             }]
         },
         options: { 
-            responsive: true, 
+            responsive: true,
+            maintainAspectRatio: false, // <-- TRAVA O CRESCIMENTO INFINITO
             plugins: { 
                 legend: { display: false } 
             }, 
