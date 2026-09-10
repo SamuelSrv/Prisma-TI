@@ -15,91 +15,88 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
-<body class="bg-slate-900 text-slate-100 flex min-h-screen">
+<body class="bg-slate-900 text-slate-100 overflow-hidden">
+    
+    <!-- Container mestre travado no tamanho da tela -->
+    <div class="layout-container flex h-screen w-full">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar shrink-0"></aside>
 
-    <aside class="sidebar w-64 bg-slate-950 border-r border-slate-800 flex-shrink-0 h-screen sticky top-0"></aside>
-
-    <main class="main-content flex-1 p-10 overflow-y-auto w-full relative">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-white">Relatório de Avaliações</h1>
-            <p class="text-slate-400 mt-2">Importe as pesquisas de satisfação e audite os atendimentos de Ligação e
-                WhatsApp.</p>
-        </div>
-
-        <!-- MÓDULO 1: IMPORTAR DADOS -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg mb-8">
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i
-                    class="fa-solid fa-cloud-arrow-up text-emerald-500"></i> Importar Avaliações</h2>
-            <div class="flex items-end gap-4">
-                <div class="flex-1">
-                    <!-- Adicionado 'multiple' para aceitar vários arquivos -->
-                    <input type="file" id="arquivo-csv-aval" accept=".csv, .xlsx, .xls" multiple
-                        class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer bg-slate-900 border border-slate-700 rounded-lg">
-                </div>
-                <button id="btn-importar-aval"
-                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold transition shadow-lg w-56">
-                    Processar Arquivos
-                </button>
-            </div>
-            <p id="msg-importacao-aval" class="text-sm mt-3 text-emerald-400 hidden"></p>
-        </div>
-
-        <!-- MÓDULO 2: GERADOR DE RELATÓRIOS -->
-        <div
-            class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex gap-4 items-end flex-wrap justify-between">
-            <div class="flex gap-4 items-end flex-wrap">
-                <div class="min-w-[200px]">
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Tipo de Avaliação</label>
-                    <select id="select-tipo-aval"
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none focus:border-emerald-500">
-                        <option value="Ligação">Ligação (Telefonia)</option>
-                        <option value="WhatsApp">WhatsApp (Chat)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Data Inicial</label>
-                    <input id="date-start-aval" type="text"
-                        class="w-36 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none"
-                        placeholder="dd/mm/aaaa">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Data Final</label>
-                    <input id="date-end-aval" type="text"
-                        class="w-36 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none"
-                        placeholder="dd/mm/aaaa">
-                </div>
-                <button id="btn-gerar-aval"
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-semibold transition shadow-lg flex items-center gap-2 h-[42px]">
-                    <i class="fa-solid fa-list-check"></i> Gerar Relatório
-                </button>
+        <!-- Main rolável -->
+        <main class="main-content flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10 box-border">
+            <div class="mb-8">
+                <h1 class="text-2xl lg:text-3xl font-bold text-white">Relatório de Avaliações</h1>
+                <p class="text-slate-400 mt-2">Importe as pesquisas de satisfação e audite os atendimentos de Ligação e WhatsApp.</p>
             </div>
 
-            <!-- NOVO: BOTÃO DE CONSOLIDADO ANUAL -->
-            <div class="border-l border-slate-700 pl-6 flex gap-4 items-end">
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Ano Base</label>
-                    <input id="ano-consolidado" type="number" value="2026"
-                        class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none text-center font-bold">
+            <!-- MÓDULO 1: IMPORTAR DADOS -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg mb-8">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-emerald-500"></i> Importar Avaliações</h2>
+                <div class="flex flex-col sm:flex-row items-end gap-4">
+                    <div class="flex-1 w-full">
+                        <input type="file" id="arquivo-csv-aval" accept=".csv, .xlsx, .xls" multiple
+                            class="block w-full text-sm text-slate-400 file:mr-4 file:py-0 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer bg-slate-900 border border-slate-700 rounded-lg h-[46px] file:h-[46px]">
+                    </div>
+                    <button id="btn-importar-aval" class="bg-blue-600 hover:bg-blue-500 text-white px-6 h-[46px] rounded-lg font-semibold transition shadow-lg sm:w-56 w-full flex justify-center items-center">
+                        Processar Arquivos
+                    </button>
                 </div>
-                <button id="btn-gerar-consolidado"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-semibold transition shadow-lg flex items-center gap-2 h-[42px]">
-                    <i class="fa-solid fa-calendar-days"></i> Visão Geral Anual
-                </button>
+                <p id="msg-importacao-aval" class="text-sm mt-3 text-emerald-400 hidden"></p>
             </div>
-        </div>
-    </main>
+
+            <!-- MÓDULO 2: GERADOR DE RELATÓRIOS -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg flex flex-col xl:flex-row gap-6 items-start xl:items-end justify-between">
+                
+                <!-- Controles Principais -->
+                <div class="flex gap-4 items-end flex-wrap w-full xl:w-auto">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Tipo de Avaliação</label>
+                        <select id="select-tipo-aval" class="w-full h-[42px] bg-slate-900 border border-slate-700 rounded-lg px-4 text-white outline-none focus:border-emerald-500">
+                            <option value="Ligação">Ligação (Telefonia)</option>
+                            <option value="WhatsApp">WhatsApp (Chat)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Data Inicial</label>
+                        <input id="date-start-aval" type="text" class="w-36 h-[42px] bg-slate-900 border border-slate-700 rounded-lg px-4 text-white outline-none" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Data Final</label>
+                        <input id="date-end-aval" type="text" class="w-36 h-[42px] bg-slate-900 border border-slate-700 rounded-lg px-4 text-white outline-none" placeholder="dd/mm/aaaa">
+                    </div>
+                    <button id="btn-gerar-aval" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 h-[42px] rounded-lg font-semibold transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> Gerar Relatório
+                    </button>
+                </div>
+
+                <!-- Divisor Responsivo (Vertical no PC, Horizontal no Celular) -->
+                <div class="hidden xl:block w-px h-[42px] bg-slate-700"></div>
+                <div class="block xl:hidden w-full h-px bg-slate-700 my-1"></div>
+
+                <!-- Controle Consolidado -->
+                <div class="flex gap-4 items-end w-full xl:w-auto">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Ano Base</label>
+                        <input id="ano-consolidado" type="number" value="2026" class="w-24 h-[42px] bg-slate-900 border border-slate-700 rounded-lg px-4 text-white outline-none text-center font-bold">
+                    </div>
+                    <button id="btn-gerar-consolidado" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 h-[42px] rounded-lg font-semibold transition shadow-lg flex items-center justify-center gap-2 w-full sm:w-auto">
+                        <i class="fa-solid fa-calendar-days"></i> Visão Geral Anual
+                    </button>
+                </div>
+
+            </div>
+        </main>
+    </div>
 
     <!-- Modal de Visualização (Tela Cheia) -->
-    <div id="modal-relatorio-aval" class="fixed inset-0 bg-slate-900 z-50 hidden flex-col overflow-y-auto"
-        style="z-index: 9999;">
-        <div
-            class="w-full bg-slate-950 border-b border-slate-800 p-4 sticky top-0 z-10 flex justify-between items-center shadow-lg">
+    <div id="modal-relatorio-aval" class="fixed inset-0 bg-slate-900 z-50 hidden flex-col overflow-y-auto" style="z-index: 9999;">
+        <div class="w-full bg-slate-950 border-b border-slate-800 p-4 sticky top-0 z-10 flex justify-between items-center shadow-lg">
             <div class="text-white font-bold text-lg flex items-center gap-3">
                 <i class="fa-solid fa-star text-emerald-500"></i> Painel de Auditoria e Qualidade
             </div>
             <div class="flex gap-4">
-                <button id="btn-fechar-modal-aval"
-                    class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition shadow-lg flex items-center gap-2">
+                <button id="btn-fechar-modal-aval" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition shadow-lg flex items-center gap-2">
                     <i class="fa-solid fa-arrow-left"></i> Voltar
                 </button>
             </div>
