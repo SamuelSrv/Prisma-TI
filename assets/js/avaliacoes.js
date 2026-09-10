@@ -55,46 +55,74 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. IMPORTAÇÃO HÍBRIDA (Mantida intacta)
+// 1. IMPORTAÇÃO HÍBRIDA (Múltiplos Arquivos)
 // ==========================================
-function processarCSVAvaliacoes() {
+async function processarCSVAvaliacoes() {
     const fileInput = document.getElementById('arquivo-csv-aval');
     const msgEl = document.getElementById('msg-importacao-aval');
     const btn = document.getElementById('btn-importar-aval');
 
-    if (!fileInput.files.length) { alert("Selecione um arquivo."); return; }
-
-    const file = fileInput.files[0];
-    const extensao = file.name.split('.').pop().toLowerCase();
+    if (!fileInput.files.length) { alert("Selecione um ou mais arquivos."); return; }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lendo arquivos...';
     msgEl.classList.remove('hidden');
-    msgEl.innerText = "Lendo arquivo...";
+    msgEl.innerText = `Processando ${fileInput.files.length} arquivo(s)...`;
 
-    if (extensao === 'csv') {
-        Papa.parse(file, {
-            header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
-            complete: function (results) { enviarDadosParaBanco(results.data, msgEl, btn, fileInput); }
+    // Função interna para ler cada arquivo de forma assíncrona
+    const lerArquivo = (file) => {
+        return new Promise((resolve) => {
+            const extensao = file.name.split('.').pop().toLowerCase();
+            
+            if (extensao === 'csv') {
+                Papa.parse(file, {
+                    header: true, skipEmptyLines: true, encoding: "ISO-8859-1",
+                    complete: function (results) { resolve(results.data); },
+                    error: function () { resolve([]); } // Evita travar o lote se 1 arquivo falhar
+                });
+            } else if (extensao === 'xlsx' || extensao === 'xls') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
+                        resolve(json);
+                    } catch (err) { resolve([]); }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                resolve([]); // Extensão inválida ignorada
+            }
         });
-    } else if (extensao === 'xlsx' || extensao === 'xls') {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ""});
-            enviarDadosParaBanco(json, msgEl, btn, fileInput);
-        };
-        reader.readAsArrayBuffer(file);
-    } else {
-        alert("Formato inválido."); btn.disabled = false; btn.innerHTML = 'Processar Arquivo';
+    };
+
+    try {
+        // Dispara a leitura de todos os arquivos simultaneamente
+        const promessasLeitura = Array.from(fileInput.files).map(file => lerArquivo(file));
+        const resultadosMatriz = await Promise.all(promessasLeitura);
+        
+        // Achata a matriz (Array de Arrays) em um único arrayzão de objetos
+        const dadosBrutosTotais = resultadosMatriz.flat();
+
+        if (dadosBrutosTotais.length === 0) {
+            throw new Error("Nenhum dado válido encontrado nos arquivos suportados.");
+        }
+
+        await enviarDadosParaBanco(dadosBrutosTotais, msgEl, btn, fileInput);
+    } catch (error) {
+        msgEl.className = "text-sm mt-3 text-red-500";
+        msgEl.innerText = `Erro: ${error.message}`;
+        btn.disabled = false;
+        btn.innerHTML = 'Processar Arquivos';
     }
 }
 
 async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
-    msgEl.innerText = "Tratando dados...";
+    msgEl.innerText = "Tratando e consolidando dados...";
     const registrosLimpados = [];
+    const idsUnicos = new Set(); // Previne duplicidade dentro do próprio lote
 
     dadosBrutos.forEach(row => {
         const getVal = (keys) => {
@@ -132,12 +160,18 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
             const dataIso = formatarDataISO(dataInic);
             
             if (dataIso) {
+                // A CHAVE DE OURO: Tipo + Agente + Data exata impossibilita duplicidades
                 const hashId = `${tipo}_${agente}_${dataIso.replace(/[\-T:]/g, '')}`;
-                registrosLimpados.push({
-                    id: hashId, tipo_atendimento: tipo, data_inicial: dataIso,
-                    data_atendimento: formatarDataISO(dataAtend) || dataIso,
-                    agente: agente, interlocutor: interlocutor, nota: nota, filial: extrairFilial(dadosAssoc)
-                });
+                
+                // Evita que o mesmo arquivo empilhado gere IDs repetidos no mesmo lote
+                if (!idsUnicos.has(hashId)) {
+                    idsUnicos.add(hashId);
+                    registrosLimpados.push({
+                        id: hashId, tipo_atendimento: tipo, data_inicial: dataIso,
+                        data_atendimento: formatarDataISO(dataAtend) || dataIso,
+                        agente: agente, interlocutor: interlocutor, nota: nota, filial: extrairFilial(dadosAssoc)
+                    });
+                }
             }
         }
     });
@@ -146,15 +180,16 @@ async function enviarDadosParaBanco(dadosBrutos, msgEl, btn, fileInput) {
         const batchSize = 300;
         for (let i = 0; i < registrosLimpados.length; i += batchSize) {
             const lote = registrosLimpados.slice(i, i + batchSize);
+            // Upsert atualizará dados se o ID já existir, ou criará um novo.
             const { error } = await supabase.from('avaliacoes').upsert(lote, { onConflict: 'id' });
             if (error) throw error;
         }
         msgEl.className = "text-sm mt-3 text-emerald-400";
         msgEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Sucesso! ${registrosLimpados.length} avaliações sincronizadas.`;
     } catch (error) {
-        msgEl.className = "text-sm mt-3 text-red-500"; msgEl.innerText = `Erro: ${error.message}`;
+        msgEl.className = "text-sm mt-3 text-red-500"; msgEl.innerText = `Erro no banco: ${error.message}`;
     } finally {
-        btn.disabled = false; btn.innerHTML = 'Processar Arquivo'; fileInput.value = '';
+        btn.disabled = false; btn.innerHTML = 'Processar Arquivos'; fileInput.value = '';
     }
 }
 
@@ -186,7 +221,7 @@ async function gerarRelatorioAvaliacoes() {
             .order('data_inicial', { ascending: false });
 
         if (error) throw error;
-        if (!data || data.length === 0) { alert("Nenhum dado encontrado."); return; }
+        if (!data || data.length === 0) { alert("Nenhum dado encontrado no banco para este período."); return; }
 
         dadosRelatorioCache = data;
         analistasDesabilitados.clear(); 
@@ -197,7 +232,7 @@ async function gerarRelatorioAvaliacoes() {
         document.getElementById('modal-relatorio-aval').classList.remove('hidden');
         document.getElementById('modal-relatorio-aval').classList.add('flex');
 
-    } catch (err) { alert('Erro ao buscar.'); } 
+    } catch (err) { alert('Erro ao buscar as informações.'); } 
     finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-list-check"></i> Auditoria'; }
 }
 
@@ -235,7 +270,7 @@ async function salvarAnotacao(inputEl) {
 }
 
 // ==========================================
-// 3. NOVO: GERAR MATRIZ CONSOLIDADA ANUAL
+// 3. GERAR MATRIZ CONSOLIDADA ANUAL
 // ==========================================
 async function gerarRelatorioConsolidado() {
     const ano = document.getElementById('ano-consolidado').value;
@@ -269,7 +304,7 @@ async function gerarRelatorioConsolidado() {
         alert('Erro ao buscar dados anuais.');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-calendar-days"></i> Matriz Consolidada';
+        btn.innerHTML = '<i class="fa-solid fa-calendar-days"></i> Visão Geral Anual';
     }
 }
 
@@ -293,17 +328,13 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
     `;
 
     tipos.forEach(tipo => {
-        // Inicializa a matriz zerada
         const matriz = { totalAno: { 5:0, 4:0, 3:0, 2:0, 1:0, total:0 }, meses: {} };
         for (let i = 0; i < 12; i++) matriz.meses[i] = { 5:0, 4:0, 3:0, 2:0, 1:0, total:0 };
 
-        // Preenche a matriz filtrando pelo tipo (Ligação/Whats)
         dadosGlobais.filter(d => d.tipo_atendimento === tipo).forEach(d => {
             const n = parseInt(d.nota, 10);
             if (notasValidas.includes(n) && d.data_inicial) {
-                // Puxa o mês direto da string (ex: "2026-08-17" -> 08 -> index 7)
                 const mesIndex = parseInt(d.data_inicial.substring(5, 7), 10) - 1;
-                
                 matriz.meses[mesIndex][n]++;
                 matriz.meses[mesIndex].total++;
                 matriz.totalAno[n]++;
@@ -311,7 +342,6 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
             }
         });
 
-        // Montagem da Tabela para o Tipo atual
         const icone = tipo === 'Ligação' ? '<i class="fa-solid fa-headset text-emerald-400 text-xl mr-2"></i>' : '<i class="fa-brands fa-whatsapp text-emerald-400 text-xl mr-2"></i>';
         
         let tabelaHTML = `
@@ -343,7 +373,6 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
                     <tbody>
         `;
 
-        // Linhas das Notas (5 até 1)
         notasValidas.forEach(nota => {
             const coresNota = {
                 5: 'text-emerald-400 font-bold',
@@ -356,7 +385,6 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
             tabelaHTML += `<tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
                 <td class="py-2 px-2 border-r border-slate-700 bg-slate-950 font-black ${coresNota[nota]}">${nota}</td>`;
             
-            // Colunas dos Meses
             for (let i = 0; i < 12; i++) {
                 const val = matriz.meses[i][nota];
                 const totMes = matriz.meses[i].total;
@@ -370,7 +398,6 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
                 </td>`;
             }
 
-            // Coluna Total Ano da Nota
             const valAno = matriz.totalAno[nota];
             const pctAno = matriz.totalAno.total > 0 ? Math.round((valAno/matriz.totalAno.total)*100) : 0;
             tabelaHTML += `<td class="py-2 px-2 bg-slate-950 border-l border-slate-700">
@@ -381,7 +408,6 @@ function renderizarMatrizConsolidada(dadosGlobais, ano) {
             </td></tr>`;
         });
 
-        // Linha de Rodapé (Total de Avaliações)
         tabelaHTML += `<tr class="bg-slate-950/80 font-bold text-slate-400">
             <td class="py-2 px-2 border-r border-slate-700 text-[10px] uppercase">Qtd. Notas</td>`;
         for (let i = 0; i < 12; i++) {
